@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0 (2026-10-27)
+Tabs: Today, Progress, Gear, Me, with a status strip on every tab (fluids, protein, hourly as labeled fill bars).
+Today: day ring on the next card (blocks done of the day), quick adds for ankle pumps, fluid, protein.
+Progress: this week from real logs, bars only where the program sets a target; Spirit shown as history, not a score.
+Gear: grippers, dumbbells, pull-up bar, rower, with what's in use and the rule for moving up.
+Me: today's log, handoff, backups. Graphite palette (blue for the main action, gold for the verse, green for done),
+chunkier buttons with a pressed state. Fix: the service worker had a syntax error since 0.5.0 (updates still loaded
+through the older worker); a test now checks it parses.
+
 ## 0.6.0 (2026-10-27)
 Verse card: Context is the whole chapter (today's verse highlighted and scrolled into view); the 3-verse view is gone.
 Greek / Hebrew is now an interlinear: every word in order, original over its English in this verse, key words

@@ -14,10 +14,10 @@ async function shareOrDownload(name, text, type) {
   document.body.append(a); a.click(); a.remove();
 }
 
-export async function dataSheet() {
+export async function dataActions() {
   const persisted = await navigator.storage?.persisted?.();
-  const body = h('div', { class: 'stack' },
-    h('button', { class: 'btn', onclick: async () => {
+  return h('div', { class: 'stack' },
+    h('button', { class: 'btn ghost', onclick: async () => {
       await navigator.clipboard.writeText(buildHandoff(state));
       toast('Handoff copied');
     } }, 'Copy today’s handoff'),
@@ -35,8 +35,9 @@ export async function dataSheet() {
     h('p', { class: 'muted small' }, persisted ? 'Storage is protected from automatic clearing.' : 'Add to Home Screen to protect storage from being cleared.'),
     h('p', { class: 'muted small' }, `Version ${APP_VERSION}${TEST ? ', test mode (separate data)' : ''}`),
     h('p', { class: 'muted small' }, 'Alarms for scheduled blocks arrive in phase 2.'));
-  sheet('Data', body);
 }
+
+export async function dataSheet() { sheet('Data', await dataActions()); }
 
 function pasteSheet() {
   const ta = h('textarea', { rows: 10, placeholder: 'Paste a handoff starting with DATE:', 'aria-label': 'Handoff text' });

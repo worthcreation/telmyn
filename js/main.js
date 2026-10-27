@@ -1,7 +1,7 @@
 import * as db from './db.js';
 import { load, state, onChange } from './state.js';
 import { TEST, isoDate, now } from './clock.js';
-import { renderToday } from './ui/today.js';
+import { renderShell, startShell } from './ui/shell.js';
 import { toast, h } from './ui/dom.js';
 import { APP_VERSION } from './version.js';
 
@@ -19,7 +19,8 @@ async function boot() {
   // Test mode writes to its own database so practice runs never touch real logs.
   await db.open(TEST ? 'telmyn-test' : 'telmyn');
   navigator.storage?.persist?.();
-  onChange(() => { if (!document.querySelector('.sheet-wrap .log-form')) renderToday(root); });
+  onChange(() => { if (!document.querySelector('.sheet-wrap .log-form')) renderShell(root); });
+  startShell(root);
   await load(isoDate());
 
   // Roll over at midnight; refresh "now" labels each minute.
@@ -28,7 +29,7 @@ async function boot() {
     const d = now();
     if (isoDate(d) !== state.date) return load(isoDate(d));
     const m = d.getMinutes();
-    if (m !== minute && !document.querySelector('.runner, .sheet-wrap')) { minute = m; renderToday(root); }
+    if (m !== minute && !document.querySelector('.runner, .sheet-wrap')) { minute = m; renderShell(root); }
   }, 1000);
 
   registerSW();

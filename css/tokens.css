@@ -1,12 +1,12 @@
 /* Design tokens. Change the look here, nowhere else. */
 :root {
   color-scheme: light dark;
-  --paper: #EEF1EC;      /* cool chalk, the infield */
+  --paper: #EEF0EE;      /* neutral light */
   --surface: #FFFFFF;
-  --ink: #17212D;        /* deep slate */
-  --ink-2: #536070;
-  --line: #D3D9D1;
-  --lane: #2B57C9;       /* track blue, the one bold color */
+  --ink: #1B1F24;
+  --ink-2: #5A626B;
+  --line: #D6DAD6;
+  --lane: #2B57C9;       /* track blue: the main action only */
   --lane-ink: #FFFFFF;
   --spirit: #A97A1F;     /* verse and Spirit, old gold */
   --ok: #2F7D4F;
@@ -24,7 +24,8 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #131C27; --surface: #1B2633; --ink: #E8ECE5; --ink-2: #98A5B4; --line: #2B3848;
-    --lane: #7196F2; --lane-ink: #0F1722; --spirit: #E1B65A; --ok: #6CC08B; --warn: #E3846A;
+    /* graphite base so the few accents stand out: blue = main action, gold = verse/Spirit, green = done */
+    --paper: #1B1D20; --surface: #25282C; --ink: #EDEEEA; --ink-2: #9AA1A9; --line: #34383E;
+    --lane: #6E93F0; --lane-ink: #0F1520; --spirit: #E1B65A; --ok: #6CC08B; --warn: #E3846A;
   }
 }
