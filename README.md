@@ -17,7 +17,13 @@ node tests/tests.js
 ```
 Or open /tests/ in a browser.
 
-## Release
-1. Bump `APP_VERSION` in `js/version.js` and `VERSION` in `sw.js` to the same number.
-2. Add a line to `docs/CHANGELOG.md`.
-3. Run the tests, commit, push.
+## Release (how updates ship)
+1. Claude starts every build from this GitHub repo, makes the change, sets the version with `node tools/bump.mjs X.Y.Z`
+   (updates js/version.js and sw.js together), runs the tests, and delivers one git patch file named
+   `telmyn-X.Y.Z-YYYYMMDD-HHMM.patch`.
+2. Ross downloads the patch and runs:
+```
+powershell -ExecutionPolicy Bypass -File "$HOME\telmyn\tools\apply.ps1"
+```
+   It syncs with GitHub, applies every telmyn patch in Downloads in order, runs the tests, pushes only if they pass,
+   and deletes the patches and any old telmyn zips. If anything fails, nothing is pushed and the files are put back.

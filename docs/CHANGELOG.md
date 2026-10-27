@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1 (2026-10-27)
+Release workflow: git patches applied by tools/apply.ps1 (sync, apply, test, push, clean up Downloads),
+tools/bump.mjs sets the version in both files, and the tests fail if version.js and sw.js disagree.
+
 ## 0.4.0 (2026-10-27)
 Today uses the whole screen: compact next card, the full day list with times, an hourly strip showing every block's palms
 (imported and logged) with one-tap "Done, palms ↓/↑" that alternates for you, and three counters.

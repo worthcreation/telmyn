@@ -37,6 +37,10 @@ registered in program/index.js. Past days keep showing the program that was in e
 telmyn-api, a Cloudflare Worker. /verse and /versions relay Bible Gateway text for personal use and cache it 7 days.
 Phase 2 adds alarm pushes here. The app finds it through js/config.js (API_BASE).
 
+## Delivery
+Every build starts from the GitHub repo (the single source of truth). Each release is one git patch,
+telmyn-X.Y.Z-YYYYMMDD-HHMM.patch, applied with tools/apply.ps1, which tests before pushing. See README.
+
 ## Roadmap
 - Phase 2: tight-mode alarms via a Cloudflare Worker (cron + Web Push). Worker stores only block names and times.
 - Phase 3: XP and levels once 3-4 weeks of real data exist. Physical skills from real accomplishments only; Discipline gives bonuses.

@@ -118,6 +118,12 @@ if (typeof document !== 'undefined') {
   document.body.innerHTML = `<h1>${failed.length ? failed.length + ' failed' : 'All ' + results.length + ' passed'}</h1>` +
     results.map(([n, ok, m]) => `<p style="color:${ok ? 'green' : 'crimson'}">${ok ? 'PASS' : 'FAIL'} ${n}${m ? ': ' + m : ''}</p>`).join('');
 } else {
+  // Node only: the release number must match in both files, or phones won't update.
+  const fs = await import('fs');
+  const app = fs.readFileSync(new URL('../js/version.js', import.meta.url), 'utf8').match(/APP_VERSION = '([^']+)'/)[1];
+  const sw = fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8').match(/const VERSION = '([^']+)'/)[1];
+  results.push(['version.js and sw.js versions match', app === sw, app === sw ? '' : `version.js ${app}, sw.js ${sw}`]);
+  if (app !== sw) failed.push(results[results.length - 1]);
   for (const [n, ok, m] of results) console.log(`${ok ? 'PASS' : 'FAIL'} ${n}${m ? ': ' + m : ''}`);
   console.log(failed.length ? `${failed.length} failed` : `All ${results.length} passed`);
   if (failed.length) process.exitCode = 1;
