@@ -28,3 +28,6 @@ powershell -ExecutionPolicy Bypass -File "$HOME\telmyn\tools\apply.ps1"
    Each patch is cumulative (everything since what is live), one file per update. The script syncs with GitHub,
    applies the newest telmyn patch in Downloads, runs the tests, pushes only if they pass, and deletes all telmyn
    patches and zips from Downloads. If anything fails, nothing is pushed and the files are put back.
+
+## Credits
+Greek and Hebrew word data (data/original.json): STEPBible.org TAGNT and TAHOT, from Tyndale House Cambridge, CC BY 4.0.

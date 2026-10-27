@@ -122,6 +122,11 @@ if (typeof document !== 'undefined') {
   const fs = await import('fs');
   const app = fs.readFileSync(new URL('../js/version.js', import.meta.url), 'utf8').match(/APP_VERSION = '([^']+)'/)[1];
   const sw = fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8').match(/const VERSION = '([^']+)'/)[1];
+  const orig = JSON.parse(fs.readFileSync(new URL('../data/original.json', import.meta.url), 'utf8'));
+  const { BANK } = await import('../js/verses.js');
+  const missingWords = BANK.flat().filter(ref => !orig.verses[ref]?.words?.length);
+  results.push(['every bank verse has Greek or Hebrew key words', !missingWords.length, missingWords.join(', ')]);
+  if (missingWords.length) failed.push(results[results.length - 1]);
   results.push(['version.js and sw.js versions match', app === sw, app === sw ? '' : `version.js ${app}, sw.js ${sw}`]);
   if (app !== sw) failed.push(results[results.length - 1]);
   for (const [n, ok, m] of results) console.log(`${ok ? 'PASS' : 'FAIL'} ${n}${m ? ': ' + m : ''}`);

@@ -67,7 +67,7 @@ async function handle(req, ctx) {
   if (url.pathname === '/verse') {
     const ref = url.searchParams.get('ref') || '';
     const v = (url.searchParams.get('v') || 'NKJV').toUpperCase();
-    if (!/^[1-3]?\s?[A-Za-z ]+\s\d+:\d+(-\d+)?$/.test(ref) || !/^[A-Z0-9-]{2,12}$/.test(v)) return json(req, { error: 'Bad reference or version.' }, 400);
+    if (!/^[1-3]?\s?[A-Za-z ]+\s\d+(:\d+(-\d+)?)?$/.test(ref) || !/^[A-Z0-9-]{2,12}$/.test(v)) return json(req, { error: 'Bad reference or version.' }, 400);
     const page = `${BG}/passage/?search=${encodeURIComponent(ref)}&version=${encodeURIComponent(v)}`;
     const r = await fetch(page, { headers: { 'User-Agent': UA } });
     if (!r.ok) return json(req, { error: `Bible Gateway returned ${r.status}.` }, 502);

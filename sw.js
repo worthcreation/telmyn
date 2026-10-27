@@ -1,12 +1,12 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.4.8';
+const VERSION = '0.5.0';
 const CACHE = `telmyn-${VERSION}`;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/app.css',
   'js/main.js', 'js/version.js', 'js/clock.js', 'js/db.js', 'js/schema.js', 'js/state.js', 'js/handoff.js', 'js/verses.js', 'js/xp.js', 'js/flow.js', 'js/hourly.js', 'js/config.js', 'js/scripture.js',
   'js/program/index.js', 'js/program/v1.js', 'js/program/v1_1.js', 'js/program/steps.js',
   'js/ui/dom.js', 'js/ui/fx.js', 'js/ui/today.js', 'js/ui/runner.js', 'js/ui/forms.js', 'js/ui/verse.js', 'js/ui/data.js',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
+  'data/original.json', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
 // Install and take over right away, so a new release never waits behind an old cached copy.
@@ -35,7 +35,7 @@ self.addEventListener('fetch', e => {
 // Phase 2: tight-mode alarms pushed from the Cloudflare Worker. Payload carries only a block name.
 self.addEventListener('push', e => {
   const data = e.data ? e.data.json() : { title: 'Telmyn', body: 'Next block is ready.' };
-  e.waitUntil(self.registration.showNotification(data.title || 'Telmyn', { body: data.body, icon: 'icons/icon-192.png', tag: data.tag || 'block' }));
+  e.waitUntil(self.registration.showNotification(data.title || 'Telmyn', { body: data.body, icon: 'data/original.json', 'icons/icon-192.png', tag: data.tag || 'block' }));
 });
 
 self.addEventListener('notificationclick', e => {

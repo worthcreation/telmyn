@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 (2026-10-27)
+Verse card shows everything in the app, no outside links: Context (surrounding verses), Chapter (the whole chapter,
+today's verse highlighted), and Greek / Hebrew key words for every verse in the bank (word, transliteration, meaning),
+built from STEPBible.org data (CC BY 4.0; NT words follow the Textus Receptus, the NKJV base).
+Verse service accepts whole-chapter references. apply.ps1 deploys the verse service when an update changes it.
+
 ## 0.4.8 (2026-10-27)
 Updates are one cumulative patch file; apply.ps1 uses only the newest and clears the rest.
 

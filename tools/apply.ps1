@@ -36,6 +36,12 @@ if ($LASTEXITCODE -ne 0) {
 git push -q
 if ($LASTEXITCODE -ne 0) { Write-Host 'Push failed. The patch is applied locally; run "git push" after fixing the connection.' -ForegroundColor Red; exit 1 }
 
+# If the update touched the verse service, deploy it too.
+if ((git diff --name-only $before HEAD) -match '^worker/') {
+  Write-Host 'Deploying the verse service' -ForegroundColor Cyan
+  Push-Location worker; npx.cmd --yes wrangler deploy; Pop-Location
+}
+
 $all | Remove-Item
 Get-ChildItem $dl -Filter 'telmyn*.zip' -ErrorAction SilentlyContinue | Remove-Item
 $version = (Select-String -Path 'js\version.js' -Pattern "'(.+)'").Matches[0].Groups[1].Value

@@ -154,11 +154,17 @@ textarea { resize: vertical; }
 .verse-theme { margin: 0; color: var(--spirit); font-weight: 600; }
 .verse-block { margin: 0; padding: var(--s4); border-left: 4px solid var(--spirit); background: var(--surface); border-radius: 0 var(--r-btn) var(--r-btn) 0; display: grid; gap: var(--s2); }
 .verse-text p { margin: 0; font: 400 21px/1.5 var(--font-verse); font-style: normal; }
-.verse-cite { font: 600 15px var(--font-verse); color: var(--spirit); text-decoration: none; }
-.verse-cite::after { content: ' ↗'; font-family: var(--font-body); }
+.verse-cite { margin: 0; font: 600 15px var(--font-verse); color: var(--spirit); }
 .verse-tools { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .verse-tools .chip { text-decoration: none; color: var(--ink); font-size: 15px; padding: var(--s2) var(--s3); }
-.verse-context:empty { display: none; }
+.verse-panel-body:empty { display: none; }
+.verse-tools .chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.words { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.words li { display: grid; grid-template-columns: 9.5em 1fr; grid-template-areas: 'o g' 'o t'; column-gap: var(--s3); padding: var(--s2) 0; border-bottom: 1px solid var(--line); }
+.w-orig { grid-area: o; align-self: center; font: 400 24px/1.2 'SBL Greek', 'Noto Serif', var(--font-verse); }
+.w-orig.hebrew { font-family: 'SBL Hebrew', 'Noto Serif Hebrew', 'Times New Roman', serif; font-size: 26px; text-align: right; }
+.w-gl { grid-area: g; font-weight: 600; }
+.w-tr { grid-area: t; color: var(--ink-2); font-size: 14px; font-style: normal; }
 .ctx-label { margin: 0 0 var(--s1); font-size: 13px; font-weight: 600; color: var(--ink-2); }
 .ctx-text { margin: 0; font: 400 17px/1.55 var(--font-verse); color: var(--ink-2); }
 .ctx-text sup { font: 600 11px var(--font-body); color: var(--ink-2); }
