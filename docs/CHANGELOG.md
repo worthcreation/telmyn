@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.1 (2026-10-27)
+Verse journal: a Save button for where the verse was applied today, and a Journal of every day's verse and
+application, newest first (also opens from Spirit on Progress). Study videos: main English channel only, and only
+videos whose title names the book.
+
 ## 0.8.0 (2026-10-27)
 Study tab in the verse card: Bible teaching videos on the verse from BibleProject, Look at the Book (Desiring God),
 Mike Winger, or GotQuestions, found through the YouTube Data API (key kept as a Worker secret), filtered to each

@@ -3,6 +3,7 @@
 // word, transliteration and literal meaning only.
 import { h, sheet, fill } from './dom.js';
 import { state, setField } from '../state.js';
+import { journalSheet } from './journal.js';
 import { getVersion, setVersion, fetchVerse, listVersions, CREATORS, getCreator, setCreator, fetchVideos } from '../scripture.js';
 
 function parseRef(ref) {
@@ -127,11 +128,19 @@ export async function verseSheet() {
     fill(select, list.map(x => h('option', { value: x.abbr, selected: x.abbr === version }, `${x.abbr}, ${x.name}`)));
   });
 
+  // Where it was applied today: saved to today's log and collected in the verse journal.
+  const note = h('textarea', { class: 'verse-applied', rows: 2, 'aria-label': 'Where I applied it today', placeholder: 'Where I applied it today' }, state.day.verse_applied_notes ?? '');
+  const saveBtn = h('button', { class: 'btn', onclick: async () => {
+    await setField('verse_applied_notes', note.value.trim() || null);
+    saveBtn.textContent = 'Saved'; setTimeout(() => { saveBtn.textContent = 'Save'; }, 1500);
+  } }, 'Save');
+  const applied = h('div', { class: 'applied' }, note,
+    h('div', { class: 'applied-actions' }, h('button', { class: 'btn ghost', onclick: journalSheet }, 'Journal'), saveBtn));
+
   const body = h('div', { class: 'verse-sheet' },
     h('div', { class: 'verse-top' }, h('p', { class: 'verse-theme' }, v.theme), select),
     h('blockquote', { class: 'verse-block' }, text, cite),
-    h('input', { class: 'verse-applied', 'aria-label': 'Where I applied it today', placeholder: 'Where I applied it today',
-      value: state.day.verse_applied_notes ?? '', onchange: e => setField('verse_applied_notes', e.target.value || null) }),
+    applied,
     h('div', { class: 'verse-tools' }, Object.values(tabs)),
     panel);
   sheet('Today’s verse', body);

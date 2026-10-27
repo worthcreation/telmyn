@@ -58,10 +58,10 @@ async function versions() {
 // Bible study videos for a verse, by creator. Uses the official YouTube Data API (key stored as a Worker secret).
 // Results are filtered to the creator's own channel and cached for 30 days, so searches stay rare.
 const CREATORS = {
-  bibleproject: { name: 'BibleProject', channel: /bibleproject/i, q: (b, c) => `BibleProject ${b}` },
-  lookatthebook: { name: 'Look at the Book', channel: /desiring\s*god/i, q: (b, c, v) => `Look at the Book ${b} ${c}` },
-  mikewinger: { name: 'Mike Winger', channel: /mike\s*winger/i, q: (b, c) => `Mike Winger ${b} ${c}` },
-  gotquestions: { name: 'GotQuestions', channel: /gotquestions/i, q: (b, c, v) => `${b} ${c}:${v} GotQuestions` },
+  bibleproject: { name: 'BibleProject', channel: /^BibleProject$/i, q: (b) => `BibleProject ${b}` },
+  lookatthebook: { name: 'Look at the Book', channel: /^desiring\s*god$/i, q: (b, c) => `Look at the Book ${b} ${c}` },
+  mikewinger: { name: 'Mike Winger', channel: /^mike\s*winger$/i, q: (b, c) => `Mike Winger ${b} ${c}` },
+  gotquestions: { name: 'GotQuestions', channel: /^gotquestions(\.org)?$/i, q: (b, c, v) => `${b} ${c}:${v} GotQuestions` },
 };
 const MONTH = 60 * 60 * 24 * 30;
 
@@ -72,11 +72,14 @@ async function videos(url, env) {
   if (!who || !m) return { status: 400, body: { error: 'Bad reference or creator.' } };
   if (!env.YOUTUBE_KEY) return { status: 500, body: { error: 'Video search is not set up yet.' } };
   const api = new URL('https://www.googleapis.com/youtube/v3/search');
-  api.search = new URLSearchParams({ part: 'snippet', type: 'video', videoEmbeddable: 'true', maxResults: '15', q: who.q(m[1], m[2], m[3] || '1'), key: env.YOUTUBE_KEY });
+  api.search = new URLSearchParams({ part: 'snippet', type: 'video', videoEmbeddable: 'true', relevanceLanguage: 'en', maxResults: '25', q: who.q(m[1], m[2], m[3] || '1'), key: env.YOUTUBE_KEY });
   const r = await fetch(api);
   const d = await r.json();
   if (!r.ok) return { status: 502, body: { error: d.error?.message || `YouTube returned ${r.status}.` } };
-  const list = (d.items || []).filter(x => who.channel.test(x.snippet?.channelTitle || '')).slice(0, 4).map(x => ({
+  // Keep only the creator's main channel, and only videos whose title names the book.
+  const book = m[1].replace(/^([1-3])\s?/, '$1 ').trim().toLowerCase();
+  const decode = t => t.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+  const list = (d.items || []).filter(x => who.channel.test(x.snippet?.channelTitle || '') && decode(x.snippet?.title || '').toLowerCase().includes(book)).slice(0, 4).map(x => ({
     id: x.id.videoId, title: x.snippet.title, channel: x.snippet.channelTitle, published: x.snippet.publishedAt,
     thumb: x.snippet.thumbnails?.medium?.url || x.snippet.thumbnails?.default?.url,
   }));

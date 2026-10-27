@@ -2,6 +2,7 @@
 // Spirit is shown as history, never as a score.
 import { h, fill } from './dom.js';
 import * as db from '../db.js';
+import { journalSheet } from './journal.js';
 import { state } from '../state.js';
 import { planFor, blockStatus, PROGRAMS } from '../program/index.js';
 import { addDays, weekday, WEEKDAYS } from '../clock.js';
@@ -64,6 +65,6 @@ export async function renderProgress(root) {
       bar('Mobility', stretchDays, elapsed, `${stretchDays}/${elapsed} morning stretches`),
       bar('Fuel', proteinDays, elapsed, `${proteinDays}/${elapsed} days at ${TARGETS.protein_g[0]} g protein`),
       bar('Recovery', legsDays, elapsed, `${legsDays}/${elapsed} evenings legs up`),
-      h('div', { class: 'stat spirit' }, h('div', { class: 'stat-top' }, h('span', { class: 'stat-l' }, 'Spirit'),
-        h('span', { class: 'stat-d' }, `Verse applied on ${versesApplied} of ${elapsed} days. History, not a score.`)))));
+      h('button', { class: 'stat spirit', onclick: journalSheet }, h('div', { class: 'stat-top' }, h('span', { class: 'stat-l' }, 'Spirit'),
+        h('span', { class: 'stat-d' }, `Verse applied on ${versesApplied} of ${elapsed} days. Tap for your journal.`)))));
 }

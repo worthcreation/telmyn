@@ -346,3 +346,15 @@ textarea { resize: vertical; }
 .player:empty { display: none; }
 .player { margin-top: var(--s2); }
 .player iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--r-btn); background: #000; }
+
+.applied { display: grid; gap: var(--s2); }
+.applied textarea { font-size: 16px; }
+.applied-actions { display: grid; grid-template-columns: 1fr 2fr; gap: var(--s2); }
+button.stat { background: none; border: 0; padding: 0; text-align: left; color: var(--ink); width: 100%; }
+.journal { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+.journal li { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--spirit); border-radius: var(--r-btn); padding: var(--s3); }
+.j-head { margin: 0 0 var(--s1); display: flex; justify-content: space-between; gap: var(--s2); }
+.j-ref { font: 600 16px var(--font-verse); color: var(--spirit); }
+.j-date { font-size: 13px; color: var(--ink-2); }
+.j-note { margin: 0; font-size: 16px; line-height: 1.45; white-space: pre-wrap; }
+.center { text-align: center; }
