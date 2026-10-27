@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.4 (2026-10-27)
+Today: the verse fits the space that's left. Its type shrinks until it fits, and if it still can't fit it steps aside
+instead of being cut off.
+
 ## 0.8.3 (2026-10-27)
 Next card: the button carries the block's name ("▶ Row") instead of "Start"; above it, a one-line summary of what the block
 involves and what comes after it.

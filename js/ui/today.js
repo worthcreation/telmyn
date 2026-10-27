@@ -23,6 +23,17 @@ function ring(done, total) {
     h('div', { html: svg }), h('span', { class: 'ring-n' }, h('b', {}, done), `/${total}`));
 }
 
+// The verse fills whatever space is left. Shrink the type until it fits; if even small type won't fit, hide it
+// rather than cut it off. (Long verses on a busy day hand the space back to the day.)
+function fitVerse(el) {
+  const t = el.querySelector('.vp-text');
+  if (!t) return;
+  let size = 22;
+  t.style.fontSize = `${size}px`;
+  while (el.scrollHeight > el.clientHeight + 1 && size > 15) { size -= 1; t.style.fontSize = `${size}px`; }
+  el.classList.toggle('empty', el.scrollHeight > el.clientHeight + 1);
+}
+
 export function renderToday(root, rerender) {
   const { plan, verse, day, events } = state;
   const next = nextBlock(plan, events, day);
@@ -43,6 +54,7 @@ export function renderToday(root, rerender) {
   const versePanel = h('button', { class: 'verse-panel', onclick: verseSheet, 'aria-label': 'Open today’s verse' });
   getVersion().then(v => fetchVerse(verse.ref, v)).then(d => {
     fill(versePanel, h('span', { class: 'vp-text' }, d.text), h('span', { class: 'vp-ref' }, `${verse.ref} ${d.version}`));
+    requestAnimationFrame(() => fitVerse(versePanel));
   }).catch(() => versePanel.classList.add('empty'));
 
   let hourly = null;
