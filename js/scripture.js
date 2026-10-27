@@ -18,7 +18,8 @@ export async function fetchVerse(ref, version) {
   const cached = await getMeta(key);
   if (cached) return cached;
   if (!API_BASE) throw new Error('Verse service not connected yet.');
-  const r = await fetch(`${API_BASE}/verse?ref=${encodeURIComponent(ref)}&v=${encodeURIComponent(version)}`);
+  const r = await fetch(`${API_BASE}/verse?ref=${encodeURIComponent(ref)}&v=${encodeURIComponent(version)}`)
+    .catch(() => { throw new Error('Could not reach the verse service. Check the connection and try again.'); });
   const data = await r.json().catch(() => ({}));
   if (!r.ok || !data.text) throw new Error(data.error || 'Could not load the verse.');
   await setMeta(key, data);

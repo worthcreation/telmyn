@@ -21,7 +21,7 @@ export async function verseSheet() {
   const v = state.verse;
   const r = parseRef(v.ref);
   let version = await getVersion();
-  let open = null;   // 'context' | 'chapter' | 'words'
+  let open = null;   // 'context' (the whole chapter) | 'words'
 
   const text = h('div', { class: 'verse-text' }, h('p', { class: 'muted' }, 'Loading…'));
   const cite = h('p', { class: 'verse-cite' });
@@ -29,7 +29,6 @@ export async function verseSheet() {
   const select = h('select', { class: 'version-select', 'aria-label': 'Bible version', onchange: async e => { version = e.target.value; await setVersion(version); load(); } });
   const tabs = {
     context: h('button', { class: 'chip', onclick: () => show('context') }, 'Context'),
-    chapter: h('button', { class: 'chip', onclick: () => show('chapter') }, 'Chapter'),
     words: h('button', { class: 'chip', onclick: () => show('words') }, 'Greek / Hebrew'),
   };
 
@@ -51,26 +50,47 @@ export async function verseSheet() {
           const n = verseNo(x.id);
           return h('span', { class: n >= r.from && n <= r.to ? 'ctx-today' : '' }, h('sup', {}, n), ` ${x.text} `);
         })));
+      panel.querySelector('.ctx-today')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     } catch (err) { fill(panel, h('p', { class: 'muted small' }, err.message)); }
   }
 
+  // Interlinear: every word of the verse in order, original over its English in this verse.
+  // Key words (nouns, verbs, adjectives) stand out. Tap any word for its dictionary meaning and grammar.
   async function words() {
     const o = await original(v.ref);
     if (!o?.words?.length) return fill(panel, h('p', { class: 'muted small' }, 'No word notes for this verse yet.'));
-    const multi = r.to > r.from;
-    fill(panel, h('p', { class: 'ctx-label' }, o.lang === 'hebrew' ? 'Key Hebrew words' : 'Key Greek words'),
-      h('ol', { class: 'words' }, o.words.map(w => h('li', {},
-        h('span', { class: `w-orig ${o.lang}`, lang: o.lang === 'hebrew' ? 'he' : 'grc', dir: o.lang === 'hebrew' ? 'rtl' : 'ltr' }, w.w),
-        h('span', { class: 'w-tr' }, (multi ? `v${w.v} ` : '') + w.t),
-        h('span', { class: 'w-gl' }, w.g)))));
+    const heb = o.lang === 'hebrew';
+    const detail = h('div', { class: 'w-detail' });
+    const pick = (w, el) => {
+      panel.querySelectorAll('.iw.on').forEach(x => x.classList.remove('on'));
+      el?.classList.add('on');
+      fill(detail,
+        h('div', { class: 'wd-top' },
+          h('span', { class: `wd-orig ${o.lang}`, lang: heb ? 'he' : 'grc', dir: heb ? 'rtl' : 'ltr' }, w.w),
+          h('span', { class: 'wd-tr' }, w.t)),
+        h('p', { class: 'wd-line' }, h('b', {}, 'Here: '), w.en || '(not translated)'),
+        w.g ? h('p', { class: 'wd-line' }, h('b', {}, 'Meaning: '), w.g, w.lemma ? h('span', { class: 'wd-lemma', lang: heb ? 'he' : 'grc' }, ` (${w.lemma})`) : null) : null,
+        w.gram ? h('p', { class: 'wd-line muted' }, w.gram) : null);
+    };
+    let lastV = null;
+    const flow = h('div', { class: `interlinear ${o.lang}`, dir: heb ? 'rtl' : 'ltr' }, o.words.map(w => {
+      const mark = r.to > r.from && w.v !== lastV ? h('span', { class: 'iw-v' }, w.v) : null;
+      lastV = w.v;
+      const el = h('button', { class: `iw${w.key ? ' key' : ''}`, onclick: e => pick(w, e.currentTarget) },
+        h('span', { class: 'iw-o', lang: heb ? 'he' : 'grc' }, w.w),
+        h('span', { class: `iw-e${w.faint ? ' faint' : ''}`, dir: 'ltr' }, w.en || '–'));
+      return [mark, el];
+    }).flat());
+    fill(panel, h('p', { class: 'ctx-label' }, `${heb ? 'Hebrew' : 'Greek'}, word by word. Tap a word.`), flow, detail);
+    const first = o.words.findIndex(w => w.key);
+    pick(o.words[first], flow.querySelectorAll('.iw')[first]);
   }
 
   function show(which, reload = false) {
     if (open === which && !reload) { open = null; fill(panel); }
     else {
       open = which;
-      if (which === 'context') passage(`${r.book} ${r.ch}:${Math.max(1, r.from - 3)}-${r.to + 3}`, `${r.book} ${r.ch}:${Math.max(1, r.from - 3)}-${r.to + 3}`);
-      if (which === 'chapter') passage(`${r.book} ${r.ch}`, `${r.book} ${r.ch}`);
+      if (which === 'context') passage(`${r.book} ${r.ch}`, `${r.book} ${r.ch}`);
       if (which === 'words') words();
     }
     for (const [k, b] of Object.entries(tabs)) b.classList.toggle('on', k === open);

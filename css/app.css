@@ -159,16 +159,23 @@ textarea { resize: vertical; }
 .verse-tools .chip { text-decoration: none; color: var(--ink); font-size: 15px; padding: var(--s2) var(--s3); }
 .verse-panel-body:empty { display: none; }
 .verse-tools .chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.words { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-.words li { display: grid; grid-template-columns: 9.5em 1fr; grid-template-areas: 'o g' 'o t'; column-gap: var(--s3); padding: var(--s2) 0; border-bottom: 1px solid var(--line); }
-.w-orig { grid-area: o; align-self: center; font: 400 24px/1.2 'SBL Greek', 'Noto Serif', var(--font-verse); }
-.w-orig.hebrew { font-family: 'SBL Hebrew', 'Noto Serif Hebrew', 'Times New Roman', serif; font-size: 26px; text-align: right; }
-.w-gl { grid-area: g; font-weight: 600; }
-.w-tr { grid-area: t; color: var(--ink-2); font-size: 14px; font-style: normal; }
-.ctx-label { margin: 0 0 var(--s1); font-size: 13px; font-weight: 600; color: var(--ink-2); }
-.ctx-text { margin: 0; font: 400 17px/1.55 var(--font-verse); color: var(--ink-2); }
-.ctx-text sup { font: 600 11px var(--font-body); color: var(--ink-2); }
-.ctx-today { color: var(--ink); background: color-mix(in srgb, var(--spirit) 18%, transparent); border-radius: 4px; }
+.interlinear { display: flex; flex-wrap: wrap; gap: var(--s1); align-items: flex-end; }
+.iw { display: grid; justify-items: center; gap: 1px; padding: 4px 6px; background: none; border: 1px solid transparent; border-radius: 8px; color: var(--ink-2); }
+.iw.key { color: var(--ink); }
+.iw.on { border-color: var(--spirit); background: color-mix(in srgb, var(--spirit) 14%, transparent); }
+.iw-o { font: 400 20px/1.2 'SBL Greek', 'Noto Serif', var(--font-verse); }
+.hebrew .iw-o { font: 400 22px/1.3 'SBL Hebrew', 'Noto Serif Hebrew', 'Times New Roman', serif; }
+.iw.key .iw-o { font-weight: 600; }
+.iw-e { font-size: 12px; line-height: 1.2; max-width: 9em; text-align: center; }
+.iw-e.faint { opacity: .55; }
+.iw-v { align-self: flex-start; font-size: 11px; font-weight: 700; color: var(--spirit); padding-top: 4px; }
+.w-detail { margin-top: var(--s3); padding: var(--s3); background: var(--surface); border-radius: var(--r-btn); border-left: 3px solid var(--spirit); display: grid; gap: 4px; }
+.wd-top { display: flex; align-items: baseline; gap: var(--s3); }
+.wd-orig { font: 400 30px/1.2 'SBL Greek', 'Noto Serif', var(--font-verse); }
+.wd-orig.hebrew { font-family: 'SBL Hebrew', 'Noto Serif Hebrew', 'Times New Roman', serif; }
+.wd-tr { color: var(--ink-2); font-size: 16px; }
+.wd-line { margin: 0; font-size: 15px; }
+.wd-lemma { color: var(--ink-2); }
 .verse-applied { font-size: 16px; }
 
 /* ---------- Runner ---------- */

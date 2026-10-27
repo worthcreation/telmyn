@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0 (2026-10-27)
+Verse card: Context is the whole chapter (today's verse highlighted and scrolled into view); the 3-verse view is gone.
+Greek / Hebrew is now an interlinear: every word in order, original over its English in this verse, key words
+stand out; tap any word for transliteration, how it reads here, dictionary meaning, and grammar in plain words.
+
 ## 0.5.2 (2026-10-27)
 tools/cf.ps1 runs Wrangler with Telmyn's own Cloudflare sign-in (telmyn/.cfhome), separate from NFC's; apply.ps1 deploys through it.
 
