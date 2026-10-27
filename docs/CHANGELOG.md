@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 (2026-10-27)
+Hang stopwatches beep at the target (10 and 20 sec on hang sets) and stop themselves (15 sec in the strength warm-up).
+Flow: tap Start once and timed steps chain. Each gets a transition countdown (0 sec if you don't move, 5 to switch sides,
+10 for a new position), 3-2-1 ticks, a held tone at the start, a double beep at the end. Pause and Start now on every timer.
+Hourly block: the 5 sec squeeze holds are now their own timed steps. Forearm stretch video added (starts at 0:36, approved by Ross).
+
 ## 0.2.0 (2026-10-27)
 Program v1.1 (effective 2026-10-27, Ross's request): warm-up before and cooldown after every round
 (Fab Five, hangs, row, hourly blocks; strength days already had both), a short cue on every step,

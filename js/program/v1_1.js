@@ -15,7 +15,7 @@ export const EXERCISES = {
   hamstring: { name: 'Hamstring stretch' },
   hip_lunge: { name: 'Lunge hip stretch' },
   doorway_chest: { name: 'Doorway chest stretch' },
-  forearm: { name: 'Forearm stretch' },      // video pending Ross's approval
+  forearm: { name: 'Forearm stretch', video: 'https://www.youtube.com/watch?v=mLVLLGUbyfU&t=36s' }, // approved by Ross 2026-10-27, starts at 0:36
   toe_touch: { name: 'Toe touch' },
 };
 
@@ -48,7 +48,7 @@ const PULL_RULE = 'Full range. Stop 1-2 reps short of failure. Under 4 clean rep
 const HANG_CUE = 'Shoulders pulled down from the ears, ribs down, arms straight.';
 const strengthWarmup = phase('Warm-up', [
   step.timed('Arm circles forward', 30, { exercise: 'arm_circles', cue: C.armCircles }),
-  step.timed('Arm circles backward', 30, { exercise: 'arm_circles', cue: C.armCircles }),
+  step.timed('Arm circles backward', 30, { exercise: 'arm_circles', cue: C.armCircles, setup: 0 }),
   step.set('scap_pullup', 'Scapular pull-ups, 10 reps', { cue: 'Arms straight. Pull the shoulder blades down, then let them rise.' }),
   step.rest(30),
   step.set('dead_hang', 'Active hang, 15 sec', { log: 'sec', sec: 15, set_no: 1, cue: HANG_CUE }),
@@ -138,8 +138,8 @@ export const BLOCKS = {
       ]),
       step.do('Set the damper to 3-5', { exercise: 'row', cue: 'Higher is not harder work, just heavier feel. 3-5 is right.' }),
       step.timed('Very easy', 120, { exercise: 'row', cue: 'Finishes the warm-up. Smooth, no effort.' }),
-      step.timed('Conversational pace', 900, { exercise: 'row', cue: 'You could talk in full sentences. Legs, body, arms.' }),
-      step.timed('Easy cooldown, 1-2 min', 120, { exercise: 'row', cue: 'Let the heart rate come down.' }),
+      step.timed('Conversational pace', 900, { exercise: 'row', setup: 0, cue: 'You could talk in full sentences. Legs, body, arms.' }),
+      step.timed('Easy cooldown, 1-2 min', 120, { exercise: 'row', setup: 0, cue: 'Let the heart rate come down.' }),
       step.set('row', 'Total minutes rowed', { log: 'min', logField: 'row_min', cue: 'Enter what the monitor shows.' }),
       ...phase('Cooldown', [
         ...eachSide('Calf stretch', 30, { exercise: 'calf_wall', cue: C.calf }, 'leg'),
@@ -159,7 +159,7 @@ export const BLOCKS = {
         ...armCircles,
         step.do('Scapular pull-ups, 5 easy', { exercise: 'scap_pullup', cue: 'Arms straight. Pull the shoulder blades down, then let them rise.' }),
       ]),
-      ...sets(3, i => step.set('dead_hang', `Active hang, set ${i}, 10-20 sec`, { log: 'sec', set_no: i, cue: HANG_CUE }), 60),
+      ...sets(3, i => step.set('dead_hang', `Active hang, set ${i}, 10-20 sec`, { log: 'sec', range: [10, 20], set_no: i, cue: HANG_CUE }), 60),
       ...phase('Cooldown', [doorway, ...eachSide('Forearm stretch', 30, { exercise: 'forearm', cue: C.forearmUp }, 'arm')]),
     ],
   },
@@ -170,8 +170,10 @@ export const BLOCKS = {
     steps: [
       step.do('Palms', { choice: 'palms', options: ['up', 'down'] }),
       ...phase('Warm-up', [step.do('Wrist circles, 10 each way', { exercise: 'wrist_circles', cue: C.wrist })]),
-      step.do('Left hand: 15 squeezes, calf raise with each, 5 sec hold at the end', { cue: 'Full squeeze each rep. Recite the verse on the hold.' }),
-      step.do('Right hand: 15 squeezes, calf raise with each, 5 sec hold at the end', { cue: 'Full squeeze each rep. Recite the verse on the hold.' }),
+      step.do('Left hand: 15 squeezes, calf raise with each', { cue: 'Full squeeze each rep, arm extended.' }),
+      step.timed('Left hand: squeeze and hold', 5, { setup: 0, cue: 'Recite the verse.' }),
+      step.do('Right hand: 15 squeezes, calf raise with each', { cue: 'Full squeeze each rep, arm extended.' }),
+      step.timed('Right hand: squeeze and hold', 5, { setup: 0, cue: 'Recite the verse.' }),
       ...phase('Cooldown', forearmHolds(15)),
     ],
   },

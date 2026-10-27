@@ -3,6 +3,7 @@ import { parseHandoff, buildHandoff } from '../js/handoff.js';
 import { verseFor } from '../js/verses.js';
 import { planFor, weekAndDay, nextBlock } from '../js/program/index.js';
 import { cleanNumber, fluidTotals, blankDay } from '../js/schema.js';
+import { transitionSec } from '../js/flow.js';
 
 const results = [];
 const test = (name, fn) => { try { fn(); results.push([name, true]); } catch (e) { results.push([name, false, e.message]); } };
@@ -97,6 +98,14 @@ test('hourly: imported 3 plus 1 in app', () => {
   if (!out.includes('HOURLY_BLOCKS: 4 | CoC Trainer | block 1 palm not noted, block 2 palms down, block 3 palms up, block 4 palms down')) throw new Error(out.split('\n').find(l => l.startsWith('HOURLY')));
 });
 
+test('transitions: start 5, sides 5, new position 10, after rest 0, row segments 0', () => {
+  const R = planFor('2026-10-27').program.data.BLOCKS.row.steps;
+  const at = t => R.findIndex(s => s.text === t);
+  const tr = t => transitionSec(R[at(t) - 1], R[at(t)]);
+  eq([tr('Lunge with reach, left leg forward'), tr('Lunge with reach, right leg forward'), tr('Calf stretch, right leg'), tr('Hamstring stretch'), tr('Conversational pace'), tr('Easy cooldown, 1-2 min')], [10, 5, 5, 10, 0, 0]);
+  eq(transitionSec(undefined, { kind: 'timed' }), 5);
+  eq(transitionSec({ kind: 'rest' }, { kind: 'timed' }), 0);
+});
 const failed = results.filter(r => !r[1]);
 if (typeof document !== 'undefined') {
   document.body.innerHTML = `<h1>${failed.length ? failed.length + ' failed' : 'All ' + results.length + ' passed'}</h1>` +

@@ -1,9 +1,12 @@
 // Full-screen block runner. One step on screen at a time, no scrolling.
-// Rests start themselves and advance when they end. Sets log reps, seconds or minutes.
-import { h, chime, unlockAudio, fill } from './dom.js';
+// Flow: tap Start once and every timed step chains into the next. Each timed step gets a short
+// transition countdown first (0, 5 or 10 sec), ticks at 3-2-1, a held tone as it starts, and a
+// double beep when it ends. Rests run and advance by themselves. Steps counted in reps wait for Done.
+import { h, chime, sounds, unlockAudio, fill } from './dom.js';
 import { burst } from './fx.js';
 import { state, addEvent, addSet, setField } from '../state.js';
 import { now, fmtSec } from '../clock.js';
+import { transitionSec } from '../flow.js';
 
 let wakeLock = null;
 const lockScreen = async () => { try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* optional */ } };
@@ -15,8 +18,9 @@ export function runBlock(block, { onExit } = {}) {
   lockScreen();
   const steps = block.steps;
   let i = 0;
-  let timer = null;            // { end, total, running, kind }
-  let stopwatch = null;        // { start }
+  let timer = null;            // { end, total, int, kind: 'hold' | 'rest' | 'transition' }
+  let stopwatch = null;        // { int }
+  let paused = false;          // when paused, nothing starts by itself
   let entry = {};              // current set input
   const startedAt = now().toISOString();
   const root = h('div', { class: 'runner', role: 'dialog', 'aria-label': block.name });
@@ -31,17 +35,54 @@ export function runBlock(block, { onExit } = {}) {
 
   function clearTimers() { clearInterval(timer?.int); timer = null; clearInterval(stopwatch?.int); stopwatch = null; }
 
-  function startTimer(sec, onEnd) {
+  function startTimer(sec, kind, onEnd) {
     clearTimers();
-    timer = { end: now().getTime() + sec * 1000, total: sec };
+    timer = { end: now().getTime() + sec * 1000, total: sec, kind, lastWhole: Math.ceil(sec) };
     timer.int = setInterval(() => {
       const left = Math.max(0, (timer.end - now().getTime()) / 1000);
+      const whole = Math.ceil(left);
       const el = root.querySelector('.clock');
-      if (el) el.textContent = fmtSec(Math.ceil(left));
+      if (el) el.textContent = fmtSec(whole);
       const bar = root.querySelector('.clock-fill');
       if (bar) bar.style.transform = `scaleX(${1 - left / timer.total})`;
-      if (left <= 0) { clearTimers(); chime(2); onEnd?.(); }
-    }, 200);
+      if (whole !== timer.lastWhole) {
+        timer.lastWhole = whole;
+        if (kind !== 'hold' && whole >= 1 && whole <= 3) sounds.tick();
+      }
+      if (left <= 0) { clearTimers(); onEnd?.(); }
+    }, 100);
+  }
+
+  function runHold(s) {
+    sounds.go();
+    startTimer(s.sec, 'hold', () => { sounds.end(); advance(true); });
+    render();
+  }
+
+  function runRest(s) {
+    startTimer(s.sec, 'rest', () => { sounds.end(); advance(true); });
+    render();
+  }
+
+  // Show step k. auto = arrived by flow (may start by itself); false = arrived by Back.
+  function enter(k, auto) {
+    clearTimers();
+    i = k;
+    const s = steps[i];
+    if (s.kind === 'rest' && !paused) return runRest(s);
+    if (s.kind === 'timed' && auto && !paused) {
+      const t = transitionSec(steps[i - 1], s);
+      if (t === 0) return runHold(s);
+      startTimer(t, 'transition', () => runHold(s));
+    }
+    render();
+  }
+
+  function pause() { clearTimers(); paused = true; render(); }
+  function resume() {
+    paused = false;
+    const s = steps[i];
+    if (s.kind === 'rest') runRest(s); else if (s.kind === 'timed') runHold(s);
   }
 
   async function saveCurrent() {
@@ -57,13 +98,14 @@ export function runBlock(block, { onExit } = {}) {
     if (s.choice === 'palms') entry.palmsSaved = entry.mode;
   }
 
-  async function next() {
+  async function advance(auto = true) {
     await saveCurrent();
     const keepPalms = entry.palmsSaved ?? entry.palms;
     clearTimers();
     entry = { palms: keepPalms };
-    if (i < steps.length - 1) { i++; render(); } else finish('block_done');
+    if (i < steps.length - 1) enter(i + 1, auto); else finish('block_done');
   }
+  const next = () => { paused = false; return advance(true); };
 
   async function finish(type) {
     clearTimers();
@@ -74,7 +116,7 @@ export function runBlock(block, { onExit } = {}) {
     setTimeout(() => { root.remove(); onExit?.(); }, 200);
   }
 
-  function back() { clearTimers(); entry = { palms: entry.palms }; if (i > 0) { i--; render(); } }
+  function back() { entry = { palms: entry.palms }; if (i > 0) enter(i - 1, false); }
 
   function closeMenu() {
     const menu = h('div', { class: 'runner-menu' },
@@ -104,13 +146,22 @@ export function runBlock(block, { onExit } = {}) {
       h('button', { class: 'round', 'aria-label': 'Less', onclick: bump(-1) }, '−'),
       h('label', {}, input, h('span', {}, unit)),
       h('button', { class: 'round', 'aria-label': 'More', onclick: bump(1) }, '+'))];
+    const swLabel = s.range ? `Start stopwatch (beeps at ${s.range[0]}, stops at ${s.range[1]} sec)` : s.sec ? `Start stopwatch (stops at ${s.sec} sec)` : 'Start stopwatch';
     if (s.log === 'sec') {
       kids.push(h('button', { class: 'btn ghost', onclick: e => {
-        if (stopwatch) { clearTimers(); e.target.textContent = 'Start stopwatch'; return; }
+        if (stopwatch) { clearTimers(); e.target.textContent = swLabel; return; }
         const start = now().getTime();
         e.target.textContent = 'Stop';
-        stopwatch = { int: setInterval(() => { const sec = Math.floor((now().getTime() - start) / 1000); input.value = sec; entry.value = sec; }, 200) };
-      } }, 'Start stopwatch'));
+        // Beeps once at the low end of the target range, twice at the top, and stops itself there.
+        const [lo, hi] = s.range || (s.sec ? [s.sec, s.sec] : [null, null]);
+        let beeped = false;
+        stopwatch = { int: setInterval(() => {
+          const sec = Math.floor((now().getTime() - start) / 1000);
+          input.value = sec; entry.value = sec;
+          if (lo && lo !== hi && sec >= lo && !beeped) { beeped = true; chime(1); }
+          if (hi && sec >= hi) { clearTimers(); chime(2); e.target.textContent = swLabel; }
+        }, 200) };
+      } }, swLabel));
     }
     if (s.modes) {
       entry.mode ||= 'full';
@@ -125,8 +176,12 @@ export function runBlock(block, { onExit } = {}) {
     const lanes = h('div', { class: 'lanes', 'aria-hidden': 'true' }, steps.map((_, k) => h('span', { class: k < i ? 'done' : k === i ? 'now' : '' })));
     let body = [];
 
+    const inTransition = timer?.kind === 'transition';
     if (s.kind === 'rest' || s.kind === 'timed') {
-      body.push(h('div', { class: 'clock-wrap' }, h('div', { class: 'clock' }, fmtSec(s.sec)), h('div', { class: 'clock-bar' }, h('div', { class: 'clock-fill' }))));
+      const shown = timer ? Math.ceil(Math.max(0, (timer.end - now().getTime()) / 1000)) : s.sec;
+      body.push(h('div', { class: `clock-wrap${inTransition ? ' getready' : ''}` },
+        inTransition ? h('p', { class: 'getready-label' }, 'Starts in') : null,
+        h('div', { class: 'clock' }, fmtSec(shown)), h('div', { class: 'clock-bar' }, h('div', { class: 'clock-fill' }))));
     }
     if (s.kind === 'set') body.push(stepper(s));
     if (s.choice === 'palms') {
@@ -136,11 +191,17 @@ export function runBlock(block, { onExit } = {}) {
       if (sug) body.push(h('p', { class: 'muted small' }, `Alternating: palms ${sug} this time.`));
     }
 
-    const primary = s.kind === 'rest'
-      ? h('button', { class: 'btn', onclick: next }, 'Skip rest')
-      : s.kind === 'timed' && !timer
-        ? h('button', { class: 'btn', onclick: () => { startTimer(s.sec, () => root.querySelector('.next-btn')?.classList.add('pulse')); render(); } }, 'Start')
-        : h('button', { class: 'btn next-btn', onclick: next }, i === steps.length - 1 ? 'Finish block' : (s.kind === 'set' ? 'Save and next' : 'Done'));
+    const running = timer && (timer.kind === 'hold' || timer.kind === 'rest' || inTransition);
+    const isLast = i === steps.length - 1;
+    let primary;
+    if (inTransition) primary = h('button', { class: 'btn', onclick: () => runHold(s) }, 'Start now');
+    else if (s.kind === 'rest') primary = running ? h('button', { class: 'btn', onclick: next }, 'Skip rest') : h('button', { class: 'btn', onclick: resume }, 'Resume rest');
+    else if (s.kind === 'timed' && !running) primary = h('button', { class: 'btn', onclick: () => { paused = false; runHold(s); } }, paused ? 'Resume' : 'Start');
+    else if (s.kind === 'timed') primary = h('button', { class: 'btn next-btn', onclick: next }, isLast ? 'Finish block' : 'Done early');
+    else primary = h('button', { class: 'btn next-btn', onclick: next }, isLast ? 'Finish block' : (s.kind === 'set' ? 'Save and next' : 'Done'));
+    const secondary = running
+      ? h('button', { class: 'btn ghost', onclick: pause }, 'Pause')
+      : h('button', { class: 'btn ghost', onclick: back, disabled: i === 0 }, 'Back');
 
     fill(root, 
       h('header', { class: 'runner-head' },
@@ -149,22 +210,17 @@ export function runBlock(block, { onExit } = {}) {
         h('span', { class: 'runner-count' }, `${i + 1} of ${steps.length}`)),
       lanes,
       h('main', { class: 'runner-main' },
-        h('p', { class: `step-kind ${s.kind}` }, s.phase || { rest: 'Rest', set: 'Set', timed: 'Hold', do: 'Do' }[s.kind]),
+        h('p', { class: `step-kind ${inTransition ? 'upnext' : s.kind}` }, inTransition ? 'Next' : (s.phase || { rest: 'Rest', set: 'Set', timed: 'Hold', do: 'Do' }[s.kind])),
         h('h1', { class: 'step-text' }, s.text),
         s.note || (i === 0 && block.note) ? h('p', { class: 'step-note' }, s.note || block.note) : null,
         (s.cue || EXERCISES[s.exercise]?.cue) ? h('p', { class: 'step-cue' }, s.cue || EXERCISES[s.exercise].cue) : null,
         videoLinks(s),
         ...body),
       h('footer', { class: 'runner-foot' },
-        h('button', { class: 'btn ghost', onclick: back, disabled: i === 0 }, 'Back'),
+        secondary,
         primary));
 
-    if (s.kind === 'rest' && !timer) startTimer(s.sec, next);
-    if (timer) { // repaint running clock immediately
-      const left = Math.max(0, (timer.end - now().getTime()) / 1000);
-      root.querySelector('.clock') && (root.querySelector('.clock').textContent = fmtSec(Math.ceil(left)));
-    }
   }
 
-  render();
+  enter(0, true);
 }

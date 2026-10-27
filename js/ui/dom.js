@@ -40,16 +40,28 @@ export function toast(msg) {
 }
 
 let audio;
-export function chime(times = 1) {
+const ctx = () => (audio ||= new (window.AudioContext || window.webkitAudioContext)());
+
+// One tone. freq in Hz, dur and delay in seconds.
+export function tone(freq = 880, dur = 0.25, delay = 0, vol = 0.3) {
   try {
-    audio ||= new (window.AudioContext || window.webkitAudioContext)();
-    for (let i = 0; i < times; i++) {
-      const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime + i * 0.28;
-      o.frequency.value = 880; o.type = 'sine';
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
-      o.connect(g).connect(audio.destination); o.start(t); o.stop(t + 0.26);
-    }
+    const a = ctx(), o = a.createOscillator(), g = a.createGain(), t = a.currentTime + delay;
+    o.frequency.value = freq; o.type = 'sine';
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+    g.gain.setValueAtTime(vol, t + Math.max(0.03, dur - 0.05)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
   } catch { /* sound is optional */ }
+}
+
+// The sound vocabulary: tick = 3-2-1 countdown, go = held tone as a timer starts, end = double beep when a timer finishes.
+export const sounds = {
+  tick: () => tone(660, 0.09),
+  go: () => { tone(1046, 0.6); navigator.vibrate?.(150); },
+  end: () => { tone(880, 0.2); tone(880, 0.2, 0.28); navigator.vibrate?.([120, 80, 120]); },
+};
+
+export function chime(times = 1) {
+  for (let i = 0; i < times; i++) tone(880, 0.22, i * 0.28);
   navigator.vibrate?.(200);
 }
-export const unlockAudio = () => { audio ||= new (window.AudioContext || window.webkitAudioContext)(); audio.resume?.(); };
+export const unlockAudio = () => { ctx(); audio.resume?.(); };
