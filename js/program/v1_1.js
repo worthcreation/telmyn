@@ -68,7 +68,7 @@ const windmills = sets(2, i => step.set('windmills', `Windmills, set ${i}, 15 sl
 
 export const BLOCKS = {
   stretch: {
-    name: 'Morning stretch', minutes: 6, video: 'morning_stretch', verseOpens: true,
+    name: 'Morning stretch', summary: 'Toe touches, cat-cow, lunges, calf and chest stretches', minutes: 6, video: 'morning_stretch', verseOpens: true,
     steps: [
       step.timed('Standing toe touch, slow, knees soft', 30, { exercise: 'toe_touch', note: 'Note your fingertip reach.', logField: 'toe_touch_notes', cue: 'Let the head hang. No bouncing.' }),
       step.rest(10),
@@ -82,7 +82,7 @@ export const BLOCKS = {
   },
 
   gates: {
-    name: 'Fab Five', minutes: 7, video: 'fab_five', note: '20 lb. Keep the weights in hand until step 6.',
+    name: 'Fab Five', summary: 'Grip, curls, flies, press, rows, squats, squat hold', minutes: 7, video: 'fab_five', note: '20 lb. Keep the weights in hand until step 6.',
     steps: [
       step.do('Grip warmup: squeeze and hammer the dumbbells', { cue: 'Wakes up the grip before the circuit.' }),
       step.do('Curls x10', { cue: 'Elbows stay at your sides. Full stretch at the bottom.' }),
@@ -96,7 +96,7 @@ export const BLOCKS = {
   },
 
   strength_a: {
-    name: 'Strength A', minutes: 50, xpSkills: ['strength', 'grip'],
+    name: 'Strength A', summary: 'Chin-ups, split squats, push-ups, rows, curls', minutes: 50, xpSkills: ['strength', 'grip'],
     steps: [
       step.rest(180, 'Rest 3 min after the Fab Five'),
       ...strengthWarmup,
@@ -111,7 +111,7 @@ export const BLOCKS = {
   },
 
   strength_b: {
-    name: 'Strength B', minutes: 50, xpSkills: ['strength', 'grip'],
+    name: 'Strength B', summary: 'Pull-ups, single-leg RDLs, goblet squats, paused push-ups, curls', minutes: 50, xpSkills: ['strength', 'grip'],
     steps: [
       step.rest(180, 'Rest 3 min after the Fab Five'),
       ...strengthWarmup,
@@ -128,7 +128,7 @@ export const BLOCKS = {
   },
 
   row: {
-    name: 'Row', minutes: 30, video: 'row', xpSkills: ['endurance'],
+    name: 'Row', summary: 'Warm-up, row 2 easy, 15 steady, 1-2 easy, cooldown', minutes: 30, video: 'row', xpSkills: ['endurance'],
     note: 'Damper 3-5. Drive: legs, body, arms. Return: arms, body, knees. Loose grip.',
     steps: [
       ...phase('Warm-up', [
@@ -152,7 +152,7 @@ export const BLOCKS = {
   },
 
   hangs: {
-    name: 'Dead hangs', minutes: 7, video: 'dead_hang',
+    name: 'Dead hangs', summary: 'Warm-up, 3 active hangs of 10-20 sec, cooldown', minutes: 7, video: 'dead_hang',
     note: 'Bend knees back for a full straight-arm hang. Can replace one hourly block.',
     steps: [
       ...phase('Warm-up', [
@@ -178,10 +178,10 @@ export const BLOCKS = {
     ],
   },
 
-  walk: { name: 'Optional walk', optional: true, steps: [step.do('Walk', { cue: 'Easy pace. Count it as recovery.' })] },
+  walk: { name: 'Optional walk', summary: 'Easy pace, counts as recovery', optional: true, steps: [step.do('Walk', { cue: 'Easy pace. Count it as recovery.' })] },
 
   evening_legs: {
-    name: 'Legs up', minutes: 15, note: 'Legs above heart level.',
+    name: 'Legs up', summary: 'Lie back, legs above heart, 10-15 min', minutes: 15, note: 'Legs above heart level.',
     steps: [step.timed('Legs elevated above heart, 10-15 min', 900, { cue: 'Lie back with heels on the couch or wall. Stop at 10 min if needed.' })],
   },
 };

@@ -61,13 +61,17 @@ export function renderToday(root, rerender) {
         h('button', { class: 'btn ghost', onclick: () => runBlock(plan.hourly, { onExit: rerender }) }, 'Guided')));
   }
 
-  // Two columns, each centered on its own: the block and Start on the left, the day ring and Skip on the right.
+  // Two columns, each centered on its own. Left: what's next and what it involves, and the button named for it.
+  // Right: the day ring and Skip.
+  const after = open.filter(b => b !== next)[0];
   const meta = next ? [next.time ? `${next.time}${hhmm() < next.time ? '' : ', now'}` : 'Next', next.minutes ? `about ${next.minutes} min` : ''].filter(Boolean).join(', ') : 'All blocks closed';
   const nextCard = h('section', { class: `next${next ? '' : ' done'}`, 'aria-label': 'Next block' },
     h('div', { class: 'next-main' },
       h('p', { class: 'next-meta' }, meta),
-      h('h1', { class: 'next-name' }, next ? next.name : 'Day done'),
-      next ? h('button', { class: 'btn big', onclick: () => runBlock(next, { onExit: rerender }) }, 'Start') : null),
+      next ? h('p', { class: 'next-sum' }, next.summary || `${next.steps.length} steps`) : h('h1', { class: 'next-name' }, 'Day done'),
+      next && after ? h('p', { class: 'next-then' }, `Then: ${after.name}`) : null,
+      next ? h('button', { class: 'btn big go', 'aria-label': `Start ${next.name}`, onclick: () => runBlock(next, { onExit: rerender }) },
+        h('span', { class: 'go-i', 'aria-hidden': 'true' }, '▶'), h('span', {}, next.name)) : null),
     h('div', { class: 'next-side' },
       ring(closed.length, plan.blocks.length),
       next ? h('button', { class: 'btn ghost', onclick: async () => { await addEvent('block_skip', { block: next.id }); rerender(); } }, next.optional ? 'Not today' : 'Skip') : null));

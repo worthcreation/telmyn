@@ -366,3 +366,8 @@ button.stat { background: none; border: 0; padding: 0; text-align: left; color: 
 .next-side { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 10px; }
 .next-side .btn { min-height: 46px; padding: 6px var(--s4); }
 .next-main .next-name { max-width: 100%; font-size: clamp(28px, 8.5vw, 40px); line-height: 1; overflow-wrap: anywhere; }
+
+.next-sum { margin: 2px 0 0; font-size: 14px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.next-then { margin: 0; font-size: 12px; opacity: .8; }
+.btn.go { display: flex; align-items: center; justify-content: center; gap: var(--s2); font: 700 clamp(20px, 6vw, 26px)/1 var(--font-display); letter-spacing: .01em; white-space: nowrap; overflow: hidden; }
+.btn.go .go-i { font-size: .6em; }

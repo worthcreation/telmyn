@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.3 (2026-10-27)
+Next card: the button carries the block's name ("▶ Row") instead of "Start"; above it, a one-line summary of what the block
+involves and what comes after it.
+
 ## 0.8.2 (2026-10-27)
 Next card in two columns, each centered on its own: the block and Start on the left, the day ring and Skip on the right.
 
