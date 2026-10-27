@@ -29,5 +29,9 @@ powershell -ExecutionPolicy Bypass -File "$HOME\telmyn\tools\apply.ps1"
    applies the newest telmyn patch in Downloads, runs the tests, pushes only if they pass, and deletes all telmyn
    patches and zips from Downloads. If anything fails, nothing is pushed and the files are put back.
 
+## Cloudflare (verse service)
+Telmyn has its own Cloudflare sign-in in `.cfhome` (git-ignored), separate from NFC's. Run Wrangler through
+`tools/cf.ps1` (login, whoami, deploy). The worker is also pinned to the personal account in worker/wrangler.toml.
+
 ## Credits
 Greek and Hebrew word data (data/original.json): STEPBible.org TAGNT and TAHOT, from Tyndale House Cambridge, CC BY 4.0.

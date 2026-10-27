@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.2 (2026-10-27)
+tools/cf.ps1 runs Wrangler with Telmyn's own Cloudflare sign-in (telmyn/.cfhome), separate from NFC's; apply.ps1 deploys through it.
+
 ## 0.5.1 (2026-10-27)
 Worker pinned to the personal Cloudflare account (account_id in wrangler.toml), so it can't deploy to NFC's.
 

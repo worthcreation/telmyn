@@ -39,7 +39,7 @@ if ($LASTEXITCODE -ne 0) { Write-Host 'Push failed. The patch is applied locally
 # If the update touched the verse service, deploy it too.
 if ((git diff --name-only $before HEAD) -match '^worker/') {
   Write-Host 'Deploying the verse service' -ForegroundColor Cyan
-  Push-Location worker; npx.cmd --yes wrangler deploy; Pop-Location
+  & (Join-Path $repo 'tools\cf.ps1') deploy
 }
 
 $all | Remove-Item
