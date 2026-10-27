@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 (2026-10-27)
+Verse text in the app from Bible Gateway (personal, non-commercial use), any version Bible Gateway offers,
+choice remembered, each verse cached on the phone for offline use. Served through the telmyn-api Cloudflare Worker (worker/).
+Bottom system area (Android buttons, iPhone home bar) matches the app background; nothing interactive sits there.
+
 ## 0.2.1 (2026-10-27)
 Hang stopwatches beep at the target (10 and 20 sec on hang sets) and stop themselves (15 sec in the strength warm-up).
 Flow: tap Start once and timed steps chain. Each gets a transition countdown (0 sec if you don't move, 5 to switch sides,

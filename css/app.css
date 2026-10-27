@@ -1,6 +1,6 @@
 /* Layout and components. Colors and type come from tokens.css only. */
 *, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
+html, body { margin: 0; height: 100%; background: var(--paper); }
 body {
   background: var(--paper); color: var(--ink);
   font: 17px/1.4 var(--font-body);
@@ -108,7 +108,7 @@ textarea { resize: vertical; }
 .sheet-wrap.open .sheet-scrim { opacity: 1; }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; }
 .sheet-head h2 { margin: 0; font: 700 26px var(--font-display); }
-.sheet-body { overflow: auto; min-height: 0; }
+.sheet-body { overflow-y: auto; overflow-x: hidden; min-height: 0; }
 
 .log-form { display: grid; gap: var(--s3); }
 .fields { display: grid; gap: var(--s3); }
@@ -117,7 +117,9 @@ textarea { resize: vertical; }
 .derived { color: var(--ink-2); font-size: 15px; }
 
 /* ---------- Verse ---------- */
-.verse-sheet { display: grid; gap: var(--s3); }
+.verse-sheet { display: grid; gap: var(--s3); min-width: 0; grid-template-columns: minmax(0, 1fr); }
+.verse-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
+.version-select { width: 11em; min-width: 0; text-overflow: ellipsis; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-btn); padding: var(--s2) var(--s3); font: inherit; font-size: 15px; }
 .verse-theme { margin: 0; color: var(--spirit); font-weight: 600; }
 .verse-block { margin: 0; padding: var(--s4); border-left: 4px solid var(--spirit); background: var(--surface); border-radius: 0 var(--r-btn) var(--r-btn) 0; font: 400 20px/1.55 var(--font-verse); font-style: normal; }
 .verse-block p { margin: 0 0 var(--s2); }

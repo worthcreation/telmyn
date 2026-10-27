@@ -33,6 +33,10 @@ registered in program/index.js. Past days keep showing the program that was in e
 - Runner: one step per screen, lane progress bar, rests auto-start and auto-advance, sets log with last value as a hint.
 - Sheets: fluid, protein, log (tabbed by group, no scrolling), verse, data.
 
+## Server (worker/)
+telmyn-api, a Cloudflare Worker. /verse and /versions relay Bible Gateway text for personal use and cache it 7 days.
+Phase 2 adds alarm pushes here. The app finds it through js/config.js (API_BASE).
+
 ## Roadmap
 - Phase 2: tight-mode alarms via a Cloudflare Worker (cron + Web Push). Worker stores only block names and times.
 - Phase 3: XP and levels once 3-4 weeks of real data exist. Physical skills from real accomplishments only; Discipline gives bonuses.
