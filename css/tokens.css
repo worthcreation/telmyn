@@ -1,0 +1,29 @@
+/* Design tokens. Change the look here, nowhere else. */
+:root {
+  color-scheme: light dark;
+  --paper: #EEF1EC;      /* cool chalk, the infield */
+  --surface: #FFFFFF;
+  --ink: #17212D;        /* deep slate */
+  --ink-2: #536070;
+  --line: #D3D9D1;
+  --lane: #2B57C9;       /* track blue, the one bold color */
+  --lane-ink: #FFFFFF;
+  --spirit: #A97A1F;     /* verse and Spirit, old gold */
+  --ok: #2F7D4F;
+  --warn: #B4472F;
+
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', sans-serif;
+  --font-body: 'Barlow', -apple-system, 'Segoe UI', sans-serif;
+  --font-verse: 'Source Serif 4', Georgia, serif;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 36px;
+  --r-btn: 12px; --r-card: 20px; --r-pill: 999px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #131C27; --surface: #1B2633; --ink: #E8ECE5; --ink-2: #98A5B4; --line: #2B3848;
+    --lane: #7196F2; --lane-ink: #0F1722; --spirit: #E1B65A; --ok: #6CC08B; --warn: #E3846A;
+  }
+}

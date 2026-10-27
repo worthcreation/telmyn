@@ -1,0 +1,6 @@
+{
+  "name": "telmyn",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node tests/tests.js", "serve": "python3 -m http.server 8000" }
+}
