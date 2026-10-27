@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2 (2026-10-27)
+No page scrolling and no visible scrollbars. Today: done blocks collapse into one line, hourly is one compact row
+(count, arrows, Done, other palms, Guided), smaller next card and counters, and spare space shows today's verse text.
+Checked on 360, 390 and 411 px wide screens with the Android bottom reserve: everything fits.
+
 ## 0.4.1 (2026-10-27)
 Release workflow: git patches applied by tools/apply.ps1 (sync, apply, test, push, clean up Downloads),
 tools/bump.mjs sets the version in both files, and the tests fail if version.js and sw.js disagree.

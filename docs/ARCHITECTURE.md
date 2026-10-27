@@ -10,7 +10,8 @@
    - Version: `js/version.js`
    - Look: `css/tokens.css`
 4. Record facts, derive everything else. Totals, statuses, handoff text and XP are computed from events, sets and fluids.
-5. Blank means not recorded. 0 means recorded as zero. Non-numbers never become numbers.
+5. Screens fit one phone screen: no page scrolling and no visible scrollbars. Spare space gets useful content, not padding.
+6. Blank means not recorded. 0 means recorded as zero. Non-numbers never become numbers.
 
 ## Data (IndexedDB, database `telmyn`; test mode uses `telmyn-test`)
 | Store | Key | One row per | Notes |

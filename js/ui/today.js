@@ -9,6 +9,7 @@ import { runBlock } from './runner.js';
 import { fluidSheet, proteinSheet, logSheet } from './forms.js';
 import { verseSheet } from './verse.js';
 import { dataSheet } from './data.js';
+import { getVersion, fetchVerse } from '../scripture.js';
 
 const timeOf = iso => (iso ? hhmm(new Date(iso)) : '');
 const arrow = p => (p === 'up' ? '↑' : p === 'down' ? '↓' : '–');
@@ -23,17 +24,16 @@ export function renderToday(root) {
   const rerender = () => renderToday(root);
 
   // Day list: every block with its status and the time it closed.
-  const closedAt = id => [...events].reverse().find(e => e.block === id && /block_(done|skip|partial)/.test(e.type))?.at;
-  const dayList = h('ol', { class: 'daylist' }, plan.blocks.map(b => {
-    const st = blockStatus(b.id, events, day, plan);
-    const mark = { done: '✓', skip: 'Skipped', partial: 'Partial' }[st];
-    const when = st ? timeOf(closedAt(b.id)) : (b.time || '');
-    return h('li', { class: `${st ? 'closed' : ''}${b === next ? ' current' : ''}` },
+  const open = plan.blocks.filter(b => !blockStatus(b.id, events, day, plan));
+  const closed = plan.blocks.filter(b => blockStatus(b.id, events, day, plan));
+  const dayList = h('ol', { class: 'daylist' },
+    closed.length ? h('li', { class: 'closed-summary' }, h('span', { class: 'dl-mark' }, '✓'),
+      h('span', { class: 'dl-name' }, closed.map(b => b.name + ({ skip: ' (skipped)', partial: ' (partial)' }[blockStatus(b.id, events, day, plan)] || '')).join(', '))) : null,
+    open.filter(b => b !== next).map(b => h('li', {},
       h('button', { onclick: () => runBlock(b, { onExit: rerender }) },
-        h('span', { class: 'dl-mark' }, mark || (b === next ? '›' : '')),
+        h('span', { class: 'dl-mark' }, ''),
         h('span', { class: 'dl-name' }, b.name),
-        h('span', { class: 'dl-when' }, [when, b.minutes && !st ? `${b.minutes} min` : ''].filter(Boolean).join(', '))));
-  }));
+        h('span', { class: 'dl-when' }, [b.time, b.minutes ? `${b.minutes} min` : ''].filter(Boolean).join(', '))))));
 
   // Hourly: chips for every block today, then one-tap logging with the alternating palms.
   let hourly = null;
@@ -43,26 +43,28 @@ export function renderToday(root) {
     const other = np === 'up' ? 'down' : 'up';
     const quick = async palms => { await addEvent('block_done', { block: 'hourly', palms, quick: true }); toast(`Hourly block ${hist.length + 1} logged, palms ${palms}`); rerender(); };
     hourly = h('section', { class: 'hourly', 'aria-label': 'Hourly blocks' },
-      h('div', { class: 'hourly-head' },
-        h('span', { class: 'hourly-title' }, `Hourly blocks: ${hist.length}`),
-        h('span', { class: 'muted small' }, `Next: palms ${np}`)),
-      h('div', { class: 'chips' }, hist.length
-        ? hist.map(x => h('span', { class: `chip-h ${x.palms || 'none'}`, title: x.at ? timeOf(x.at) : 'from handoff' },
-            h('b', {}, arrow(x.palms)), x.at ? h('small', {}, timeOf(x.at)) : null))
-        : h('span', { class: 'muted small' }, 'None yet')),
+      h('p', { class: 'hourly-line' },
+        h('b', {}, `Hourly ${hist.length}`),
+        h('span', { class: 'arrows', 'aria-label': hist.map(x => x.palms || 'not noted').join(', ') },
+          hist.map(x => h('span', { class: x.palms || 'none', title: x.at ? timeOf(x.at) : 'from handoff' }, arrow(x.palms))))),
       h('div', { class: 'hourly-actions' },
         h('button', { class: 'btn', 'aria-label': `Done, palms ${np}`, onclick: () => quick(np) }, `Done ${arrow(np)}`),
-        h('button', { class: 'btn ghost', 'aria-label': `Done, palms ${other}`, onclick: () => quick(other) }, `Done ${arrow(other)}`),
+        h('button', { class: 'btn ghost', 'aria-label': `Done, palms ${other}`, onclick: () => quick(other) }, arrow(other)),
         h('button', { class: 'btn ghost', onclick: () => runBlock(plan.hourly, { onExit: rerender }) }, 'Guided')));
   }
+
+  // Spare space shows today's verse text (from the phone's cache or the verse service). Tap opens the full card.
+  const versePanel = h('button', { class: 'verse-panel', onclick: verseSheet, 'aria-label': 'Open today’s verse' });
+  getVersion().then(v => fetchVerse(verse.ref, v)).then(d => {
+    fill(versePanel, h('span', { class: 'vp-text' }, d.text), h('span', { class: 'vp-ref' }, `${verse.ref} ${d.version}`));
+  }).catch(() => versePanel.classList.add('empty'));
 
   const nextCard = next
     ? h('section', { class: 'next', 'aria-label': 'Next block' },
         h('div', { class: 'next-row' },
           h('div', {},
-            h('p', { class: 'next-when' }, next.time ? `${next.time}${hhmm() < next.time ? '' : ', now'}` : 'Next'),
-            h('h1', { class: 'next-name' }, next.name),
-            h('p', { class: 'next-meta' }, `${next.steps.length} steps${next.minutes ? `, about ${next.minutes} min` : ''}`)),
+            h('p', { class: 'next-meta' }, [next.time ? `${next.time}${hhmm() < next.time ? '' : ', now'}` : 'Next', `${next.steps.length} steps`, next.minutes ? `about ${next.minutes} min` : ''].filter(Boolean).join(', ')),
+            h('h1', { class: 'next-name' }, next.name)),
           h('div', { class: 'next-actions' },
             h('button', { class: 'btn big', onclick: () => runBlock(next, { onExit: rerender }) }, 'Start'),
             h('button', { class: 'btn ghost', onclick: async () => { await addEvent('block_skip', { block: next.id }); rerender(); } }, next.optional ? 'Not today' : 'Skip'))))
@@ -79,6 +81,7 @@ export function renderToday(root) {
         h('span', { class: 'verse-ref' }, verse.ref), h('span', { class: 'verse-theme' }, verse.theme))),
     nextCard,
     h('section', { class: 'day', 'aria-label': 'Today' }, dayList),
+    versePanel,
     hourly,
     h('section', { class: 'counters' },
       h('button', { class: 'counter', onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } },
