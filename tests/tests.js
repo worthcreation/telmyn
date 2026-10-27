@@ -35,12 +35,24 @@ FLAGS_FOR_TOMORROW: Book doctor visit
 TOMORROW: Wed Off
 INSTRUCTION UPDATES: applied in full on 2026-10-27.`;
 
-test('week 1 day 1 on start date', () => eq(weekAndDay('2026-10-27'), { version: 'v1', week: 1, day: 1 }));
+test('week 1 day 1 on start date', () => eq(weekAndDay('2026-10-27'), { version: 'v1.1', week: 1, day: 1 }));
 test('next Monday is week 2', () => eq(weekAndDay('2026-11-02').week, 2));
 test('Tue week 1 verse is Galatians 6:9', () => eq(verseFor('2026-10-27').ref, 'Galatians 6:9'));
 test('Wed week 1 verse is James 1:5 (Wisdom)', () => { const v = verseFor('2026-10-28'); eq([v.ref, v.theme], ['James 1:5', 'Wisdom']); });
 test('Tue week 2 rotates to James 1:12', () => eq(verseFor('2026-11-03').ref, 'James 1:12'));
-test('Tue plan is Row with stretch at 06:30', () => { const p = planFor('2026-10-27'); eq([p.typeLabel, p.blocks.map(b => b.id), p.blocks[0].time], ['Row', ['stretch', 'gates', 'row', 'hangs', 'evening_legs'], '06:30']); });
+test('Tue plan is v1.1 Row, hangs before row, stretch at 06:30', () => { const p = planFor('2026-10-27'); eq([p.version, p.typeLabel, p.blocks.map(b => b.id), p.blocks[0].time], ['v1.1', 'Row', ['stretch', 'gates', 'hangs', 'row', 'evening_legs'], '06:30']); });
+test('Strength day keeps hangs after the routine', () => eq(planFor('2026-11-02').blocks.map(b => b.id), ['stretch', 'gates', 'strength_a', 'hangs', 'evening_legs']));
+test('every v1.1 step has a cue except rests, palms choice and curls without cues', () => {
+  for (const b of Object.values(planFor('2026-10-27').program.data.BLOCKS)) for (const s of b.steps) {
+    if (s.kind === 'rest' || s.choice || /curls/i.test(s.text)) continue;
+    if (!s.cue) throw new Error(`no cue: ${b.name} / ${s.text}`);
+  }
+});
+test('row, hangs, hourly, Fab Five each have warm-up and cooldown', () => {
+  const B = planFor('2026-10-27').program.data.BLOCKS;
+  for (const k of ['row', 'hangs', 'hourly']) { const ph = new Set(B[k].steps.map(s => s.phase)); if (!ph.has('Warm-up') || !ph.has('Cooldown')) throw new Error(k); }
+  if (!B.gates.steps.some(s => s.phase === 'Cooldown')) throw new Error('gates');
+});
 test('Wed plan has no routine', () => eq(planFor('2026-10-28').blocks.map(b => b.id), ['stretch', 'gates', 'hangs', 'evening_legs']));
 test('Sat has no hourly blocks', () => eq(planFor('2026-10-31').hourly, null));
 test('cleanNumber keeps blank as null and 0 as 0', () => eq([cleanNumber(''), cleanNumber('0'), cleanNumber('about 6'), cleanNumber('22.9')], [null, 0, null, 22.9]));
@@ -63,12 +75,12 @@ test('parse sets', () => {
 test('round trip keeps key lines', () => {
   const { day, sets } = parseHandoff(SAMPLE);
   const out = buildHandoff({ day, sets, events: [], fluids: [] });
-  for (const line of ['DATE: 2026-10-27', 'PROGRAM: v1 | Week 1, Day 1 | Row', 'PROTEIN_G: 40', 'WATER_OZ: 22.9', 'OTHER_DRINKS_OZ: 24', 'STRETCH: done | toe touch reach: nearly palms flat, legs nearly straight', 'ROUTINE: Row | pending', 'VERSE: Galatians 6:9 | '])
+  for (const line of ['DATE: 2026-10-27', 'PROGRAM: v1.1 | Week 1, Day 1 | Row', 'PROTEIN_G: 40', 'WATER_OZ: 22.9', 'OTHER_DRINKS_OZ: 24', 'STRETCH: done | toe touch reach: nearly palms flat, legs nearly straight', 'ROUTINE: Row | pending', 'VERSE: Galatians 6:9 | '])
     if (!out.includes(line)) throw new Error(`missing "${line}"`);
 });
 test('imported done status closes blocks', () => {
   const { day } = parseHandoff(SAMPLE);
-  eq(nextBlock(planFor('2026-10-27'), [], day).id, 'row');
+  eq(nextBlock(planFor('2026-10-27'), [], day).id, 'hangs');
 });
 test('fluid entries add up by bucket', () => {
   const t = fluidTotals(blankDay('2026-10-27'), [{ kind: 'huel_water', oz: 16.9 }, { kind: 'water', oz: 6 }, { kind: 'yerba_mate', oz: 24 }]);

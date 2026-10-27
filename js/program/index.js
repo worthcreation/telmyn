@@ -1,9 +1,11 @@
 // Picks the program version in effect for a date and builds that day's plan.
 import * as v1 from './v1.js';
+import * as v1_1 from './v1_1.js';
 import { weekday, daysBetween } from '../clock.js';
 
 export const PROGRAMS = [
   { version: 'v1', effective: '2026-10-27', weekOneMonday: '2026-10-26', data: v1 },
+  { version: 'v1.1', effective: '2026-10-27', weekOneMonday: '2026-10-26', data: v1_1 }, // same day: v1.1 wins
 ];
 
 export function programFor(iso) {
@@ -29,9 +31,9 @@ export function planFor(iso) {
   const type = DAY_TYPES[typeKey];
   const timing = workday ? DEFAULT_TIMING.workday : DEFAULT_TIMING.weekend;
 
-  const order = ['stretch', 'gates'];
-  if (type.routine) order.push(type.routine);
-  order.push('hangs', 'evening_legs');
+  const order = p.data.dayOrder
+    ? p.data.dayOrder(type.routine)
+    : ['stretch', 'gates', ...(type.routine ? [type.routine] : []), 'hangs', 'evening_legs'];
 
   const blocks = order.map(id => ({
     id,

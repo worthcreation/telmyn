@@ -148,6 +148,7 @@ textarea { resize: vertical; }
 .step-kind.rest { color: var(--ok); }
 .step-text { margin: 0; font: 700 clamp(36px, 10vw, 56px)/1 var(--font-display); }
 .step-note { margin: 0; color: var(--ink-2); }
+.step-cue { margin: 0; padding-left: var(--s3); border-left: 3px solid var(--lane); font-size: 18px; line-height: 1.4; max-width: 34ch; }
 .links { display: flex; gap: var(--s4); }
 .clock-wrap { display: grid; gap: var(--s2); }
 .clock { font: 700 clamp(72px, 26vw, 120px)/1 var(--font-display); font-variant-numeric: tabular-nums; }

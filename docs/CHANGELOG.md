@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0 (2026-10-27)
+Program v1.1 (effective 2026-10-27, Ross's request): warm-up before and cooldown after every round
+(Fab Five, hangs, row, hourly blocks; strength days already had both), a short cue on every step,
+hangs before the routine except on strength days. Runner labels warm-up and cooldown steps and shows the cue.
+
 ## 0.1.1 (2026-10-27)
 Fix: a stray "null" printed at the top of Today (and in the fluid sheet) when a conditional item was empty.
 Fix: blocks marked done in an imported handoff now count as done on Today.
