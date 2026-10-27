@@ -64,6 +64,7 @@ export function renderToday(root, rerender) {
   const nextCard = next
     ? h('section', { class: 'next', 'aria-label': 'Next block' },
         h('div', { class: 'next-row' },
+          h('span', { class: 'ring-spacer', 'aria-hidden': 'true' }),
           h('div', { class: 'next-text' },
             h('p', { class: 'next-meta' }, [next.time ? `${next.time}${hhmm() < next.time ? '' : ', now'}` : 'Next', next.minutes ? `about ${next.minutes} min` : ''].filter(Boolean).join(', ')),
             h('h1', { class: 'next-name' }, next.name)),
@@ -73,6 +74,7 @@ export function renderToday(root, rerender) {
           h('button', { class: 'btn ghost', onclick: async () => { await addEvent('block_skip', { block: next.id }); rerender(); } }, next.optional ? 'Not today' : 'Skip')))
     : h('section', { class: 'next done' },
         h('div', { class: 'next-row' },
+          h('span', { class: 'ring-spacer', 'aria-hidden': 'true' }),
           h('div', { class: 'next-text' }, h('p', { class: 'next-meta' }, 'All blocks closed'), h('h1', { class: 'next-name' }, 'Day done')),
           ring(closed.length, plan.blocks.length)));
 

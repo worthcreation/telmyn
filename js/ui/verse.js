@@ -3,7 +3,7 @@
 // word, transliteration and literal meaning only.
 import { h, sheet, fill } from './dom.js';
 import { state, setField } from '../state.js';
-import { getVersion, setVersion, fetchVerse, listVersions } from '../scripture.js';
+import { getVersion, setVersion, fetchVerse, listVersions, CREATORS, getCreator, setCreator, fetchVideos } from '../scripture.js';
 
 function parseRef(ref) {
   const m = ref.match(/^(.+?)\s(\d+):(\d+)(?:-(\d+))?$/);
@@ -30,6 +30,7 @@ export async function verseSheet() {
   const tabs = {
     context: h('button', { class: 'chip', onclick: () => show('context') }, 'Context'),
     words: h('button', { class: 'chip', onclick: () => show('words') }, 'Greek / Hebrew'),
+    study: h('button', { class: 'chip', onclick: () => show('study') }, 'Study'),
   };
 
   async function load() {
@@ -86,12 +87,37 @@ export async function verseSheet() {
     pick(o.words[first], flow.querySelectorAll('.iw')[first]);
   }
 
+  // Study: Bible teaching videos on this verse from one creator at a time, played inside the app.
+  async function study() {
+    let creator = await getCreator();
+    const decode = t => { const e = document.createElement('textarea'); e.innerHTML = t; return e.value; };
+    const picker = h('div', { class: 'seg wrap creators' });
+    const list = h('div', { class: 'videos' });
+    const player = h('div', { class: 'player' });
+    const drawPicker = () => fill(picker, CREATORS.map(c => h('button', { class: c.key === creator ? 'on' : '', onclick: async () => { creator = c.key; await setCreator(c.key); drawPicker(); load(); } }, c.name)));
+    async function load() {
+      fill(player); fill(list, h('p', { class: 'muted small' }, 'Finding videos…'));
+      try {
+        const vids = await fetchVideos(v.ref, creator);
+        if (!vids.length) return fill(list, h('p', { class: 'muted small' }, 'No videos from this creator on this passage yet. Try another.'));
+        fill(list, vids.map(x => h('button', { class: 'video', onclick: () => {
+          fill(player, h('iframe', { src: `https://www.youtube-nocookie.com/embed/${x.id}?autoplay=1&rel=0`, title: decode(x.title), allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true }));
+          player.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } }, h('img', { src: x.thumb || '', alt: '', loading: 'lazy', onerror: e => { e.target.style.visibility = 'hidden'; } }), h('span', { class: 'v-title' }, decode(x.title)))));
+      } catch (err) { fill(list, h('p', { class: 'muted small' }, err.message)); }
+    }
+    drawPicker();
+    fill(panel, picker, player, list);
+    load();
+  }
+
   function show(which, reload = false) {
     if (open === which && !reload) { open = null; fill(panel); }
     else {
       open = which;
       if (which === 'context') passage(`${r.book} ${r.ch}`, `${r.book} ${r.ch}`);
       if (which === 'words') words();
+      if (which === 'study') study();
     }
     for (const [k, b] of Object.entries(tabs)) b.classList.toggle('on', k === open);
   }

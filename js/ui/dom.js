@@ -24,7 +24,7 @@ export function sheet(title, body, { onClose, full = false } = {}) {
   const wrap = h('div', { class: 'sheet-wrap' },
     h('div', { class: 'sheet-scrim', onclick: close }),
     h('section', { class: `sheet${full ? ' full' : ''}`, role: 'dialog', 'aria-label': title },
-      h('header', { class: 'sheet-head' }, h('h2', {}, title), h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: close }, '✕')),
+      h('header', { class: 'sheet-head' }, h('span', { class: 'icon-btn', 'aria-hidden': 'true' }), h('h2', {}, title), h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: close }, '✕')),
       h('div', { class: 'sheet-body' }, body)));
   root.append(wrap);
   requestAnimationFrame(() => wrap.classList.add('open'));
