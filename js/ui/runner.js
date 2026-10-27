@@ -7,6 +7,7 @@ import { burst } from './fx.js';
 import { state, addEvent, addSet, setField } from '../state.js';
 import { now, fmtSec } from '../clock.js';
 import { transitionSec } from '../flow.js';
+import { hourlyHistory, nextPalms } from '../hourly.js';
 
 let wakeLock = null;
 const lockScreen = async () => { try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* optional */ } };
@@ -28,10 +29,7 @@ export function runBlock(block, { onExit } = {}) {
   addEvent('block_start', { block: block.id });
 
   const lastSet = ex => [...state.sets].reverse().find(s => s.exercise === ex);
-  const suggestPalms = () => {
-    const last = [...state.events].reverse().find(e => e.block === 'hourly' && e.palms);
-    return last ? (last.palms === 'up' ? 'down' : 'up') : null;
-  };
+  const suggestPalms = () => nextPalms(hourlyHistory(state.day, state.events));
 
   function clearTimers() { clearInterval(timer?.int); timer = null; clearInterval(stopwatch?.int); stopwatch = null; }
 

@@ -7,7 +7,15 @@ import { APP_VERSION } from './version.js';
 
 const root = document.getElementById('app');
 
+// Android Chrome can draw an installed app behind the system buttons without reporting their height.
+// Reserve their usual height (48px) so nothing tappable sits under them.
+function reserveAndroidNav() {
+  const standalone = matchMedia('(display-mode: standalone)').matches;
+  if (standalone && /Android/i.test(navigator.userAgent)) document.documentElement.style.setProperty('--nav-fallback', '48px');
+}
+
 async function boot() {
+  reserveAndroidNav();
   // Test mode writes to its own database so practice runs never touch real logs.
   await db.open(TEST ? 'telmyn-test' : 'telmyn');
   navigator.storage?.persist?.();

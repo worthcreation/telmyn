@@ -19,7 +19,8 @@
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 36px;
   --r-btn: 12px; --r-card: 20px; --r-pill: 999px;
   --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* Android standalone can draw behind the system buttons without reporting their height; main.js sets --nav-fallback there. */
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--nav-fallback, 0px));
 }
 @media (prefers-color-scheme: dark) {
   :root {

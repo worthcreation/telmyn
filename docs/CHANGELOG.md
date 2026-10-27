@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0 (2026-10-27)
+Today uses the whole screen: compact next card, the full day list with times, an hourly strip showing every block's palms
+(imported and logged) with one-tap "Done, palms ↓/↑" that alternates for you, and three counters.
+Android: space reserved for the system buttons so Log and Data never sit under them.
+
 ## 0.3.3 (2026-10-27)
 Fix: phones kept running cached files after a release (the version number itself was cached).
 App files now load network first with the cache as offline fallback, and a new service worker takes over immediately.

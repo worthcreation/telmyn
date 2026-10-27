@@ -4,6 +4,7 @@ import { verseFor } from '../js/verses.js';
 import { planFor, weekAndDay, nextBlock } from '../js/program/index.js';
 import { cleanNumber, fluidTotals, blankDay } from '../js/schema.js';
 import { transitionSec } from '../js/flow.js';
+import { hourlyHistory, nextPalms } from '../js/hourly.js';
 
 const results = [];
 const test = (name, fn) => { try { fn(); results.push([name, true]); } catch (e) { results.push([name, false, e.message]); } };
@@ -105,6 +106,12 @@ test('transitions: start 5, sides 5, new position 10, after rest 0, row segments
   eq([tr('Lunge with reach, left leg forward'), tr('Lunge with reach, right leg forward'), tr('Calf stretch, right leg'), tr('Hamstring stretch'), tr('Conversational pace'), tr('Easy cooldown, 1-2 min')], [10, 5, 5, 10, 0, 0]);
   eq(transitionSec(undefined, { kind: 'timed' }), 5);
   eq(transitionSec({ kind: 'rest' }, { kind: 'timed' }), 0);
+});
+test('hourly history: imported palms plus app blocks, next alternates', () => {
+  const { day } = parseHandoff(SAMPLE);
+  const hist = hourlyHistory(day, [{ type: 'block_done', block: 'hourly', palms: 'down', at: '2026-10-27T19:00:00Z' }]);
+  eq(hist.map(x => x.palms), [null, 'down', 'up', 'down']);
+  eq(nextPalms(hist), 'up');
 });
 const failed = results.filter(r => !r[1]);
 if (typeof document !== 'undefined') {
