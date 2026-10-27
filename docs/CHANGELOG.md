@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.8 (2026-10-27)
+Updates are one cumulative patch file; apply.ps1 uses only the newest and clears the rest.
+
 ## 0.4.7 (2026-10-27)
 Copyright line removed from the verse card (Ross's call; personal use).
 

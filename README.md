@@ -25,5 +25,6 @@ Or open /tests/ in a browser.
 ```
 powershell -ExecutionPolicy Bypass -File "$HOME\telmyn\tools\apply.ps1"
 ```
-   It syncs with GitHub, applies every telmyn patch in Downloads in order, runs the tests, pushes only if they pass,
-   and deletes the patches and any old telmyn zips. If anything fails, nothing is pushed and the files are put back.
+   Each patch is cumulative (everything since what is live), one file per update. The script syncs with GitHub,
+   applies the newest telmyn patch in Downloads, runs the tests, pushes only if they pass, and deletes all telmyn
+   patches and zips from Downloads. If anything fails, nothing is pushed and the files are put back.
