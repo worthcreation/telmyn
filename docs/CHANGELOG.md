@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.1 (2026-10-27)
+Fix: today's verse is highlighted again in Context (its styles were lost in 0.6.0). Header redesigned with room to
+breathe: day type as the title, "Tue, Oct 27  Week 1, Day 1" under it, verse pill centered beside it; same header
+shape on every tab; more space between sections.
+
 ## 0.7.0 (2026-10-27)
 Tabs: Today, Progress, Gear, Me, with a status strip on every tab (fluids, protein, hourly as labeled fill bars).
 Today: day ring on the next card (blocks done of the day), quick adds for ankle pumps, fluid, protein.

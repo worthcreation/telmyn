@@ -3,13 +3,14 @@
 import { h, toast, fill } from './dom.js';
 import { state, addEvent } from '../state.js';
 import { nextBlock, blockStatus } from '../program/index.js';
-import { WEEKDAYS, weekday, hhmm } from '../clock.js';
+import { hhmm } from '../clock.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
 import { runBlock } from './runner.js';
 import { fluidSheet, proteinSheet } from './forms.js';
 import { verseSheet } from './verse.js';
 import { getVersion, fetchVerse } from '../scripture.js';
 
+const prettyDate = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
 const timeOf = iso => (iso ? hhmm(new Date(iso)) : '');
 const arrow = p => (p === 'up' ? '↑' : p === 'down' ? '↓' : '–');
 
@@ -77,11 +78,11 @@ export function renderToday(root, rerender) {
 
   fill(root,
     h('header', { class: 'top' },
-      h('div', {},
-        h('p', { class: 'date' }, `${WEEKDAYS[weekday(plan.date)]} ${plan.date}`),
-        h('p', { class: 'daytype' }, `${plan.typeLabel} day`, h('span', { class: 'muted' }, `Week ${plan.week}, Day ${plan.day}`))),
+      h('div', { class: 'top-text' },
+        h('h1', { class: 'daytype' }, `${plan.typeLabel} day`),
+        h('p', { class: 'date' }, prettyDate(plan.date), h('span', { class: 'wkday' }, `Week ${plan.week}, Day ${plan.day}`))),
       h('button', { class: 'verse-pill', onclick: verseSheet, 'aria-label': `Today's verse, ${verse.ref}` },
-        h('span', { class: 'verse-ref' }, verse.ref), h('span', { class: 'verse-theme' }, verse.theme))),
+        h('span', { class: 'verse-ref' }, verse.ref), h('span', { class: 'pill-theme' }, verse.theme))),
     nextCard,
     h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList),
     versePanel,

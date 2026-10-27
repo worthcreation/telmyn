@@ -55,7 +55,7 @@ export async function renderProgress(root) {
   const versesApplied = past.filter(d => dayRec[d]?.verse_applied_notes).length;
 
   fill(root,
-    h('header', { class: 'top' }, h('div', {}, h('p', { class: 'date' }, `Week of ${monday}`), h('p', { class: 'daytype' }, 'This week'))),
+    h('header', { class: 'top' }, h('div', { class: 'top-text' }, h('h1', { class: 'daytype' }, 'This week'), h('p', { class: 'date' }, `Week of ${monday}`))),
     strip,
     h('section', { class: 'stats' },
       bar('Strength', strengthDone, strengthPlanned || null, `${strengthDone}/${strengthPlanned} sessions${pulls.length ? `, best pull set ${Math.max(...pulls)}` : ''}`),
