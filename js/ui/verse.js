@@ -20,7 +20,6 @@ export async function verseSheet() {
 
   const text = h('div', { class: 'verse-text' }, h('p', { class: 'muted' }, 'Loading…'));
   const cite = h('a', { class: 'verse-cite', target: '_blank', rel: 'noopener' });
-  const copy = h('p', { class: 'verse-copy' });
   const context = h('div', { class: 'verse-context' });
   const ctxBtn = h('button', { class: 'chip', onclick: toggleContext });
   const select = h('select', { class: 'version-select', 'aria-label': 'Bible version', onchange: async e => { version = e.target.value; await setVersion(version); load(); } });
@@ -32,10 +31,8 @@ export async function verseSheet() {
     try {
       const d = await fetchVerse(v.ref, version);
       fill(text, h('p', {}, d.text));
-      copy.textContent = (d.copyright || '').replace(/^.*?\)\s*/, '');   // drop the repeated version name
     } catch (err) {
       fill(text, h('p', { class: 'muted' }, `${err.message} Tap the reference to read it on Bible Gateway.`));
-      copy.textContent = '';
     }
     if (contextOpen) loadContext();
   }
@@ -68,7 +65,7 @@ export async function verseSheet() {
   const chapter = `${r.book} ${r.ch}`;
   const body = h('div', { class: 'verse-sheet' },
     h('div', { class: 'verse-top' }, h('p', { class: 'verse-theme' }, v.theme), select),
-    h('blockquote', { class: 'verse-block' }, text, cite, copy),
+    h('blockquote', { class: 'verse-block' }, text, cite),
     h('div', { class: 'verse-tools' },
       ctxBtn,
       h('a', { class: 'chip', href: passageUrl(chapter, version), target: '_blank', rel: 'noopener' }, 'Full chapter'),

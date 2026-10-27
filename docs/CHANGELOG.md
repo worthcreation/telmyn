@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.7 (2026-10-27)
+Copyright line removed from the verse card (Ross's call; personal use).
+
 ## 0.4.6 (2026-10-27)
 Verse card rebuilt: verse, reference (tap to open Bible Gateway), short copyright line inside the verse block,
 Context shows the surrounding verses in place with today's verse highlighted, Full chapter and Greek / Hebrew links,

@@ -156,7 +156,6 @@ textarea { resize: vertical; }
 .verse-text p { margin: 0; font: 400 21px/1.5 var(--font-verse); font-style: normal; }
 .verse-cite { font: 600 15px var(--font-verse); color: var(--spirit); text-decoration: none; }
 .verse-cite::after { content: ' ↗'; font-family: var(--font-body); }
-.verse-copy { margin: 0; font-size: 11px; line-height: 1.35; color: var(--ink-2); }
 .verse-tools { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .verse-tools .chip { text-decoration: none; color: var(--ink); font-size: 15px; padding: var(--s2) var(--s3); }
 .verse-context:empty { display: none; }
