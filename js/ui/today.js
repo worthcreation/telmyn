@@ -61,22 +61,16 @@ export function renderToday(root, rerender) {
         h('button', { class: 'btn ghost', onclick: () => runBlock(plan.hourly, { onExit: rerender }) }, 'Guided')));
   }
 
-  const nextCard = next
-    ? h('section', { class: 'next', 'aria-label': 'Next block' },
-        h('div', { class: 'next-row' },
-          h('span', { class: 'ring-spacer', 'aria-hidden': 'true' }),
-          h('div', { class: 'next-text' },
-            h('p', { class: 'next-meta' }, [next.time ? `${next.time}${hhmm() < next.time ? '' : ', now'}` : 'Next', next.minutes ? `about ${next.minutes} min` : ''].filter(Boolean).join(', ')),
-            h('h1', { class: 'next-name' }, next.name)),
-          ring(closed.length, plan.blocks.length)),
-        h('div', { class: 'next-actions' },
-          h('button', { class: 'btn big', onclick: () => runBlock(next, { onExit: rerender }) }, 'Start'),
-          h('button', { class: 'btn ghost', onclick: async () => { await addEvent('block_skip', { block: next.id }); rerender(); } }, next.optional ? 'Not today' : 'Skip')))
-    : h('section', { class: 'next done' },
-        h('div', { class: 'next-row' },
-          h('span', { class: 'ring-spacer', 'aria-hidden': 'true' }),
-          h('div', { class: 'next-text' }, h('p', { class: 'next-meta' }, 'All blocks closed'), h('h1', { class: 'next-name' }, 'Day done')),
-          ring(closed.length, plan.blocks.length)));
+  // Two columns, each centered on its own: the block and Start on the left, the day ring and Skip on the right.
+  const meta = next ? [next.time ? `${next.time}${hhmm() < next.time ? '' : ', now'}` : 'Next', next.minutes ? `about ${next.minutes} min` : ''].filter(Boolean).join(', ') : 'All blocks closed';
+  const nextCard = h('section', { class: `next${next ? '' : ' done'}`, 'aria-label': 'Next block' },
+    h('div', { class: 'next-main' },
+      h('p', { class: 'next-meta' }, meta),
+      h('h1', { class: 'next-name' }, next ? next.name : 'Day done'),
+      next ? h('button', { class: 'btn big', onclick: () => runBlock(next, { onExit: rerender }) }, 'Start') : null),
+    h('div', { class: 'next-side' },
+      ring(closed.length, plan.blocks.length),
+      next ? h('button', { class: 'btn ghost', onclick: async () => { await addEvent('block_skip', { block: next.id }); rerender(); } }, next.optional ? 'Not today' : 'Skip') : null));
 
   fill(root,
     h('header', { class: 'top' },

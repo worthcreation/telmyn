@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.8.2 (2026-10-27)
+Next card in two columns, each centered on its own: the block and Start on the left, the day ring and Skip on the right.
+
 ## 0.8.1 (2026-10-27)
 Verse journal: a Save button for where the verse was applied today, and a Journal of every day's verse and
 application, newest first (also opens from Spirit on Progress). Study videos: main English channel only, and only
