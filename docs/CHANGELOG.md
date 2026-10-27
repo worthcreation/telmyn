@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.6 (2026-10-27)
+Verse card rebuilt: verse, reference (tap to open Bible Gateway), short copyright line inside the verse block,
+Context shows the surrounding verses in place with today's verse highlighted, Full chapter and Greek / Hebrew links,
+and one line for where it was applied. Removed the placeholder sections, the duplicate button and the footer.
+
 ## 0.4.5 (2026-10-27)
 Clearer cues for the doorway chest stretch (field goal arms, step through, bend the front knee), hamstring stretch,
 and lunge hip stretch.

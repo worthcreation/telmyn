@@ -152,12 +152,19 @@ textarea { resize: vertical; }
 .verse-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
 .version-select { width: 11em; min-width: 0; text-overflow: ellipsis; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-btn); padding: var(--s2) var(--s3); font: inherit; font-size: 15px; }
 .verse-theme { margin: 0; color: var(--spirit); font-weight: 600; }
-.verse-block { margin: 0; padding: var(--s4); border-left: 4px solid var(--spirit); background: var(--surface); border-radius: 0 var(--r-btn) var(--r-btn) 0; font: 400 20px/1.55 var(--font-verse); font-style: normal; }
-.verse-block p { margin: 0 0 var(--s2); }
-.verse-block cite { font: 600 15px var(--font-verse); font-style: normal; color: var(--spirit); }
-.layer { border-top: 1px solid var(--line); padding: var(--s2) 0; }
-.layer summary { font-weight: 600; cursor: pointer; }
-.layer-body { padding-top: var(--s2); }
+.verse-block { margin: 0; padding: var(--s4); border-left: 4px solid var(--spirit); background: var(--surface); border-radius: 0 var(--r-btn) var(--r-btn) 0; display: grid; gap: var(--s2); }
+.verse-text p { margin: 0; font: 400 21px/1.5 var(--font-verse); font-style: normal; }
+.verse-cite { font: 600 15px var(--font-verse); color: var(--spirit); text-decoration: none; }
+.verse-cite::after { content: ' ↗'; font-family: var(--font-body); }
+.verse-copy { margin: 0; font-size: 11px; line-height: 1.35; color: var(--ink-2); }
+.verse-tools { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.verse-tools .chip { text-decoration: none; color: var(--ink); font-size: 15px; padding: var(--s2) var(--s3); }
+.verse-context:empty { display: none; }
+.ctx-label { margin: 0 0 var(--s1); font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.ctx-text { margin: 0; font: 400 17px/1.55 var(--font-verse); color: var(--ink-2); }
+.ctx-text sup { font: 600 11px var(--font-body); color: var(--ink-2); }
+.ctx-today { color: var(--ink); background: color-mix(in srgb, var(--spirit) 18%, transparent); border-radius: 4px; }
+.verse-applied { font-size: 16px; }
 
 /* ---------- Runner ---------- */
 .runner {

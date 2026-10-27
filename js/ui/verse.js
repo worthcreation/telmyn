@@ -1,51 +1,81 @@
 // Verse card. Bible study rules carried over: verse text in its own block, never italic.
-// Text comes from Bible Gateway in the version Ross picks; the choice is remembered.
+// Only things that do something: the verse, version picker, context in place, where it was applied, study links.
 import { h, sheet, fill } from './dom.js';
 import { state, setField } from '../state.js';
 import { getVersion, setVersion, fetchVerse, listVersions, passageUrl } from '../scripture.js';
 
+// "1 Corinthians 9:24-27" -> { book, ch, from, to }
+function parseRef(ref) {
+  const m = ref.match(/^(.+?)\s(\d+):(\d+)(?:-(\d+))?$/);
+  return { book: m[1], ch: Number(m[2]), from: Number(m[3]), to: Number(m[4] || m[3]) };
+}
+const contextRef = r => `${r.book} ${r.ch}:${Math.max(1, r.from - 3)}-${r.to + 3}`;
+const verseNo = id => Number((id.match(/-(\d+)$/) || [])[1]);
+
 export async function verseSheet() {
   const v = state.verse;
+  const r = parseRef(v.ref);
   let version = await getVersion();
-  const block = h('blockquote', { class: 'verse-block' }, h('p', { class: 'muted' }, 'Loading…'));
+  let contextOpen = false;
+
+  const text = h('div', { class: 'verse-text' }, h('p', { class: 'muted' }, 'Loading…'));
+  const cite = h('a', { class: 'verse-cite', target: '_blank', rel: 'noopener' });
+  const copy = h('p', { class: 'verse-copy' });
+  const context = h('div', { class: 'verse-context' });
+  const ctxBtn = h('button', { class: 'chip', onclick: toggleContext });
   const select = h('select', { class: 'version-select', 'aria-label': 'Bible version', onchange: async e => { version = e.target.value; await setVersion(version); load(); } });
-  const readLink = h('a', { class: 'btn ghost', target: '_blank', rel: 'noopener' }, '');
-  const copy = h('p', { class: 'fine' });
 
   async function load() {
-    readLink.href = passageUrl(v.ref, version);
-    readLink.textContent = `Open ${v.ref} on Bible Gateway`;
-    fill(block, h('p', { class: 'muted' }, 'Loading…'));
+    cite.href = passageUrl(v.ref, version);
+    cite.textContent = `${v.ref} ${version}`;
+    fill(text, h('p', { class: 'muted' }, 'Loading…'));
     try {
       const d = await fetchVerse(v.ref, version);
-      fill(block, h('p', {}, d.text), h('cite', {}, `${v.ref} ${d.version}`));
-      copy.textContent = d.copyright || `${d.version}, from Bible Gateway.`;
+      fill(text, h('p', {}, d.text));
+      copy.textContent = (d.copyright || '').replace(/^.*?\)\s*/, '');   // drop the repeated version name
     } catch (err) {
-      fill(block, h('p', { class: 'muted' }, `${err.message} Open it on Bible Gateway instead.`), h('cite', {}, `${v.ref} ${version}`));
+      fill(text, h('p', { class: 'muted' }, `${err.message} Tap the reference to read it on Bible Gateway.`));
       copy.textContent = '';
     }
+    if (contextOpen) loadContext();
   }
+
+  async function loadContext() {
+    const ref = contextRef(r);
+    fill(context, h('p', { class: 'muted small' }, 'Loading…'));
+    try {
+      const d = await fetchVerse(ref, version);
+      fill(context, h('p', { class: 'ctx-label' }, ref.replace(`${r.book} `, `${r.book} `)),
+        h('p', { class: 'ctx-text' }, d.verses.map(x => {
+          const n = verseNo(x.id);
+          return h('span', { class: n >= r.from && n <= r.to ? 'ctx-today' : '' }, h('sup', {}, n), ` ${x.text} `);
+        })));
+    } catch (err) { fill(context, h('p', { class: 'muted small' }, err.message)); }
+  }
+
+  function toggleContext() {
+    contextOpen = !contextOpen;
+    ctxBtn.textContent = contextOpen ? 'Hide context' : 'Context';
+    if (contextOpen) loadContext(); else fill(context);
+  }
+  ctxBtn.textContent = 'Context';
 
   listVersions().then(list => {
     if (!list.some(x => x.abbr === version)) list = [{ abbr: version, name: version }, ...list];
     fill(select, list.map(x => h('option', { value: x.abbr, selected: x.abbr === version }, `${x.abbr}, ${x.name}`)));
   });
 
-  const layer = (title, ...kids) => h('details', { class: 'layer' }, h('summary', {}, title), h('div', { class: 'layer-body' }, kids));
+  const chapter = `${r.book} ${r.ch}`;
   const body = h('div', { class: 'verse-sheet' },
     h('div', { class: 'verse-top' }, h('p', { class: 'verse-theme' }, v.theme), select),
-    block,
-    readLink,
-    h('div', { class: 'field' },
-      h('label', { class: 'lbl', for: 'verse-applied' }, 'Where I applied it today'),
-      h('input', { id: 'verse-applied', value: state.day.verse_applied_notes ?? '', onchange: e => setField('verse_applied_notes', e.target.value || null) })),
-    layer('Context', h('p', { class: 'muted small' }, 'Read the surrounding chapter for who is speaking, to whom, and why.'),
-      h('a', { href: passageUrl(v.ref.replace(/:\d+(-\d+)?$/, ''), version), target: '_blank', rel: 'noopener' }, 'Open the full chapter')),
-    layer('Original language', h('p', { class: 'muted small' }, 'Key Greek or Hebrew words: word, transliteration, literal meaning.'),
-      h('a', { href: v.links.interlinear, target: '_blank', rel: 'noopener' }, 'Bible Hub interlinear'), ' ',
-      h('a', { href: v.links.blb, target: '_blank', rel: 'noopener' }, 'Blue Letter Bible')),
-    layer('Deep study', h('p', { class: 'muted small' }, 'Cross-references, background, and readings where scholars differ.')),
-    copy);
+    h('blockquote', { class: 'verse-block' }, text, cite, copy),
+    h('div', { class: 'verse-tools' },
+      ctxBtn,
+      h('a', { class: 'chip', href: passageUrl(chapter, version), target: '_blank', rel: 'noopener' }, 'Full chapter'),
+      h('a', { class: 'chip', href: v.links.interlinear, target: '_blank', rel: 'noopener' }, 'Greek / Hebrew')),
+    context,
+    h('input', { class: 'verse-applied', 'aria-label': 'Where I applied it today', placeholder: 'Where I applied it today',
+      value: state.day.verse_applied_notes ?? '', onchange: e => setField('verse_applied_notes', e.target.value || null) }));
   sheet('Today’s verse', body);
   load();
 }
