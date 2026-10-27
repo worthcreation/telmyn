@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.5 (2026-10-27)
+Clearer cues for the doorway chest stretch (field goal arms, step through, bend the front knee), hamstring stretch,
+and lunge hip stretch.
+
 ## 0.4.4 (2026-10-27)
 Hangs are real timers now: "Starts in 5" to get on the bar, then a big clock counting up. One beep at the minimum
 (10 sec), double beep and auto-save at the top (20 sec), or tap Stop and save to drop early. On-screen text explains the beeps.
