@@ -28,7 +28,7 @@ async function boot() {
 
 function registerSW() {
   if (!('serviceWorker' in navigator) || TEST) return;
-  navigator.serviceWorker.register(`sw.js?v=${APP_VERSION}`).then(reg => {
+  navigator.serviceWorker.register('sw.js').then(reg => {
     reg.addEventListener('updatefound', () => {
       const w = reg.installing;
       w?.addEventListener('statechange', () => {

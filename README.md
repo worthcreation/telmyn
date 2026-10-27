@@ -18,6 +18,6 @@ node tests/tests.js
 Or open /tests/ in a browser.
 
 ## Release
-1. Bump `APP_VERSION` in `js/version.js` (the service worker reads it, so phones pick up new files).
+1. Bump `APP_VERSION` in `js/version.js` and `VERSION` in `sw.js` to the same number.
 2. Add a line to `docs/CHANGELOG.md`.
 3. Run the tests, commit, push.

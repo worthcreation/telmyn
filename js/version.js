@@ -1,2 +1,2 @@
-// Bump on every release. sw.js reads the same number so phones pick up the new files.
-export const APP_VERSION = '0.3.2';
+// Bump on every release, together with VERSION in sw.js.
+export const APP_VERSION = '0.3.3';

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3 (2026-10-27)
+Fix: phones kept running cached files after a release (the version number itself was cached).
+App files now load network first with the cache as offline fallback, and a new service worker takes over immediately.
+
 ## 0.3.0 (2026-10-27)
 Verse text in the app from Bible Gateway (personal, non-commercial use), any version Bible Gateway offers,
 choice remembered, each verse cached on the phone for offline use. Served through the telmyn-api Cloudflare Worker (worker/).
