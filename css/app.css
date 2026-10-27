@@ -180,6 +180,7 @@ textarea { resize: vertical; }
 .step-kind { margin: 0; font-weight: 600; color: var(--ink-2); }
 .step-kind.rest { color: var(--ok); }
 .step-kind.upnext { color: var(--spirit); }
+.countup-hint { margin: 0; color: var(--ink-2); font-size: 15px; }
 .getready-label { margin: 0; color: var(--spirit); font-weight: 600; }
 .getready .clock { color: var(--spirit); }
 .getready .clock-fill { background: var(--spirit); }

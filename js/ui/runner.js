@@ -57,6 +57,33 @@ export function runBlock(block, { onExit } = {}) {
     render();
   }
 
+  // Timed sets (hangs): count up on a big clock. One beep = minimum reached (keep going or drop).
+  // Double beep = top of the range: it stops and saves by itself. Stop saves whatever you held.
+  const isTimedSet = s => s.kind === 'set' && s.log === 'sec';
+  const rangeOf = s => s.range || (s.sec ? [s.sec, s.sec] : [null, null]);
+  function runCountUp(s) {
+    clearTimers();
+    sounds.go();
+    const [lo, hi] = rangeOf(s);
+    const start = now().getTime();
+    timer = { kind: 'countup', total: hi || 60, beeped: false };
+    entry.value = 0;
+    timer.int = setInterval(() => {
+      const sec = Math.floor((now().getTime() - start) / 1000);
+      entry.value = sec;
+      const el = root.querySelector('.clock');
+      if (el) el.textContent = fmtSec(sec);
+      const bar = root.querySelector('.clock-fill');
+      if (bar) bar.style.transform = `scaleX(${Math.min(1, sec / timer.total)})`;
+      const hint = root.querySelector('.countup-hint');
+      if (lo && lo !== hi && sec >= lo && !timer.beeped) { timer.beeped = true; sounds.tick(); sounds.tick(); if (hint) hint.textContent = `Minimum reached. Hold to ${hi} or drop and tap Stop.`; }
+      if (hi && sec >= hi) { clearTimers(); entry.value = hi; sounds.end(); advance(true); }
+    }, 100);
+    render();
+  }
+  function stopCountUp() { clearTimers(); sounds.end(); advance(true); }
+  const startStep = s => (isTimedSet(s) ? runCountUp(s) : runHold(s));
+
   function runRest(s) {
     startTimer(s.sec, 'rest', () => { sounds.end(); advance(true); });
     render();
@@ -68,10 +95,10 @@ export function runBlock(block, { onExit } = {}) {
     i = k;
     const s = steps[i];
     if (s.kind === 'rest' && !paused) return runRest(s);
-    if (s.kind === 'timed' && auto && !paused) {
+    if ((s.kind === 'timed' || isTimedSet(s)) && auto && !paused) {
       const t = transitionSec(steps[i - 1], s);
-      if (t === 0) return runHold(s);
-      startTimer(t, 'transition', () => runHold(s));
+      if (t === 0) return startStep(s);
+      startTimer(t, 'transition', () => startStep(s));
     }
     render();
   }
@@ -80,7 +107,7 @@ export function runBlock(block, { onExit } = {}) {
   function resume() {
     paused = false;
     const s = steps[i];
-    if (s.kind === 'rest') runRest(s); else if (s.kind === 'timed') runHold(s);
+    if (s.kind === 'rest') runRest(s); else if (s.kind === 'timed' || isTimedSet(s)) startStep(s);
   }
 
   async function saveCurrent() {
@@ -144,23 +171,6 @@ export function runBlock(block, { onExit } = {}) {
       h('button', { class: 'round', 'aria-label': 'Less', onclick: bump(-1) }, '−'),
       h('label', {}, input, h('span', {}, unit)),
       h('button', { class: 'round', 'aria-label': 'More', onclick: bump(1) }, '+'))];
-    const swLabel = s.range ? `Start stopwatch (beeps at ${s.range[0]}, stops at ${s.range[1]} sec)` : s.sec ? `Start stopwatch (stops at ${s.sec} sec)` : 'Start stopwatch';
-    if (s.log === 'sec') {
-      kids.push(h('button', { class: 'btn ghost', onclick: e => {
-        if (stopwatch) { clearTimers(); e.target.textContent = swLabel; return; }
-        const start = now().getTime();
-        e.target.textContent = 'Stop';
-        // Beeps once at the low end of the target range, twice at the top, and stops itself there.
-        const [lo, hi] = s.range || (s.sec ? [s.sec, s.sec] : [null, null]);
-        let beeped = false;
-        stopwatch = { int: setInterval(() => {
-          const sec = Math.floor((now().getTime() - start) / 1000);
-          input.value = sec; entry.value = sec;
-          if (lo && lo !== hi && sec >= lo && !beeped) { beeped = true; chime(1); }
-          if (hi && sec >= hi) { clearTimers(); chime(2); e.target.textContent = swLabel; }
-        }, 200) };
-      } }, swLabel));
-    }
     if (s.modes) {
       entry.mode ||= 'full';
       kids.push(h('div', { class: 'seg' }, s.modes.map(m => h('button', { class: entry.mode === m ? 'on' : '', onclick: () => { entry.mode = m; render(); } }, m === 'full' ? 'Full range' : 'Negatives'))));
@@ -175,13 +185,22 @@ export function runBlock(block, { onExit } = {}) {
     let body = [];
 
     const inTransition = timer?.kind === 'transition';
-    if (s.kind === 'rest' || s.kind === 'timed') {
+    const counting = timer?.kind === 'countup';
+    if (isTimedSet(s) && !inTransition) {
+      const [lo, hi] = rangeOf(s);
+      body.push(h('div', { class: 'clock-wrap' },
+        h('p', { class: 'countup-hint' }, counting
+          ? (lo && lo !== hi ? `One beep at ${lo} sec: minimum reached. Double beep at ${hi}: done, it saves itself.` : `Double beep at ${hi} sec: done, it saves itself.`)
+          : (entry.value ? 'Saved time below. Adjust if needed, or start again.' : 'Get on the bar, then tap Start. It counts up.')),
+        h('div', { class: 'clock' }, fmtSec(Number(entry.value) || 0)), h('div', { class: 'clock-bar' }, h('div', { class: 'clock-fill' }))));
+    }
+    if (s.kind === 'rest' || s.kind === 'timed' || (isTimedSet(s) && inTransition)) {
       const shown = timer ? Math.ceil(Math.max(0, (timer.end - now().getTime()) / 1000)) : s.sec;
       body.push(h('div', { class: `clock-wrap${inTransition ? ' getready' : ''}` },
         inTransition ? h('p', { class: 'getready-label' }, 'Starts in') : null,
         h('div', { class: 'clock' }, fmtSec(shown)), h('div', { class: 'clock-bar' }, h('div', { class: 'clock-fill' }))));
     }
-    if (s.kind === 'set') body.push(stepper(s));
+    if (s.kind === 'set' && !counting && !(isTimedSet(s) && inTransition)) body.push(stepper(s));
     if (s.choice === 'palms') {
       const sug = suggestPalms();
       entry.mode ||= entry.palms || sug || null;
@@ -189,10 +208,12 @@ export function runBlock(block, { onExit } = {}) {
       if (sug) body.push(h('p', { class: 'muted small' }, `Alternating: palms ${sug} this time.`));
     }
 
-    const running = timer && (timer.kind === 'hold' || timer.kind === 'rest' || inTransition);
+    const running = timer && (timer.kind === 'hold' || timer.kind === 'rest' || inTransition || counting);
     const isLast = i === steps.length - 1;
     let primary;
-    if (inTransition) primary = h('button', { class: 'btn', onclick: () => runHold(s) }, 'Start now');
+    if (inTransition) primary = h('button', { class: 'btn', onclick: () => startStep(s) }, 'Start now');
+    else if (counting) primary = h('button', { class: 'btn', onclick: stopCountUp }, 'Stop and save');
+    else if (isTimedSet(s) && !entry.value) primary = h('button', { class: 'btn', onclick: () => { paused = false; runCountUp(s); } }, 'Start');
     else if (s.kind === 'rest') primary = running ? h('button', { class: 'btn', onclick: next }, 'Skip rest') : h('button', { class: 'btn', onclick: resume }, 'Resume rest');
     else if (s.kind === 'timed' && !running) primary = h('button', { class: 'btn', onclick: () => { paused = false; runHold(s); } }, paused ? 'Resume' : 'Start');
     else if (s.kind === 'timed') primary = h('button', { class: 'btn next-btn', onclick: next }, isLast ? 'Finish block' : 'Done early');

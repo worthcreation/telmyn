@@ -51,9 +51,9 @@ const strengthWarmup = phase('Warm-up', [
   step.timed('Arm circles backward', 30, { exercise: 'arm_circles', cue: C.armCircles, setup: 0 }),
   step.set('scap_pullup', 'Scapular pull-ups, 10 reps', { cue: 'Arms straight. Pull the shoulder blades down, then let them rise.' }),
   step.rest(30),
-  step.set('dead_hang', 'Active hang, 15 sec', { log: 'sec', sec: 15, set_no: 1, cue: HANG_CUE }),
+  step.set('dead_hang', 'Active hang, 15 sec', { log: 'sec', sec: 15, set_no: 1, setup: 5, cue: HANG_CUE }),
   step.rest(30),
-  step.set('dead_hang', 'Active hang, 15 sec', { log: 'sec', sec: 15, set_no: 2, cue: HANG_CUE }),
+  step.set('dead_hang', 'Active hang, 15 sec', { log: 'sec', sec: 15, set_no: 2, setup: 5, cue: HANG_CUE }),
   step.rest(60),
 ]);
 
@@ -159,7 +159,7 @@ export const BLOCKS = {
         ...armCircles,
         step.do('Scapular pull-ups, 5 easy', { exercise: 'scap_pullup', cue: 'Arms straight. Pull the shoulder blades down, then let them rise.' }),
       ]),
-      ...sets(3, i => step.set('dead_hang', `Active hang, set ${i}, 10-20 sec`, { log: 'sec', range: [10, 20], set_no: i, cue: HANG_CUE }), 60),
+      ...sets(3, i => step.set('dead_hang', `Active hang, set ${i}, 10-20 sec`, { log: 'sec', range: [10, 20], set_no: i, setup: 5, cue: HANG_CUE }), 60),
       ...phase('Cooldown', [doorway, ...eachSide('Forearm stretch', 30, { exercise: 'forearm', cue: C.forearmUp }, 'arm')]),
     ],
   },

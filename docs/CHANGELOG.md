@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.4 (2026-10-27)
+Hangs are real timers now: "Starts in 5" to get on the bar, then a big clock counting up. One beep at the minimum
+(10 sec), double beep and auto-save at the top (20 sec), or tap Stop and save to drop early. On-screen text explains the beeps.
+
 ## 0.4.3 (2026-10-27)
 Handoff import: a newer handoff now updates the day (its values replace stored ones; blank lines change nothing).
 App-logged blocks, sets and drinks are still kept, and app-logged fluids and hourly blocks are never double counted.
