@@ -1,11 +1,11 @@
-import { h, sheet, toast } from './dom.js';
+import { h, sheet, toast, fill } from './dom.js';
 import { state, setField, addFluid, undoFluid, addProtein } from '../state.js';
-import { DAY_FIELDS, FLUID_KINDS, ozFromMl, cleanNumber } from '../schema.js';
+import { DAY_FIELDS, FLUID_KINDS, ozFromMl, cleanNumber, fluidTotals } from '../schema.js';
 
 export function fluidSheet() {
   let kind = 'water';
   const body = h('div', { class: 'stack' });
-  const draw = () => body.replaceChildren(
+  const draw = () => fill(body, 
     h('div', { class: 'seg wrap' }, FLUID_KINDS.map(k => h('button', { class: kind === k.key ? 'on' : '', onclick: () => { kind = k.key; draw(); } }, k.label))),
     h('div', { class: 'grid4' }, [8, 16.9, 24, 25].map(oz => h('button', { class: 'chip', onclick: () => add(oz) }, `${oz} oz`))),
     h('div', { class: 'row' },
@@ -42,7 +42,7 @@ export function logSheet() {
     const save = raw => setField(f.key, f.type === 'number' ? cleanNumber(raw) : (raw === '' ? null : raw));
     let input;
     if (f.derivedFrom && state.fluids.length) {
-      return h('div', { class: 'field' }, h('span', { class: 'lbl' }, `${f.label} (${f.unit})`), h('span', { class: 'derived' }, 'From fluid entries'));
+      return h('div', { class: 'field' }, h('span', { class: 'lbl' }, `${f.label} (${f.unit})`), h('span', { class: 'derived' }, `${fluidTotals(state.day, state.fluids)[f.key] ?? ''} (imported total plus fluid entries)`));
     }
     if (f.type === 'choice') {
       input = h('div', { class: 'seg' }, f.options.map(o => h('button', { class: val === o ? 'on' : '', onclick: async () => { await save(state.day[f.key] === o ? '' : o); draw(); } }, o)));
@@ -56,7 +56,7 @@ export function logSheet() {
   // One group at a time, picked by tabs, so the form never needs to scroll.
   let current = groups[0];
   const body = h('div', { class: 'log-form' });
-  const draw = () => body.replaceChildren(
+  const draw = () => fill(body, 
     h('div', { class: 'seg wrap tabs' }, groups.map(g => h('button', { class: g === current ? 'on' : '', onclick: () => { current = g; draw(); } }, g))),
     h('div', { class: 'fields' }, DAY_FIELDS.filter(f => f.group === current).map(field)),
     h('p', { class: 'muted small' }, 'Saves as you go. Empty means not recorded.'));

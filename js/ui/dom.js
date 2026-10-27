@@ -12,6 +12,9 @@ export function h(tag, attrs = {}, ...kids) {
   return el;
 }
 
+// Like replaceChildren, but skips null/false so conditional children never print as text.
+export const fill = (el, ...kids) => el.replaceChildren(...kids.flat().filter(k => k !== null && k !== undefined && k !== false));
+
 export const $ = (sel, root = document) => root.querySelector(sel);
 
 // Bottom sheet that slides up over the current screen.

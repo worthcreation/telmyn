@@ -108,8 +108,10 @@ export function buildHandoff({ day, sets, events, fluids }) {
   const legName = { bss: 'Bulgarian split squats', sl_rdl: 'Single-leg RDL' }[legEx] || '';
 
   const hourly = events.filter(e => e.type === 'block_done' && e.block === 'hourly');
-  const hourlyCount = hourly.length || day.hourly_blocks_count;
-  const palmNotes = hourly.length ? hourly.map((e, i) => `block ${i + 1} palms ${e.palms || 'not noted'}`).join(', ') : day.hourly_palm_notes;
+  const base = day.hourly_blocks_count || 0;
+  const hourlyCount = hourly.length ? base + hourly.length : day.hourly_blocks_count;
+  const appPalms = hourly.map((e, i) => `block ${base + i + 1} palms ${e.palms || 'not noted'}`).join(', ');
+  const palmNotes = [day.hourly_palm_notes, appPalms].filter(Boolean).join(', ');
   const rowMin = sets.find(s => s.exercise === 'row')?.min ?? day.row_min;
   const routine = plan.blocks.find(b => !['stretch', 'gates', 'hangs', 'evening_legs'].includes(b.id));
 

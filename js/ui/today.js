@@ -1,5 +1,5 @@
 // Home screen. Fits one phone screen: what's next, what's after, today's counters, quick actions.
-import { h, toast } from './dom.js';
+import { h, toast, fill } from './dom.js';
 import { state, addEvent } from '../state.js';
 import { nextBlock, blockStatus } from '../program/index.js';
 import { fluidTotals } from '../schema.js';
@@ -14,7 +14,7 @@ let upcomingOpen = false;
 export function renderToday(root) {
   const { plan, verse, day, events } = state;
   const { TARGETS, HABITS } = plan.program.data; // always the program version in effect for this date
-  const next = nextBlock(plan, events);
+  const next = nextBlock(plan, events, day);
   const totals = fluidTotals(day, state.fluids);
   const fluidsOz = Math.round(((totals.water_oz || 0) + (totals.other_drinks_oz || 0)) * 10) / 10;
   const hourlyDone = events.filter(e => e.type === 'block_done' && e.block === 'hourly');
@@ -23,7 +23,7 @@ export function renderToday(root) {
   const rerender = () => renderToday(root);
 
   const upcoming = plan.blocks.filter(b => b !== next);
-  const statusMark = b => ({ done: '✓', skip: 'skipped', partial: 'partial' }[blockStatus(b.id, events)] || (b.time || ''));
+  const statusMark = b => ({ done: '✓', skip: 'skipped', partial: 'partial' }[blockStatus(b.id, events, day, plan)] || (b.time || ''));
 
   const nextCard = next
     ? h('section', { class: 'next', 'aria-label': 'Next block' },
@@ -36,7 +36,7 @@ export function renderToday(root) {
     : h('section', { class: 'next done' }, h('p', { class: 'next-when' }, 'All blocks closed'), h('h1', { class: 'next-name' }, 'Day done'),
         h('p', { class: 'next-meta' }, 'Finish the log, then copy the handoff from Data.'));
 
-  root.replaceChildren(
+  fill(root, 
     TEST ? h('div', { class: 'test-banner' }, `Test mode, ${hhmm()}`) : null,
     h('header', { class: 'top' },
       h('div', {},
@@ -49,14 +49,14 @@ export function renderToday(root) {
 
     h('section', { class: 'upcoming' },
       h('button', { class: 'upcoming-toggle', 'aria-expanded': upcomingOpen, onclick: () => { upcomingOpen = !upcomingOpen; rerender(); } },
-        upcomingOpen ? 'Hide the rest of today' : `Then: ${upcoming.filter(b => !blockStatus(b.id, events)).map(b => b.name).join(', ') || 'nothing left'}`),
+        upcomingOpen ? 'Hide the rest of today' : `Then: ${upcoming.filter(b => !blockStatus(b.id, events, day, plan)).map(b => b.name).join(', ') || 'nothing left'}`),
       upcomingOpen ? h('ol', { class: 'upcoming-list' }, plan.blocks.map(b =>
-        h('li', { class: blockStatus(b.id, events) ? 'closed' : '' },
+        h('li', { class: blockStatus(b.id, events, day, plan) ? 'closed' : '' },
           h('button', { onclick: () => runBlock(b, { onExit: rerender }) }, h('span', {}, b.name), h('span', { class: 'muted' }, statusMark(b)))))) : null),
 
     h('section', { class: 'counters' },
       plan.hourly ? h('button', { class: 'counter', onclick: () => runBlock(plan.hourly, { onExit: rerender }) },
-        h('span', { class: 'count' }, String(hourlyDone.length)), h('span', { class: 'clbl' }, 'Hourly'),
+        h('span', { class: 'count' }, String((day.hourly_blocks_count || 0) + hourlyDone.length)), h('span', { class: 'clbl' }, 'Hourly'),
         h('span', { class: 'csub' }, lastPalms ? `next palms ${lastPalms === 'up' ? 'down' : 'up'}` : 'tap to start')) : null,
       h('button', { class: 'counter', onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } },
         h('span', { class: 'count' }, String(pumps)), h('span', { class: 'clbl' }, 'Ankle pumps'), h('span', { class: 'csub' }, HABITS.ankle_pumps.note.split(',')[0])),

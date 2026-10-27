@@ -1,7 +1,7 @@
 // Runs in the browser (tests/index.html) and in Node (node tests/tests.js).
 import { parseHandoff, buildHandoff } from '../js/handoff.js';
 import { verseFor } from '../js/verses.js';
-import { planFor, weekAndDay } from '../js/program/index.js';
+import { planFor, weekAndDay, nextBlock } from '../js/program/index.js';
 import { cleanNumber, fluidTotals, blankDay } from '../js/schema.js';
 
 const results = [];
@@ -66,9 +66,23 @@ test('round trip keeps key lines', () => {
   for (const line of ['DATE: 2026-10-27', 'PROGRAM: v1 | Week 1, Day 1 | Row', 'PROTEIN_G: 40', 'WATER_OZ: 22.9', 'OTHER_DRINKS_OZ: 24', 'STRETCH: done | toe touch reach: nearly palms flat, legs nearly straight', 'ROUTINE: Row | pending', 'VERSE: Galatians 6:9 | '])
     if (!out.includes(line)) throw new Error(`missing "${line}"`);
 });
-test('fluid entries override stored totals', () => {
-  const t = fluidTotals({ ...blankDay('2026-10-27'), water_oz: 99 }, [{ kind: 'huel_water', oz: 16.9 }, { kind: 'water', oz: 6 }, { kind: 'yerba_mate', oz: 24 }]);
+test('imported done status closes blocks', () => {
+  const { day } = parseHandoff(SAMPLE);
+  eq(nextBlock(planFor('2026-10-27'), [], day).id, 'row');
+});
+test('fluid entries add up by bucket', () => {
+  const t = fluidTotals(blankDay('2026-10-27'), [{ kind: 'huel_water', oz: 16.9 }, { kind: 'water', oz: 6 }, { kind: 'yerba_mate', oz: 24 }]);
   eq(t, { water_oz: 22.9, other_drinks_oz: 24 });
+});
+test('imported total plus new entries', () => {
+  const t = fluidTotals({ ...blankDay('2026-10-27'), water_oz: 22.9, other_drinks_oz: 24 }, [{ kind: 'water', oz: 25 }]);
+  eq(t, { water_oz: 47.9, other_drinks_oz: 24 });
+});
+test('no data stays blank', () => eq(fluidTotals(blankDay('2026-10-27'), []), { water_oz: null, other_drinks_oz: null }));
+test('hourly: imported 3 plus 1 in app', () => {
+  const { day, sets } = parseHandoff(SAMPLE);
+  const out = buildHandoff({ day, sets, events: [{ type: 'block_done', block: 'hourly', palms: 'down' }], fluids: [] });
+  if (!out.includes('HOURLY_BLOCKS: 4 | CoC Trainer | block 1 palm not noted, block 2 palms down, block 3 palms up, block 4 palms down')) throw new Error(out.split('\n').find(l => l.startsWith('HOURLY')));
 });
 
 const failed = results.filter(r => !r[1]);

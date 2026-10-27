@@ -68,6 +68,9 @@ export async function importDay({ day, sets }) {
   const merged = { ...day };
   for (const [k, val] of Object.entries(existing)) if (val !== null && val !== undefined && val !== '') merged[k] = val;
   merged.handoff_raw = day.handoff_raw;
+  // Don't double count: if the app already logged fluids or hourly blocks that day, keep only the app's numbers.
+  if ((await db.byDate('fluids', day.date)).length) { merged.water_oz = existing.water_oz ?? null; merged.other_drinks_oz = existing.other_drinks_oz ?? null; }
+  if ((await db.byDate('events', day.date)).some(e => e.block === 'hourly')) { merged.hourly_blocks_count = existing.hourly_blocks_count ?? null; merged.hourly_palm_notes = existing.hourly_palm_notes ?? null; }
   await db.put('days', merged);
   await db.deleteWhere('sets', day.date, r => r.source === 'import');
   for (const s of sets) await db.put('sets', s);

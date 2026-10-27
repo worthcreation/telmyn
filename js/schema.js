@@ -46,12 +46,13 @@ export function cleanNumber(v) {
   return /^-?\d+(\.\d+)?$/.test(s) ? Number(s) : null;
 }
 
-// Totals: if fluid entries exist for the day they win; otherwise use the stored daily number (imported days).
+// Totals = number carried in from an imported handoff (if any) + fluid entries logged in the app.
+// Blank stays blank when there is neither.
 export function fluidTotals(day, fluids) {
-  if (!fluids.length) return { water_oz: day.water_oz ?? null, other_drinks_oz: day.other_drinks_oz ?? null };
-  const t = { water_oz: 0, other_drinks_oz: 0 };
-  for (const f of fluids) t[FLUID_KINDS.find(k => k.key === f.kind)?.bucket || 'other_drinks_oz'] += f.oz;
-  t.water_oz = Math.round(t.water_oz * 10) / 10;
-  t.other_drinks_oz = Math.round(t.other_drinks_oz * 10) / 10;
+  const t = { water_oz: day.water_oz ?? null, other_drinks_oz: day.other_drinks_oz ?? null };
+  for (const f of fluids) {
+    const k = FLUID_KINDS.find(k => k.key === f.kind)?.bucket || 'other_drinks_oz';
+    t[k] = Math.round(((t[k] || 0) + f.oz) * 10) / 10;
+  }
   return t;
 }

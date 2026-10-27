@@ -52,13 +52,20 @@ export function planFor(iso) {
   };
 }
 
-// The next block is the first one with no done or skipped event today.
-export function nextBlock(plan, events) {
-  const closed = new Set(events.filter(e => e.type === 'block_done' || e.type === 'block_skip').map(e => e.block));
-  return plan.blocks.find(b => !closed.has(b.id)) || null;
+// Status lines from an imported handoff count as closed blocks (the app had no events for them).
+function importedStatus(blockId, day, plan) {
+  if (!day) return null;
+  const routine = plan?.blocks.find(b => !['stretch', 'gates', 'hangs', 'evening_legs'].includes(b.id))?.id;
+  const raw = { stretch: day.stretch_status, gates: day.fab_five_status, [routine]: day.routine_status }[blockId];
+  return { done: 'done', skipped: 'skip', partial: 'partial' }[(raw || '').toLowerCase()] || null;
 }
 
-export function blockStatus(blockId, events) {
+export function blockStatus(blockId, events, day = null, plan = null) {
   const e = [...events].reverse().find(e => e.block === blockId && ['block_done', 'block_skip', 'block_partial'].includes(e.type));
-  return e ? e.type.replace('block_', '') : null;
+  return e ? e.type.replace('block_', '') : importedStatus(blockId, day, plan);
+}
+
+// The next block is the first one not yet done, skipped or marked partial.
+export function nextBlock(plan, events, day = null) {
+  return plan.blocks.find(b => !blockStatus(b.id, events, day, plan)) || null;
 }

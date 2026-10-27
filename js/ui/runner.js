@@ -1,6 +1,6 @@
 // Full-screen block runner. One step on screen at a time, no scrolling.
 // Rests start themselves and advance when they end. Sets log reps, seconds or minutes.
-import { h, chime, unlockAudio } from './dom.js';
+import { h, chime, unlockAudio, fill } from './dom.js';
 import { burst } from './fx.js';
 import { state, addEvent, addSet, setField } from '../state.js';
 import { now, fmtSec } from '../clock.js';
@@ -142,7 +142,7 @@ export function runBlock(block, { onExit } = {}) {
         ? h('button', { class: 'btn', onclick: () => { startTimer(s.sec, () => root.querySelector('.next-btn')?.classList.add('pulse')); render(); } }, 'Start')
         : h('button', { class: 'btn next-btn', onclick: next }, i === steps.length - 1 ? 'Finish block' : (s.kind === 'set' ? 'Save and next' : 'Done'));
 
-    root.replaceChildren(
+    fill(root, 
       h('header', { class: 'runner-head' },
         h('button', { class: 'icon-btn', 'aria-label': 'Leave block', onclick: closeMenu }, '✕'),
         h('span', { class: 'runner-title' }, block.name),
