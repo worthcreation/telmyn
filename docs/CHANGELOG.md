@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.2 (2026-10-27)
+Next-block card 23% shorter (185 to 143 px on a 411 px wide phone): one-line title, smaller ring, tighter padding.
+The freed space goes to the rest of the day and the verse.
+
 ## 0.7.1 (2026-10-27)
 Fix: today's verse is highlighted again in Context (its styles were lost in 0.6.0). Header redesigned with room to
 breathe: day type as the title, "Tue, Oct 27  Week 1, Day 1" under it, verse pill centered beside it; same header
