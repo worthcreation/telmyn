@@ -1,3 +1,6 @@
 name = "telmyn-api"
 main = "src/index.js"
+# Pinned to the personal (worthcreation) Cloudflare account. An account ID is an identifier, not a secret.
+# With this set, a deploy can never land in the NFC account: if the wrong login is active, it fails instead.
+account_id = "947472feabdf0ab4c1be6624f9c72b2f"
 compatibility_date = "2026-06-01"

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.1 (2026-10-27)
+Worker pinned to the personal Cloudflare account (account_id in wrangler.toml), so it can't deploy to NFC's.
+
 ## 0.5.0 (2026-10-27)
 Verse card shows everything in the app, no outside links: Context (surrounding verses), Chapter (the whole chapter,
 today's verse highlighted), and Greek / Hebrew key words for every verse in the bank (word, transliteration, meaning),
