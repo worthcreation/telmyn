@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.3 (2026-10-27)
+New app icon from Ross's John 17 star: the Star of Bethlehem with 7 rays, every ray a different length, the longest
+pointing down so it reads as a cross, gold with a soft glow on graphite.
+
 ## 0.7.2 (2026-10-27)
 Next-block card 23% shorter (185 to 143 px on a 411 px wide phone): one-line title, smaller ring, tighter padding.
 The freed space goes to the rest of the day and the verse.
