@@ -62,12 +62,13 @@ export async function addProtein(g) {
   await setField('protein_g', (state.day.protein_g || 0) + g);
 }
 
-// Import a parsed handoff: imported fields fill blanks only, app-recorded data always wins.
+// Import a parsed handoff. A newer handoff updates the day: every value it carries replaces the stored one,
+// and blank lines in the handoff leave stored values alone. Blocks, sets and drinks logged in the app are kept.
 export async function importDay({ day, sets }) {
   const existing = (await db.get('days', day.date)) || {};
-  const merged = { ...day };
-  for (const [k, val] of Object.entries(existing)) if (val !== null && val !== undefined && val !== '') merged[k] = val;
-  merged.handoff_raw = day.handoff_raw;
+  const merged = { ...existing };
+  for (const [k, val] of Object.entries(day)) if (val !== null && val !== undefined && val !== '') merged[k] = val;
+  merged.date = day.date;
   // Don't double count: if the app already logged fluids or hourly blocks that day, keep only the app's numbers.
   if ((await db.byDate('fluids', day.date)).length) { merged.water_oz = existing.water_oz ?? null; merged.other_drinks_oz = existing.other_drinks_oz ?? null; }
   if ((await db.byDate('events', day.date)).some(e => e.block === 'hourly')) { merged.hourly_blocks_count = existing.hourly_blocks_count ?? null; merged.hourly_palm_notes = existing.hourly_palm_notes ?? null; }

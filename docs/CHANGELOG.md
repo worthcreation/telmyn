@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.3 (2026-10-27)
+Handoff import: a newer handoff now updates the day (its values replace stored ones; blank lines change nothing).
+App-logged blocks, sets and drinks are still kept, and app-logged fluids and hourly blocks are never double counted.
+
 ## 0.4.2 (2026-10-27)
 No page scrolling and no visible scrollbars. Today: done blocks collapse into one line, hourly is one compact row
 (count, arrows, Done, other palms, Guided), smaller next card and counters, and spare space shows today's verse text.
