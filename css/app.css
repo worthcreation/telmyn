@@ -833,3 +833,8 @@ button.test-banner { border: 0; font: inherit; font-size: 13px; width: 100%; }
 .vs-hint { margin: 0; color: var(--ink-2); font-size: 15px; }
 .vs-start { justify-self: start; background: none; border: 0; padding: 4px 0; color: var(--ink); font-weight: 600; font-size: 15px; }
 .vs-def:has(.vs-hint) { align-content: center; }
+
+/* Verse study 0.10.7: every word with a translation behind it gets the same quiet dotted underline (no gold, no
+   key/small difference); nothing is selected until you tap. The tapped word or phrase turns gold. */
+.kw, .sw { border-bottom: 2px dotted color-mix(in srgb, var(--ink) 40%, transparent); padding-bottom: 1px; }
+.kw.on, .sw.on { border-bottom: 2px solid var(--spirit); }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.7 (2026-10-28)
+Verse study: every word or phrase with a translation behind it shows the same quiet dotted underline, so you can see
+what is tappable; nothing is selected until you tap, and the tapped one turns gold.
+
 ## 0.10.6 (2026-10-28)
 Verse study: the verse reads as plain text with nothing highlighted until you tap a word; then that word (or phrase)
 is marked and its Greek or Hebrew shows below. Before a pick, the panel says how to start or steps through every word.

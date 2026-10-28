@@ -153,7 +153,7 @@ export async function verseSheet(date = null) {
       : p.t));
     // Nothing is marked until you pick a word; the panel says how to start.
     if (current >= 0) define(current);
-    else fill(def, h('p', { class: 'vs-hint' }, `Tap any word to see the ${heb ? 'Hebrew' : 'Greek'} behind it.`),
+    else fill(def, h('p', { class: 'vs-hint' }, `Underlined words have the ${heb ? 'Hebrew' : 'Greek'} behind them. Tap one.`),
       h('button', { class: 'vs-start', onclick: () => define(0) }, `Or step through all ${words.length} words ›`));
   }
 
