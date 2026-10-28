@@ -10,7 +10,7 @@ import { verseFor } from '../verses.js';
 import { state, setField } from '../state.js';
 import { journalSheet } from './journal.js';
 import { playVideo } from './media.js';
-import { getVersion, setVersion, fetchVerse, listVersions, fetchVideos, fetchPassageVideos } from '../scripture.js';
+import { getVersion, setVersion, fetchVerse, listVersions, originalWords, studyVideos } from '../scripture.js';
 
 function parseRef(ref) {
   const m = ref.match(/^(.+?)\s(\d+):(\d+)(?:-(\d+))?$/);
@@ -19,11 +19,7 @@ function parseRef(ref) {
 const verseNo = id => Number((id.match(/-(\d+)$/) || [])[1]);
 const decode = t => { const e = document.createElement('textarea'); e.innerHTML = t; return e.value; };
 
-let originalData;
-async function original(ref) {
-  originalData ||= fetch('data/original.json').then(r => r.json());
-  return (await originalData).verses[ref];
-}
+const original = originalWords;
 
 // Small words that never carry a key word's meaning on their own.
 const STOP = new Set(['the', 'a', 'an', 'of', 'to', 'and', 'he', 'she', 'it', 'they', 'you', 'we', 'i', 'is', 'be', 'will', 'should', 'shall', 'may', 'one', 'in', 'on', 'for', 'with', 'from', 'by', 'that', 'this', 'his', 'her', 'their', 'not', 'let', 'have', 'has', 'was', 'were', 'are', 'who', 'which', 'what', 'him', 'them', 'us', 'me', 'my', 'your', 'our', 'do', 'does', 'did', 'while', 'when', 'then', 'so', 'but', 'if', 'also', 'even', 'as', 'there', 'these', 'those', 'things']);
@@ -202,19 +198,7 @@ export async function verseSheet(date = null) {
     h('span', { class: 'vb-thumb', style: x.thumb ? `background-image:url('${x.thumb}')` : '' }),
     h('span', { class: 'vs-vt' }, h('b', {}, decode(x.title)), h('small', {}, x.channel ? decode(x.channel) : 'BibleProject')));
   const watch = h('div', { class: 'vs-watch' }, h('p', { class: 'muted small' }, 'Finding videos on this passage…'));
-  const topic = words.find(w => w.key && /noun/.test(w.gram || ''))?.g?.split(/[\s/,]/)[0] || null;
-  Promise.all([
-    fetchPassageVideos(v.ref).catch(() => []),
-    fetchVideos(v.ref).catch(() => []),
-    topic ? fetchVideos(v.ref, 'bibleproject', topic).catch(() => []) : [],
-  ]).then(([onPassage, book, word]) => {
-    const tag = (list, label) => list.map(x => ({ ...x, group: label }));
-    const groups = [
-      ...tag(onPassage.filter(x => x.on === 'verse'), `On ${v.ref}`),
-      ...tag(onPassage.filter(x => x.on === 'chapter'), `On ${r.book} ${r.ch}`),
-      ...tag(book, `${r.book}, the whole book`),
-      ...tag(word, topic ? `On ${topic}` : 'More'),
-    ].filter((x, i, a) => a.findIndex(y => y.id === x.id) === i);
+  studyVideos(v.ref).then(groups => {
     if (!groups.length) return fill(watch, h('p', { class: 'muted small' }, 'No videos on this passage yet.'));
     const [first, ...rest] = groups;
     const more = () => {

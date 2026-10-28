@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.0 (2026-10-28)
+Landscape: every screen uses the width. Today puts the verse on the left and the next block, the day and the quick chips
+on the right; Progress puts the week and averages beside the stats; Gear is a 2-by-2 grid; Me's buttons sit in two
+columns; the verse study puts the verse beside the word panel. The status strip and tab bar are slimmer sideways.
+Checked at 915x412 and 800x360 (tests/landscape_sweep.py). Layers now open above a running block.
+Workout videos: the "Study while you train" card says how many videos there are and opens a picker with every study
+video for the day's verse (the same list as the verse study, grouped the same way). While a video plays, a swipe that
+crosses the middle of the screen moves to the next (right to left) or previous video; a tap plays or pauses.
+
 ## 0.12.8 (2026-10-28)
 Descenders stay whole: the g in "Dead hangs" was cut off because display text used a line height of 1 inside a box that
 clips. Nothing uses a line height of 1 now (the tightest is 1.15, a token), and a guard test fails any release that adds

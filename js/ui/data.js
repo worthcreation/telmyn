@@ -69,7 +69,7 @@ export async function dataActions() {
           catch (err) { toast(err.message); }
         } })),
       TEST ? h('button', { class: 'btn ghost', onclick: testSheet }, 'Test controls') : null),
-    h('button', { class: `btn ghost${on ? ' on' : ''}`, onclick: async () => { const v = await setReminders(!on); if (v !== !on && !on) return; location.reload(); } }, on ? 'Reminders on' : 'Reminders off'),
+    h('button', { class: `btn ghost reminders${on ? ' on' : ''}`, onclick: async () => { const v = await setReminders(!on); if (v !== !on && !on) return; location.reload(); } }, on ? 'Reminders on' : 'Reminders off'),
     h('p', { class: 'muted small' }, 'Grip hourly, pumps every 30 min, weight daily. Only when overdue.'),
     h('p', { class: `muted small${last === null || days >= 7 ? ' warn' : ''}` }, backupLine),
     h('p', { class: 'fine center' }, `Version ${APP_VERSION}${TEST ? ', test app' : ''}. ${persisted ? 'Storage protected.' : 'Add to Home Screen to protect storage.'}`),

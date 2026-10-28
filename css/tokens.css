@@ -57,7 +57,7 @@
   --max-w: 560px;
 
   /* Layers, lowest to highest. */
-  --z-layer: 20; --z-runner: 30; --z-player: 40; --z-fx: 45; --z-toast: 50; --z-update: 60;
+  --z-runner: 30; --z-layer: 35; --z-player: 40; --z-fx: 45; --z-toast: 50; --z-update: 60;
 
   --safe-top: env(safe-area-inset-top, 0px);
   /* Android: main.js sets --nav-fallback to the button height only when it measures the app drawn behind the buttons. */

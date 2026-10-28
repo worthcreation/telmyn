@@ -83,3 +83,31 @@ export async function fetchPassageVideos(ref) {
   await setMeta(key, { at: Date.now(), list: data.videos });
   return data.videos;
 }
+
+// Greek or Hebrew word data for a verse (STEPBible), loaded once.
+let originalData;
+export async function originalWords(ref) {
+  originalData ||= fetch('data/original.json').then(r => r.json());
+  return (await originalData).verses[ref];
+}
+
+// The one list of study videos for a verse, in order, each tagged with what it covers: on this verse, on its chapter,
+// BibleProject on the whole book, BibleProject on the verse's main word. Used by verse study and by the workout.
+export async function studyVideos(ref) {
+  const m = ref.match(/^(.+?)\s(\d+):/);
+  const book = m[1], ch = m[2];
+  const o = await originalWords(ref).catch(() => null);
+  const topic = o?.words?.find(w => w.key && /noun/.test(w.gram || ''))?.g?.split(/[\s/,]/)[0] || null;
+  const [onPassage, whole, word] = await Promise.all([
+    fetchPassageVideos(ref).catch(() => []),
+    fetchVideos(ref).catch(() => []),
+    topic ? fetchVideos(ref, 'bibleproject', topic).catch(() => []) : [],
+  ]);
+  const tag = (list, group) => list.map(x => ({ ...x, group }));
+  return [
+    ...tag(onPassage.filter(x => x.on === 'verse'), `On ${ref}`),
+    ...tag(onPassage.filter(x => x.on === 'chapter'), `On ${book} ${ch}`),
+    ...tag(whole, `${book}, the whole book`),
+    ...tag(word, topic ? `On ${topic}` : 'More'),
+  ].filter((x, i, a) => a.findIndex(y => y.id === x.id) === i);
+}
