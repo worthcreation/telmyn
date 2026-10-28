@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.4 (2026-10-28)
+Verse study fills the whole screen with nothing scrolling and nothing left empty. The verse starts large (26 px) and
+gives up size only until the lead video's picture has a useful height; the lead video takes all remaining room, with
+what it covers shown on the picture and "More videos" on its title row. The note box is one line until tapped.
+The compact layout now applies only to genuinely short screens (680 px and under), not to normal phones.
+
 ## 0.10.3 (2026-10-28)
 Verse study opens full screen over the app (slightly see-through, back gesture closes it). Every key word now sits
 inside the verse: words a version translates differently are fitted to the right words in the text by their

@@ -183,7 +183,7 @@ export async function verseSheet() {
 
   // Videos: teaching on this exact passage from any well-titled source (trusted teachers first), then
   // BibleProject's book overview and their videos on the main word. One shown; the rest behind More videos.
-  const card = (x, big = false) => h('button', { class: `vs-video${big ? ' big' : ''}`, onclick: () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title)) },
+  const card = (x, size = '') => h('button', { class: `vs-video ${size}`, onclick: () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title)) },
     h('span', { class: 'vb-thumb', style: x.thumb ? `background-image:url('${x.thumb}')` : '' }),
     h('span', { class: 'vs-vt' }, h('b', {}, decode(x.title)), h('small', {}, x.channel ? decode(x.channel) : 'BibleProject')));
   const watch = h('div', { class: 'vs-watch' }, h('p', { class: 'muted small' }, 'Finding videos on this passage…'));
@@ -202,13 +202,18 @@ export async function verseSheet() {
     ].filter((x, i, a) => a.findIndex(y => y.id === x.id) === i);
     if (!groups.length) return fill(watch, h('p', { class: 'muted small' }, 'No videos on this passage yet.'));
     const [first, ...rest] = groups;
-    fill(watch, h('p', { class: 'vs-label' }, first.group), card(first, true),
-      rest.length ? h('button', { class: 'btn ghost vs-morevids', onclick: () => {
-        const list = h('div', { class: 'vs-vlist' });
-        let last = null;
-        for (const x of groups) { if (x.group !== last) { list.append(h('p', { class: 'vs-label' }, x.group)); last = x.group; } list.append(card(x)); }
-        screen('Videos', list);
-      } }, `More videos (${rest.length})`) : null);
+    const more = () => {
+      const list = h('div', { class: 'vs-vlist' });
+      let last = null;
+      for (const x of groups) { if (x.group !== last) { list.append(h('p', { class: 'vs-label' }, x.group)); last = x.group; } list.append(card(x)); }
+      screen('Videos', list);
+    };
+    // Lead video: what it covers sits on the picture; "More" sits on its title row. No extra rows.
+    const hero = card(first, 'hero');
+    hero.querySelector('.vb-thumb').append(h('span', { class: 'vs-badge' }, first.group));
+    fill(watch, hero);
+    if (rest.length) hero.querySelector('.vs-vt').append(h('span', { class: 'vs-morelink', role: 'button', tabindex: 0,
+      onclick: e => { e.stopPropagation(); more(); } }, `More videos (${rest.length}) ›`));
   });
 
   listVersions().then(list => {
@@ -217,7 +222,7 @@ export async function verseSheet() {
   });
 
   // Where it was applied today: saved to today's log and collected in the verse journal.
-  const note = h('textarea', { class: 'vs-applied', rows: 2, 'aria-label': 'Where I applied it today', placeholder: 'Where I applied it today' }, state.day.verse_applied_notes ?? '');
+  const note = h('textarea', { class: 'vs-applied', rows: 1, onfocus: e => { e.target.rows = 3; }, onblur: e => { if (!e.target.value) e.target.rows = 1; }, 'aria-label': 'Where I applied it today', placeholder: 'Where I applied it today' }, state.day.verse_applied_notes ?? '');
   const saveBtn = h('button', { class: 'btn', onclick: async () => {
     await setField('verse_applied_notes', note.value.trim() || null);
     saveBtn.textContent = 'Saved'; setTimeout(() => { saveBtn.textContent = 'Save'; }, 1500);
@@ -232,5 +237,21 @@ export async function verseSheet() {
     watch,
     h('div', { class: 'vs-apply' }, note, h('div', { class: 'applied-actions' }, h('button', { class: 'btn ghost', onclick: journalSheet }, 'Journal'), saveBtn)));
   screen(v.ref, body);
+  // The verse keeps a large, readable size; it only shrinks (down to 17 px) if a long passage would not fit.
+  // Balance the two big pieces: the verse starts large (26 px) and gives up size only until the lead video's
+  // picture has a useful height (110 px). Nothing scrolls; nothing is left empty.
+  const scroller = body.closest('.vscreen-body');
+  const fit = () => {
+    if (!scroller?.clientHeight) return;
+    const hero = () => body.querySelector('.vs-video.hero');
+    // On short screens the lead video is a compact row with a fixed picture, so only overflow matters there.
+    const thumbH = () => (hero() && getComputedStyle(hero()).flexDirection !== 'row' ? hero().querySelector('.vb-thumb').clientHeight : 999);
+    let size = 26;
+    text.style.fontSize = `${size}px`;
+    while ((thumbH() < 110 || scroller.scrollHeight > scroller.clientHeight + 1) && size > 18) { size -= 1; text.style.fontSize = `${size}px`; }
+  };
+  new ResizeObserver(fit).observe(scroller);
+  new MutationObserver(() => requestAnimationFrame(fit)).observe(text, { childList: true });
+  new MutationObserver(() => requestAnimationFrame(fit)).observe(watch, { childList: true });
   load();
 }
