@@ -58,3 +58,18 @@ export async function fetchVideos(ref, creator) {
   await setMeta(key, { at: Date.now(), list: data.videos });
   return data.videos;
 }
+
+// Today's follow-along video for a block (newest upload from a fixed channel). Fixed for the whole day once loaded,
+// so the same video plays at 6:30 and again later, and it works offline after the first load.
+export async function fetchDaily(source, date) {
+  const key = `daily:${source}:${date}`;
+  const cached = await getMeta(key);
+  if (cached) return cached;
+  const r = await fetch(`${API_BASE}/daily?source=${encodeURIComponent(source)}`)
+    .catch(() => { throw new Error('Could not reach the video service.'); });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data.video) throw new Error(data.error || 'Could not load today’s video.');
+  const out = { ...data.video, source: data.source };
+  await setMeta(key, out);
+  return out;
+}

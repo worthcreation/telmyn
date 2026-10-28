@@ -476,3 +476,6 @@ button.wk { background: none; border: 0; color: inherit; font: inherit; }
 
 /* Test mode */
 button.test-banner { border: 0; font: inherit; font-size: 13px; width: 100%; }
+
+/* Daily follow-along video (Fab Five): gold stays reserved for the verse */
+.study-bar.daily { border-left-color: var(--ink-2); }

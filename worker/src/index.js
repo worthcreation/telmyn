@@ -1,6 +1,7 @@
 // Telmyn API (Cloudflare Worker). Personal, non-commercial use.
 // GET /verse?ref=Galatians%206:9&v=NKJV  -> { ref, version, text, verses[], copyright, source }
 // GET /versions                         -> { versions: [{ abbr, name }] }
+// GET /daily?source=gator               -> { source, video: { id, title, published, thumb } }
 // Reads the public Bible Gateway passage page, keeps only the verse text, caches for 7 days.
 
 const ALLOWED_ORIGINS = ['https://telmyn.worthcreation.com', 'http://localhost:8000'];
@@ -86,6 +87,30 @@ async function videos(url, env) {
   return { status: 200, body: { ref, creator: who.name, videos: list } };
 }
 
+// Daily follow-along video: the newest upload from a fixed channel, read from its uploads playlist
+// (1 API unit per call, cached 1 hour). Always the newest upload. Only channels listed here can be asked for.
+const DAILY = {
+  gator: { name: 'Gator', uploads: 'UUKQTBJUAPK5pvSbsNrn_sHg' },
+};
+const HOUR = 60 * 60;
+async function daily(url, env) {
+  const who = DAILY[url.searchParams.get('source') || ''];
+  if (!who) return { status: 400, body: { error: 'Unknown video source.' } };
+  if (!env.YOUTUBE_KEY) return { status: 500, body: { error: 'Video search is not set up yet.' } };
+  const api = new URL('https://www.googleapis.com/youtube/v3/playlistItems');
+  api.search = new URLSearchParams({ part: 'snippet,contentDetails', playlistId: who.uploads, maxResults: '25', key: env.YOUTUBE_KEY });
+  const r = await fetch(api);
+  const d = await r.json();
+  if (!r.ok) return { status: 502, body: { error: d.error?.message || `YouTube returned ${r.status}.` } };
+  const list = (d.items || [])
+    .filter(x => x.contentDetails?.videoId && !/^(private|deleted) video$/i.test(x.snippet?.title || ''))
+    .map(x => ({ id: x.contentDetails.videoId, title: x.snippet.title, published: x.contentDetails.videoPublishedAt || x.snippet.publishedAt,
+      thumb: x.snippet.thumbnails?.medium?.url || x.snippet.thumbnails?.default?.url }))
+    .sort((a, b) => (b.published || '').localeCompare(a.published || ''));
+  if (!list.length) return { status: 502, body: { error: 'No videos found on that channel.' } };
+  return { status: 200, body: { source: who.name, video: list[0] } };
+}
+
 async function handle(req, ctx, env) {
   const url = new URL(req.url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors(req) });
@@ -109,12 +134,16 @@ async function handle(req, ctx, env) {
     const out = await videos(url, env);
     if (out.status !== 200) return json(req, out.body, out.status);
     res = new Response(JSON.stringify(out.body), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': `public, max-age=${MONTH}`, ...cors(req) } });
+  } else if (url.pathname === '/daily') {
+    const out = await daily(url, env);
+    if (out.status !== 200) return json(req, out.body, out.status);
+    res = new Response(JSON.stringify(out.body), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': `public, max-age=${HOUR}`, ...cors(req) } });
   } else if (url.pathname === '/versions') {
     const list = await versions();
     if (!list.length) return json(req, { error: 'Could not read the version list.' }, 502);
     res = json(req, { versions: list });
   } else {
-    return json(req, { ok: true, routes: ['/verse?ref=Galatians%206:9&v=NKJV', '/versions', '/videos?ref=Galatians%206:9&creator=bibleproject'] });
+    return json(req, { ok: true, routes: ['/verse?ref=Galatians%206:9&v=NKJV', '/versions', '/videos?ref=Galatians%206:9&creator=bibleproject', '/daily?source=gator'] });
   }
   ctx.waitUntil(cache.put(req, res.clone()));
   return res;

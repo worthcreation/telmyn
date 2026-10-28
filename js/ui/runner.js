@@ -9,6 +9,7 @@ import { now, fmtSec } from '../clock.js';
 import { transitionSec } from '../flow.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
 import { studyPlayer } from './study-player.js';
+import { DAILY_VIDEO } from '../config.js';
 
 let wakeLock = null;
 const lockScreen = async () => { try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* optional */ } };
@@ -33,7 +34,7 @@ export function runBlock(block, { onExit } = {}) {
   // Re-lay out when the study video opens or closes (video mode moves the timer into its own corner chip).
   new MutationObserver(() => render()).observe(root, { attributes: true, attributeFilter: ['class'] });
   document.body.append(root);
-  const study = studyPlayer(studyEl);
+  const study = studyPlayer(studyEl, { daily: DAILY_VIDEO[block.id] || null });
   const cue = name => { study.duck(); sounds[name](); };
   addEvent('block_start', { block: block.id });
 

@@ -3,7 +3,7 @@
 // Beeps duck the video volume for a moment so alerts are always heard. Your own pause or play always wins.
 import { h, fill } from './dom.js';
 import { state } from '../state.js';
-import { getCreator, fetchVideos, CREATORS } from '../scripture.js';
+import { getCreator, fetchVideos, fetchDaily, CREATORS } from '../scripture.js';
 
 let apiReady;
 function loadApi() {
@@ -18,7 +18,8 @@ function loadApi() {
 
 const decode = t => { const e = document.createElement('textarea'); e.innerHTML = t; return e.value; };
 
-export function studyPlayer(container) {
+// daily: a /daily source name; the block then shows that channel's video of the day instead of the verse study video.
+export function studyPlayer(container, { daily = null } = {}) {
   let player = null, video = null, armed = false, ours = false, playing = false, duckTimer = null;
 
   const runner = () => container.closest('.runner');
@@ -27,9 +28,9 @@ export function studyPlayer(container) {
   function drawBar() {
     if (!video) return fill(container);
     container.className = 'study collapsed';
-    fill(container, h('button', { class: 'study-bar', onclick: open },
+    fill(container, h('button', { class: `study-bar${daily ? ' daily' : ''}`, onclick: open },
       h('span', { class: 'sb-i', 'aria-hidden': 'true' }, '▶'),
-      h('span', { class: 'sb-t' }, h('b', {}, 'Study while you train'), h('small', {}, decode(video.title)))));
+      h('span', { class: 'sb-t' }, h('b', {}, daily ? `Today’s video, ${video.source}` : 'Study while you train'), h('small', {}, decode(video.title)))));
   }
 
   async function open() {
@@ -62,6 +63,7 @@ export function studyPlayer(container) {
 
   (async () => {
     try {
+      if (daily) { video = await fetchDaily(daily, state.date); return drawBar(); }
       const creator = await getCreator();
       const list = await fetchVideos(state.verse.ref, creator);
       video = list[0] || null;
