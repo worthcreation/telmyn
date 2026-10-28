@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.1 (2026-10-28)
+No drop shadows on buttons or chips. A press now shrinks the control slightly (one token, --press) and darkens it.
+Today's verse refits after the serif font loads, so it no longer ends in … when there is room.
+
 ## 0.11.0 (2026-10-28)
 One design system for the whole app. tokens.css now holds everything the look is made of: one type scale (12 sizes
 with names, from micro to clock), line heights, control heights, glass tokens for over-video controls and the layer

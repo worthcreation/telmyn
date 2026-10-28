@@ -48,6 +48,7 @@
   /* Space and shape. */
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 36px;
   --r-btn: 12px; --r-card: 20px; --r-pill: 999px;
+  --press: .97;         /* how far a control shrinks while pressed; no drop shadows anywhere */
   --h-ctrl: 48px;       /* buttons */
   --h-tap: 44px;        /* the smallest comfortable tap target */
   --h-ctrl-sm: 36px;    /* chips in a row */

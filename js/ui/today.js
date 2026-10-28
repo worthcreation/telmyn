@@ -46,6 +46,7 @@ export function renderToday(root, rerender) {
     h('span', { class: 'vp-theme' }, verse.theme), verseText, verseRef);
   const fit = () => fitText(versePanel, verseText, { clamp: true });
   new ResizeObserver(fit).observe(versePanel);
+  document.fonts?.ready.then(() => requestAnimationFrame(fit));
   getVersion().then(v => fetchVerse(verse.ref, v)).then(d => {
     verseText.textContent = d.text; verseText.classList.remove('loading');
     verseRef.textContent = `${verse.ref} ${d.version}`;
