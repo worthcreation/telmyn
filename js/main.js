@@ -4,6 +4,7 @@ import { TEST, isoDate, now } from './clock.js';
 import { renderShell, startShell } from './ui/shell.js';
 import { toast, h } from './ui/dom.js';
 import { APP_VERSION } from './version.js';
+import { loadPicks } from './ui/media.js';
 
 const root = document.getElementById('app');
 
@@ -22,6 +23,7 @@ async function boot() {
   // Remove the old in-app test copy from 0.9.3 (a separate database, never the real one).
   else indexedDB.deleteDatabase?.('telmyn-test');
   navigator.storage?.persist?.();
+  await loadPicks();
   onChange(() => { if (!document.querySelector('.sheet-wrap .log-form')) renderShell(root); });
   startShell(root);
   await load(isoDate());

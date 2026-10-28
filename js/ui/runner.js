@@ -195,13 +195,14 @@ export function runBlock(block, opts = {}) {
   }
 
   function videoLinks(s) {
-    const ex = EXERCISES[s.exercise] || (i === 0 && block.video ? EXERCISES[block.video] : null);
+    const exKey = EXERCISES[s.exercise] ? s.exercise : (i === 0 && block.video ? block.video : null);
+    const ex = exKey ? EXERCISES[exKey] : null;
     if (!ex?.video) return null;
     // Watching a demo pauses any running timer; it stays paused until you resume.
     const hooks = { onOpen: () => { if (timer && timer.kind !== 'countup') pause(); study.hold(); } };
     return h('div', { class: 'links' },
-      watchButton('Watch', ex.video, hooks, ex.name),
-      ex.alt ? watchButton(ex.alt.label, ex.alt.video, hooks, `${ex.name}: ${ex.alt.label}`) : null);
+      watchButton('Watch', ex.video, hooks, ex.name, { key: exKey, query: `${ex.name} exercise form tutorial` }),
+      ex.alt ? watchButton(ex.alt.label, ex.alt.video, hooks, `${ex.name}: ${ex.alt.label}`, { key: `${exKey}:alt`, query: `${ex.name} ${ex.alt.label} tutorial` }) : null);
   }
 
   function stepper(s) {

@@ -592,3 +592,15 @@ button.test-banner { border: 0; font: inherit; font-size: 13px; width: 100%; }
   .view-today .next-sum, .view-today .next-then { display: none; }
   .verse-card { min-height: 96px; padding: var(--s2) var(--s3); gap: 4px; }
 }
+
+/* Replacement picker inside the player */
+.vb-error .btn { margin-top: 6px; }
+.vb-choices { display: grid; gap: 6px; max-height: 50vh; overflow-y: auto; text-align: left; }
+.vb-choice { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; background: rgb(255 255 255 / .06);
+  border: 1px solid rgb(255 255 255 / .12); border-radius: var(--r-btn); padding: 6px; color: #F3F4F1; }
+.vb-thumb { width: 96px; aspect-ratio: 16 / 9; border-radius: 6px; background: rgb(255 255 255 / .08) center / cover no-repeat; }
+.vb-choice > span:last-child { display: grid; gap: 2px; min-width: 0; }
+.vb-choice b { font-size: 14px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vb-choice small { font-size: 12px; color: rgb(243 244 241 / .7); }
+.vb-error { top: 30%; }
+.vb-choice, .vb-choice b, .vb-choice small { text-align: left; }

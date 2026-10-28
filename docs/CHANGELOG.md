@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0 (2026-10-28)
+Videos YouTube won't play inside the app (the library's Shorts) can be replaced on the spot: the player offers
+"Find one that plays", searches through the Worker for videos that are embeddable, allowed outside YouTube and
+4-20 minutes long (never Shorts), and the one Ross taps plays and becomes that exercise's video from then on
+(meta video_picks, kept in backups). New Worker route /search (cached 30 days).
+
 ## 0.9.9 (2026-10-28)
 Today's verse is always on Today, right under the date, in its own card that takes the spare space. Type shrinks to fit;
 a long passage ends with … and tap opens it. It refits whenever its space changes, so it can no longer vanish.

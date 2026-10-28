@@ -22,7 +22,7 @@
 | sets | id | logged set | exercise, set_no, side, reps or sec or min, mode, block, source (app or import) |
 | fluids | id | drink | kind, oz, ml |
 | xp | id | cached XP award | rebuilt from logs when the curve changes |
-| meta | key | setting or cache | settings (verse_version, study_creator, last_export, video_errors) and caches (verse:, videos:, daily:), which backups leave out |
+| meta | key | setting or cache | settings (verse_version, study_creator, last_export, video_errors, video_picks) and caches (verse:, videos:, daily:), which backups leave out |
 
 Schema changes: bump DB_VERSION in db.js and add a migration. Never edit an old migration.
 
@@ -42,7 +42,7 @@ registered in program/index.js. Past days keep showing the program that was in e
 ## Server (worker/)
 telmyn-api, a Cloudflare Worker. Answers only Telmyn's own addresses. /verse and /versions relay Bible Gateway text
 for personal use (cached 7 days); /videos finds study videos by creator (30 days); /daily returns a channel's newest
-upload (1 hour). The YouTube Data API key is the Worker secret YOUTUBE_KEY.
+upload (1 hour); /search finds embeddable, non-Short instructional videos (30 days). The YouTube Data API key is the Worker secret YOUTUBE_KEY.
 Phase 2 adds alarm pushes here. The app finds it through js/config.js (API_BASE).
 
 ## Delivery

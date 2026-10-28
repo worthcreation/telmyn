@@ -3,6 +3,7 @@
 import { h } from './dom.js';
 import { loadApi, ytHost, ytVars } from './study-player.js';
 import { getMeta, setMeta } from '../db.js';
+import { API_BASE } from '../config.js';
 
 // YouTube watch, shorts and youtu.be links (with optional start time), or a Facebook video page.
 export function parseVideo(url) {
@@ -37,13 +38,29 @@ export function rotateButton(el, cls = 'vb-btn') {
   return b;
 }
 
-// The Watch button. Same look everywhere: a quiet pill with a play mark.
-export const watchButton = (label, url, hooks = {}, title = label) => parseVideo(url)
-  ? h('button', { class: 'watch-chip', onclick: () => playVideo(url, title, hooks) }, h('span', { class: 'wc-i', 'aria-hidden': 'true' }, '▶'), label)
-  : null;
+// Ross's picks replace library videos that YouTube won't play inside the app. Stored as a setting
+// (meta video_picks, kept in backups): { exerciseKey: { id, title, channel } }. Loaded once at start.
+let picks = {};
+export async function loadPicks() { picks = await getMeta('video_picks', {}); }
+export const videoFor = (key, url) => (picks[key] ? `https://www.youtube.com/watch?v=${picks[key].id}` : url);
+async function savePick(key, v) {
+  picks = { ...picks, [key]: { id: v.id, title: v.title, channel: v.channel, at: new Date().toISOString() } };
+  await setMeta('video_picks', picks);
+}
 
-// Full-screen player over whatever is open. Only ✕ and the landscape switch sit on top of the video.
-export async function playVideo(url, title = 'Video', { onOpen, onClose } = {}) {
+// The Watch button. Same look everywhere: a quiet pill with a play mark.
+// pick = { key, query } lets a refused video be replaced on the spot.
+export const watchButton = (label, url, hooks = {}, title = label, pick = null) => {
+  if (!parseVideo(url)) return null;
+  // Look up the pick at tap time, so a replacement chosen a moment ago is used right away.
+  return h('button', { class: 'watch-chip', onclick: () => playVideo(pick ? videoFor(pick.key, url) : url, title, { ...hooks, pick }) },
+    h('span', { class: 'wc-i', 'aria-hidden': 'true' }, '▶'), label);
+};
+
+const decode = t => { const e = document.createElement('textarea'); e.innerHTML = t; return e.value; };
+
+// Full-screen player over whatever is open. Only ✕, the title and the landscape switch sit on top of the video.
+export async function playVideo(url, title = 'Video', { onOpen, onClose, pick = null } = {}) {
   const v = parseVideo(url);
   if (!v) return;
   onOpen?.();
@@ -70,6 +87,39 @@ export async function playVideo(url, title = 'Video', { onOpen, onClose } = {}) 
     slot.replaceWith(h('iframe', { class: 'vb-frame', src: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(v.url)}&show_text=false&autoplay=true`, allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, title }));
     return;
   }
+
+  // YouTube refused the video. Say so plainly, and when it belongs to an exercise, offer replacements
+  // that are allowed to play in apps. Tapping one plays it and makes it that exercise's video from now on.
+  async function refused(code, failedId) {
+    const list = await getMeta('video_errors', []);
+    list.push({ url: `https://www.youtube.com/watch?v=${failedId}`, code, at: new Date().toISOString() });
+    await setMeta('video_errors', list.slice(-20));
+    root.querySelector('.vb-error')?.remove();
+    const box = h('div', { class: 'vb-error' }, h('b', {}, 'YouTube won’t play this one inside the app.'));
+    root.append(box);
+    if (!pick) return box.append(h('span', {}, 'It’s logged so it can be replaced.'));
+    const btn = h('button', { class: 'btn', onclick: () => showChoices() }, 'Find one that plays');
+    box.append(btn);
+    async function showChoices() {
+      btn.disabled = true; btn.textContent = 'Searching…';
+      try {
+        const r = await fetch(`${API_BASE}/search?q=${encodeURIComponent(pick.query)}`);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Search failed.');
+        const vids = d.videos.filter(x => x.id !== failedId);
+        if (!vids.length) throw new Error('Nothing found.');
+        box.replaceChildren(h('b', {}, 'Pick one. It becomes the video for this exercise.'),
+          h('div', { class: 'vb-choices' }, vids.map(x => h('button', { class: 'vb-choice', onclick: async () => {
+            await savePick(pick.key, x);
+            box.remove();
+            player.loadVideoById({ videoId: x.id });
+            root.querySelector('.vb-title').textContent = `${title} (new pick)`;
+          } }, h('span', { class: 'vb-thumb', style: x.thumb ? `background-image:url('${x.thumb}')` : '' }),
+            h('span', {}, h('b', {}, decode(x.title)), h('small', {}, decode(x.channel)))))));
+      } catch (err) { btn.disabled = false; btn.textContent = 'Try again'; box.querySelector('span')?.remove(); box.append(h('span', {}, err.message)); }
+    }
+  }
+
   await loadApi();
   if (!root.isConnected) return;
   player = new window.YT.Player(slot, {
@@ -77,14 +127,7 @@ export async function playVideo(url, title = 'Video', { onOpen, onClose } = {}) 
     playerVars: ytVars({ autoplay: 1, start: v.start || 0 }),
     events: {
       onReady: e => e.target.playVideo(),
-      // YouTube refused to play it here: say so in the app's own words and keep a record for the next fix.
-      onError: async e => {
-        const list = await getMeta('video_errors', []);
-        list.push({ url, code: e.data, at: new Date().toISOString() });
-        await setMeta('video_errors', list.slice(-20));
-        root.append(h('div', { class: 'vb-error' }, h('b', {}, 'This video won’t play inside the app.'),
-          h('span', {}, 'It’s logged so it can be swapped for one that does.')));
-      },
+      onError: e => refused(e.data, e.target?.getVideoData?.()?.video_id || v.id),
     },
   });
 }

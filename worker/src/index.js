@@ -121,6 +121,23 @@ function fromTelmyn(req) {
   return ALLOWED_ORIGINS.includes(o) || TEST_ORIGIN.test(o);
 }
 
+// Replacement instructional videos: only ones YouTube allows to play inside other apps (embeddable and syndicated),
+// 4 to 20 minutes long so Shorts never come back. 100 API units per search, cached 30 days.
+async function search(url, env) {
+  const q = (url.searchParams.get('q') || '').trim();
+  if (!q || q.length > 80) return { status: 400, body: { error: 'Bad search.' } };
+  if (!env.YOUTUBE_KEY) return { status: 500, body: { error: 'Video search is not set up yet.' } };
+  const api = new URL('https://www.googleapis.com/youtube/v3/search');
+  api.search = new URLSearchParams({ part: 'snippet', type: 'video', videoEmbeddable: 'true', videoSyndicated: 'true', videoDuration: 'medium',
+    safeSearch: 'strict', relevanceLanguage: 'en', maxResults: '6', q, key: env.YOUTUBE_KEY });
+  const r = await fetch(api);
+  const d = await r.json();
+  if (!r.ok) return { status: 502, body: { error: d.error?.message || `YouTube returned ${r.status}.` } };
+  const list = (d.items || []).filter(x => x.id?.videoId).map(x => ({ id: x.id.videoId, title: x.snippet.title, channel: x.snippet.channelTitle,
+    thumb: x.snippet.thumbnails?.medium?.url || x.snippet.thumbnails?.default?.url }));
+  return { status: 200, body: { q, videos: list } };
+}
+
 async function handle(req, ctx, env) {
   const url = new URL(req.url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors(req) });
@@ -145,6 +162,10 @@ async function handle(req, ctx, env) {
     const out = await videos(url, env);
     if (out.status !== 200) return json(req, out.body, out.status);
     res = new Response(JSON.stringify(out.body), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': `public, max-age=${MONTH}`, ...cors(req) } });
+  } else if (url.pathname === '/search') {
+    const out = await search(url, env);
+    if (out.status !== 200) return json(req, out.body, out.status);
+    res = new Response(JSON.stringify(out.body), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': `public, max-age=${MONTH}`, ...cors(req) } });
   } else if (url.pathname === '/daily') {
     const out = await daily(url, env);
     if (out.status !== 200) return json(req, out.body, out.status);
@@ -154,7 +175,7 @@ async function handle(req, ctx, env) {
     if (!list.length) return json(req, { error: 'Could not read the version list.' }, 502);
     res = json(req, { versions: list });
   } else {
-    return json(req, { ok: true, routes: ['/verse?ref=Galatians%206:9&v=NKJV', '/versions', '/videos?ref=Galatians%206:9&creator=bibleproject', '/daily?source=gator'] });
+    return json(req, { ok: true, routes: ['/verse?ref=Galatians%206:9&v=NKJV', '/versions', '/videos?ref=Galatians%206:9&creator=bibleproject', '/daily?source=gator', '/search?q=scapular%20pull%20up'] });
   }
   ctx.waitUntil(cache.put(req, res.clone()));
   return res;
