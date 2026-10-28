@@ -46,7 +46,7 @@ test('Tue plan is v1.1 Row, hangs before row, stretch at 06:30', () => { const p
 test('Strength day keeps hangs after the routine', () => eq(planFor('2026-11-02').blocks.map(b => b.id), ['stretch', 'gates', 'strength_a', 'hangs', 'evening_legs']));
 test('every v1.1 step has a cue except rests, palms choice and curls without cues', () => {
   for (const b of Object.values(planFor('2026-10-27').program.data.BLOCKS)) for (const s of b.steps) {
-    if (s.kind === 'rest' || s.choice || /curls/i.test(s.text)) continue;
+    if (s.kind === 'rest' || /curls/i.test(s.text)) continue;
     if (!s.cue) throw new Error(`no cue: ${b.name} / ${s.text}`);
   }
 });
@@ -103,7 +103,7 @@ test('transitions: start 5, sides 5, new position 10, after rest 0, row segments
   const R = planFor('2026-10-27').program.data.BLOCKS.row.steps;
   const at = t => R.findIndex(s => s.text === t);
   const tr = t => transitionSec(R[at(t) - 1], R[at(t)]);
-  eq([tr('Lunge with reach, left leg forward'), tr('Lunge with reach, right leg forward'), tr('Calf stretch, right leg'), tr('Hamstring stretch'), tr('Conversational pace'), tr('Easy cooldown, 1-2 min')], [10, 5, 5, 10, 0, 0]);
+  eq([tr('Lunge with reach, left leg forward'), tr('Lunge with reach, right leg forward'), tr('Calf stretch, right leg'), tr('Hamstring stretch'), tr('Row steady, 15 min'), tr('Row easy, 1-2 min')], [10, 5, 5, 10, 0, 0]);
   eq(transitionSec(undefined, { kind: 'timed' }), 5);
   eq(transitionSec({ kind: 'rest' }, { kind: 'timed' }), 0);
 });

@@ -379,3 +379,33 @@ button.stat { background: none; border: 0; padding: 0; text-align: left; color: 
   .chip-btn { font-size: 14px; padding: 6px; }
   .hourly-actions .btn { padding: 0 var(--s2); font-size: 15px; }
 }
+
+/* Runner: persistent regions (header, lanes, study video, step, footer) */
+.runner { grid-template-rows: auto auto auto 1fr auto; }
+.runner-main { gap: var(--s2); min-height: 0; overflow: hidden; }
+.step-text { font-size: clamp(30px, 8.5vw, 46px); line-height: 1.02; }
+.step-text.long { font-size: clamp(26px, 7vw, 38px); }
+.step-cue { font-size: 17px; max-width: 32ch; }
+.study:empty { display: none; }
+.study { margin: 0 0 var(--s2); position: relative; }
+.study-bar { width: 100%; display: flex; align-items: center; gap: var(--s3); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--spirit); border-radius: var(--r-btn); padding: var(--s2) var(--s3); color: var(--ink); text-align: left; }
+.sb-i { color: var(--spirit); font-size: 18px; }
+.sb-t { display: grid; min-width: 0; }
+.sb-t b { font-size: 14px; }
+.sb-t small { font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.study.open .study-frame, .study.open iframe { width: 100%; aspect-ratio: 16 / 9; max-height: 30vh; border: 0; border-radius: var(--r-btn); background: #000; display: block; }
+.study-close { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: rgb(0 0 0 / .6); color: #fff; }
+.runner:has(.study.open) .clock { font-size: clamp(56px, 18vw, 84px); }
+.runner:has(.study.open) .step-text { font-size: clamp(26px, 7vw, 36px); }
+
+/* Landscape on a phone: step on the left, timer and buttons readable, nothing overlapping */
+@media (orientation: landscape) and (max-height: 520px) {
+  .runner { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto 1fr auto; column-gap: var(--s4); }
+  .runner-head, .lanes { grid-column: 1 / -1; }
+  .study { grid-column: 2; grid-row: 3; }
+  .runner-main { grid-column: 1; grid-row: 3; }
+  .runner-foot { grid-column: 1 / -1; }
+  .step-text, .step-text.long { font-size: clamp(22px, 4vw, 30px); }
+  .clock { font-size: 56px; }
+  .step-cue { font-size: 15px; }
+}

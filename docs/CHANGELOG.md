@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0 (2026-10-27)
+Study while you train: inside any block, a bar offers a Bible study video on today's verse (your chosen creator).
+Once you start it, it plays while timers run, pauses when the app waits on you (reps, logging), and its volume dips
+for every beep. Your own pause or play always wins. The runner keeps the video between steps.
+Clearer step names and cues (row segments, damper, cat-cow, lunge, palms, Fab Five), long step names size down to fit,
+the app stays portrait when installed, and landscape no longer overlaps.
+
 ## 0.8.4 (2026-10-27)
 Today: the verse fits the space that's left. Its type shrinks until it fits, and if it still can't fit it steps aside
 instead of being cut off.

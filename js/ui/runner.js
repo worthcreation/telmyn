@@ -8,6 +8,7 @@ import { state, addEvent, addSet, setField } from '../state.js';
 import { now, fmtSec } from '../clock.js';
 import { transitionSec } from '../flow.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
+import { studyPlayer } from './study-player.js';
 
 let wakeLock = null;
 const lockScreen = async () => { try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* optional */ } };
@@ -25,7 +26,12 @@ export function runBlock(block, { onExit } = {}) {
   let entry = {};              // current set input
   const startedAt = now().toISOString();
   const root = h('div', { class: 'runner', role: 'dialog', 'aria-label': block.name });
+  const headEl = h('header', { class: 'runner-head' }), lanesEl = h('div', { class: 'lanes', 'aria-hidden': 'true' });
+  const studyEl = h('section', { class: 'study' }), mainEl = h('main', { class: 'runner-main' }), footEl = h('footer', { class: 'runner-foot' });
+  root.append(headEl, lanesEl, studyEl, mainEl, footEl);
   document.body.append(root);
+  const study = studyPlayer(studyEl);
+  const cue = name => { study.duck(); sounds[name](); };
   addEvent('block_start', { block: block.id });
 
   const lastSet = ex => [...state.sets].reverse().find(s => s.exercise === ex);
@@ -45,15 +51,15 @@ export function runBlock(block, { onExit } = {}) {
       if (bar) bar.style.transform = `scaleX(${1 - left / timer.total})`;
       if (whole !== timer.lastWhole) {
         timer.lastWhole = whole;
-        if (kind !== 'hold' && whole >= 1 && whole <= 3) sounds.tick();
+        if (kind !== 'hold' && whole >= 1 && whole <= 3) cue('tick');
       }
       if (left <= 0) { clearTimers(); onEnd?.(); }
     }, 100);
   }
 
   function runHold(s) {
-    sounds.go();
-    startTimer(s.sec, 'hold', () => { sounds.end(); advance(true); });
+    cue('go');
+    startTimer(s.sec, 'hold', () => { cue('end'); advance(true); });
     render();
   }
 
@@ -63,7 +69,7 @@ export function runBlock(block, { onExit } = {}) {
   const rangeOf = s => s.range || (s.sec ? [s.sec, s.sec] : [null, null]);
   function runCountUp(s) {
     clearTimers();
-    sounds.go();
+    cue('go');
     const [lo, hi] = rangeOf(s);
     const start = now().getTime();
     timer = { kind: 'countup', total: hi || 60, beeped: false };
@@ -76,16 +82,16 @@ export function runBlock(block, { onExit } = {}) {
       const bar = root.querySelector('.clock-fill');
       if (bar) bar.style.transform = `scaleX(${Math.min(1, sec / timer.total)})`;
       const hint = root.querySelector('.countup-hint');
-      if (lo && lo !== hi && sec >= lo && !timer.beeped) { timer.beeped = true; sounds.tick(); sounds.tick(); if (hint) hint.textContent = `Minimum reached. Hold to ${hi} or drop and tap Stop.`; }
-      if (hi && sec >= hi) { clearTimers(); entry.value = hi; sounds.end(); advance(true); }
+      if (lo && lo !== hi && sec >= lo && !timer.beeped) { timer.beeped = true; cue('tick'); cue('tick'); if (hint) hint.textContent = `Minimum reached. Hold to ${hi} or drop and tap Stop.`; }
+      if (hi && sec >= hi) { clearTimers(); entry.value = hi; cue('end'); advance(true); }
     }, 100);
     render();
   }
-  function stopCountUp() { clearTimers(); sounds.end(); advance(true); }
+  function stopCountUp() { clearTimers(); cue('end'); advance(true); }
   const startStep = s => (isTimedSet(s) ? runCountUp(s) : runHold(s));
 
   function runRest(s) {
-    startTimer(s.sec, 'rest', () => { sounds.end(); advance(true); });
+    startTimer(s.sec, 'rest', () => { cue('end'); advance(true); });
     render();
   }
 
@@ -135,6 +141,7 @@ export function runBlock(block, { onExit } = {}) {
   async function finish(type) {
     clearTimers();
     unlockScreen();
+    study.destroy();
     await addEvent(type, { block: block.id, started_at: startedAt, done_at: now().toISOString(), palms: entry.palms || null });
     if (type === 'block_done') burst(innerWidth / 2, innerHeight * 0.45);
     root.classList.add('closing');
@@ -181,7 +188,7 @@ export function runBlock(block, { onExit } = {}) {
 
   function render() {
     const s = steps[i];
-    const lanes = h('div', { class: 'lanes', 'aria-hidden': 'true' }, steps.map((_, k) => h('span', { class: k < i ? 'done' : k === i ? 'now' : '' })));
+    fill(lanesEl, steps.map((_, k) => h('span', { class: k < i ? 'done' : k === i ? 'now' : '' })));
     let body = [];
 
     const inTransition = timer?.kind === 'transition';
@@ -222,23 +229,20 @@ export function runBlock(block, { onExit } = {}) {
       ? h('button', { class: 'btn ghost', onclick: pause }, 'Pause')
       : h('button', { class: 'btn ghost', onclick: back, disabled: i === 0 }, 'Back');
 
-    fill(root, 
-      h('header', { class: 'runner-head' },
-        h('button', { class: 'icon-btn', 'aria-label': 'Leave block', onclick: closeMenu }, '✕'),
-        h('span', { class: 'runner-title' }, block.name),
-        h('span', { class: 'runner-count' }, `${i + 1} of ${steps.length}`)),
-      lanes,
-      h('main', { class: 'runner-main' },
-        h('p', { class: `step-kind ${inTransition ? 'upnext' : s.kind}` }, inTransition ? 'Next' : (s.phase || { rest: 'Rest', set: 'Set', timed: 'Hold', do: 'Do' }[s.kind])),
-        h('h1', { class: 'step-text' }, s.text),
-        s.note || (i === 0 && block.note) ? h('p', { class: 'step-note' }, s.note || block.note) : null,
-        (s.cue || EXERCISES[s.exercise]?.cue) ? h('p', { class: 'step-cue' }, s.cue || EXERCISES[s.exercise].cue) : null,
-        videoLinks(s),
-        ...body),
-      h('footer', { class: 'runner-foot' },
-        secondary,
-        primary));
-
+    fill(headEl,
+      h('button', { class: 'icon-btn', 'aria-label': 'Leave block', onclick: closeMenu }, '✕'),
+      h('span', { class: 'runner-title' }, block.name),
+      h('span', { class: 'runner-count' }, `${i + 1} of ${steps.length}`));
+    fill(mainEl,
+      h('p', { class: `step-kind ${inTransition ? 'upnext' : s.kind}` }, inTransition ? 'Next' : (s.phase || { rest: 'Rest', set: 'Set', timed: 'Hold', do: 'Do' }[s.kind])),
+      h('h1', { class: `step-text${s.text.length > 26 ? ' long' : ''}` }, s.text),
+      s.note || (i === 0 && block.note) ? h('p', { class: 'step-note' }, s.note || block.note) : null,
+      (s.cue || EXERCISES[s.exercise]?.cue) ? h('p', { class: 'step-cue' }, s.cue || EXERCISES[s.exercise].cue) : null,
+      videoLinks(s),
+      ...body);
+    fill(footEl, secondary, primary);
+    // Study video follows the timers: plays while one runs, pauses while the app waits on you.
+    if (running) study.play(); else study.hold();
   }
 
   enter(0, true);

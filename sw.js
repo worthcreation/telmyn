@@ -1,11 +1,11 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.8.4';
+const VERSION = '0.9.0';
 const CACHE = `telmyn-${VERSION}`;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/app.css',
   'js/main.js', 'js/version.js', 'js/clock.js', 'js/db.js', 'js/schema.js', 'js/state.js', 'js/handoff.js', 'js/verses.js', 'js/xp.js', 'js/flow.js', 'js/hourly.js', 'js/config.js', 'js/scripture.js',
   'js/program/index.js', 'js/program/v1.js', 'js/program/v1_1.js', 'js/program/steps.js',
-  'js/ui/dom.js', 'js/ui/shell.js', 'js/ui/progress.js', 'js/ui/gear.js', 'js/ui/me.js', 'js/ui/journal.js', 'js/ui/fx.js', 'js/ui/today.js', 'js/ui/runner.js', 'js/ui/forms.js', 'js/ui/verse.js', 'js/ui/data.js',
+  'js/ui/dom.js', 'js/ui/shell.js', 'js/ui/progress.js', 'js/ui/gear.js', 'js/ui/me.js', 'js/ui/journal.js', 'js/ui/study-player.js', 'js/ui/fx.js', 'js/ui/today.js', 'js/ui/runner.js', 'js/ui/forms.js', 'js/ui/verse.js', 'js/ui/data.js',
   'data/original.json', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
