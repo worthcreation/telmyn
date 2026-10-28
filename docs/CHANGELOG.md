@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.10 (2026-10-28)
+Verse study fits with no scrolling: the lead video is a slim row (what it covers, who made it, its title, and More),
+no picture; the verse takes the room that is left, type stepping from 30 down to 18 px only as needed.
+
 ## 0.10.9 (2026-10-28)
 Writing fields at rest show one whole phrase of what was written, with "…" before and/or after when there is more
 ("… to come the wise person and presence he has called me to be. …"), never a line cut off under the edge. Read-only

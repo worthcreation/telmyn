@@ -169,9 +169,16 @@ export async function verseSheet(date = null) {
       if (m) { nx.t = nx.t.slice(m[0].length); out.push(h('span', { class: 'nw' }, btn, m[0])); } else out.push(btn);
     });
     fill(text, out);
+    // Size the word panel once for its tallest word, so it never grows while you step through and the verse
+    // above it never has to resize.
+    def.style.minHeight = '';
+    let tallest = 0;
+    for (let k = 0; k < words.length; k++) { define(k); tallest = Math.max(tallest, def.offsetHeight); }
+    def.style.minHeight = `${tallest}px`;
+    current = -1;
+    text.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
     // Nothing is marked until you pick a word; the panel says how to start.
-    if (current >= 0) define(current);
-    else fill(def, h('p', { class: 'vs-hint' }, `Underlined words have the ${heb ? 'Hebrew' : 'Greek'} behind them. Tap one.`),
+    fill(def, h('p', { class: 'vs-hint' }, `Underlined words have the ${heb ? 'Hebrew' : 'Greek'} behind them. Tap one.`),
       h('button', { class: 'vs-start', onclick: () => define(0) }, `Or step through all ${words.length} words ›`));
   }
 
@@ -216,12 +223,12 @@ export async function verseSheet(date = null) {
       for (const x of groups) { if (x.group !== last) { list.append(h('p', { class: 'vs-label' }, x.group)); last = x.group; } list.append(card(x)); }
       screen('Videos', list);
     };
-    // Lead video: what it covers sits on the picture; "More" sits on its title row. No extra rows.
-    const hero = card(first, 'hero');
-    hero.querySelector('.vb-thumb').append(h('span', { class: 'vs-badge' }, first.group));
-    fill(watch, hero);
-    if (rest.length) hero.querySelector('.vs-vt').append(h('span', { class: 'vs-morelink', role: 'button', tabindex: 0,
-      onclick: e => { e.stopPropagation(); more(); } }, `More videos (${rest.length}) ›`));
+    // Lead video: no picture, just what it covers, its title and who made it, with More on the same card.
+    const lead = h('button', { class: 'vs-lead', onclick: () => playVideo(`https://www.youtube.com/watch?v=${first.id}`, decode(first.title)) },
+      h('span', { class: 'vs-lead-i', 'aria-hidden': 'true' }, '▶'),
+      h('span', { class: 'vs-lead-t' }, h('small', {}, `${first.group} · ${decode(first.channel || 'BibleProject')}`), h('b', {}, decode(first.title))));
+    fill(watch, h('div', { class: 'vs-leadrow' }, lead,
+      rest.length ? h('button', { class: 'vs-morelink', onclick: more }, `More (${rest.length}) ›`) : null));
   });
 
   listVersions().then(list => {
@@ -245,17 +252,18 @@ export async function verseSheet(date = null) {
     h('div', { class: 'vs-apply' }, note, past ? null : h('button', { class: 'btn ghost', onclick: journalSheet }, 'Journal')));
   screen(v.ref, body);
   // The verse keeps a large, readable size; it only shrinks (down to 17 px) if a long passage would not fit.
-  // Balance the two big pieces: the verse starts large (26 px) and gives up size only until the lead video's
-  // picture has a useful height (110 px). Nothing scrolls; nothing is left empty.
+  // The verse takes whatever room is left: type starts at 30 px and steps down (to 18) until nothing scrolls.
   const scroller = body.closest('.layer-body');
   const fit = () => {
     if (!scroller?.clientHeight) return;
-    const hero = () => body.querySelector('.vs-video.hero');
-    // On short screens the lead video is a compact row with a fixed picture, so only overflow matters there.
-    const thumbH = () => (hero() && getComputedStyle(hero()).flexDirection !== 'row' ? hero().querySelector('.vb-thumb').clientHeight : 999);
-    let size = 26;
+    let size = 30;
     text.style.fontSize = `${size}px`;
-    while ((thumbH() < 110 || scroller.scrollHeight > scroller.clientHeight + 1) && size > 18) { size -= 1; text.style.fontSize = `${size}px`; }
+    const box = body.querySelector('.vs-verse');
+    const cs = getComputedStyle(box);
+    const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + parseFloat(cs.rowGap || 0);
+    // Room the verse needs: its text, the citation and the box's padding, measured directly.
+    const over = () => scroller.scrollHeight > scroller.clientHeight + 1 || text.offsetHeight + cite.offsetHeight + pad > box.clientHeight;
+    while (over() && size > 18) { size -= 1; text.style.fontSize = `${size}px`; }
   };
   new ResizeObserver(fit).observe(scroller);
   new MutationObserver(() => requestAnimationFrame(fit)).observe(text, { childList: true });
