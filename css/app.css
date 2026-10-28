@@ -838,3 +838,27 @@ button.test-banner { border: 0; font: inherit; font-size: 13px; width: 100%; }
    key/small difference); nothing is selected until you tap. The tapped word or phrase turns gold. */
 .kw, .sw { border-bottom: 2px dotted color-mix(in srgb, var(--ink) 40%, transparent); padding-bottom: 1px; }
 .kw.on, .sw.on { border-bottom: 2px solid var(--spirit); }
+
+/* Word panel 0.10.8: nothing clips. The word wraps beside a fixed-width stepper; every line wraps. */
+.vs-def-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--s2); }
+.vs-word { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s3); row-gap: 0; min-width: 0; }
+.vs-orig { overflow-wrap: anywhere; }
+.vs-nav { display: grid; grid-template-columns: 36px auto 36px; align-items: center; }
+.vs-count { min-width: 0; white-space: nowrap; }
+.vs-line { grid-template-columns: 6.5em minmax(0, 1fr); overflow-wrap: anywhere; }
+.vs-line.muted { overflow-wrap: anywhere; white-space: normal; }
+.vs-def { min-width: 0; overflow: hidden; }
+.vs-none { color: var(--ink-2); font-style: normal; }
+.vs-order { margin: 0; color: var(--ink-2); line-height: 1.5; }
+.vs-order b { color: var(--ink); background: color-mix(in srgb, var(--spirit) 26%, transparent); border-radius: 4px; padding: 0 3px; font-weight: 600; }
+.vs-order-w { background: none; border: 0; padding: 0; font: inherit; color: var(--ink-2); text-decoration: underline dotted; text-underline-offset: 3px; }
+.layer.study .vs-video.hero { min-height: 150px; }
+@media (max-height: 680px) {
+  .layer.study .vs-video.hero { min-height: 0; }
+  .vs-def .vs-line.muted { display: none; }
+  .vs-line { grid-template-columns: 5.8em minmax(0, 1fr); font-size: 14px; }
+}
+/* The word panel keeps one height whichever word is open, so the verse never resizes as you tap through. */
+@media (min-height: 681px) { .layer.study .vs-def { min-height: 212px; align-content: start; } }
+@media (max-height: 680px) { .layer.study .vs-def { min-height: 140px; align-content: start; } }
+.nw { white-space: nowrap; }

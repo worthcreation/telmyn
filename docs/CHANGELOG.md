@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.8 (2026-10-28)
+Word panel: nothing clips (long words wrap beside a fixed stepper; grammar wraps). Every word now shows its place in
+the Greek or Hebrew order, two words each side read literally ("he should ask from [the One] giving God"), each one
+tappable. Words the English has no separate word for say so plainly instead of pointing at nothing.
+
 ## 0.10.7 (2026-10-28)
 Verse study: every word or phrase with a translation behind it shows the same quiet dotted underline, so you can see
 what is tappable; nothing is selected until you tap, and the tapped one turns gold.

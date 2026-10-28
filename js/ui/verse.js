@@ -128,19 +128,30 @@ export async function verseSheet(date = null) {
     text.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
     text.querySelectorAll(`[data-i="${i}"]`).forEach(x => x.classList.add('on'));
     const shown = text.querySelector(`[data-i="${i}"]`)?.textContent;
+    // The word in its Greek (or Hebrew) order, two words each side, read literally. Shows where a word sits even
+    // when the English version has no separate word for it, without guessing which English word "covers" it.
+    const lo = Math.max(0, i - 2), hi = Math.min(words.length - 1, i + 2);
+    const order = h('p', { class: 'vs-order' }, lo > 0 ? '… ' : '',
+      words.slice(lo, hi + 1).map((x, k) => [k ? ' ' : '', lo + k === i ? h('b', {}, x.en || x.t) : h('button', { class: 'vs-order-w', onclick: () => define(lo + k) }, x.en || x.t)]).flat(),
+      hi < words.length - 1 ? ' …' : '');
     fill(def,
       h('div', { class: 'vs-def-top' },
-        h('span', { class: `vs-orig${heb ? ' hebrew' : ''}`, lang: heb ? 'he' : 'grc', dir: heb ? 'rtl' : 'ltr' }, w.w),
-        h('span', { class: 'vs-tr' }, w.t),
+        h('span', { class: 'vs-word' },
+          h('span', { class: `vs-orig${heb ? ' hebrew' : ''}`, lang: heb ? 'he' : 'grc', dir: heb ? 'rtl' : 'ltr' }, w.w),
+          h('span', { class: 'vs-tr' }, w.t)),
         h('span', { class: 'vs-nav' },
           h('button', { class: 'icon-btn', 'aria-label': 'Previous word', disabled: i === 0, onclick: () => define(i - 1) }, '‹'),
           h('span', { class: 'vs-count' }, `${i + 1} of ${words.length}`),
           h('button', { class: 'icon-btn', 'aria-label': 'Next word', disabled: i === words.length - 1, onclick: () => define(i + 1) }, '›'))),
       h('p', { class: 'vs-line' }, h('b', {}, 'Meaning'), w.g || '(none listed)'),
       h('p', { class: 'vs-line' }, h('b', {}, 'Literally'), w.en || '(not translated)'),
-      shown && shown.toLowerCase() !== (w.en || '').toLowerCase() ? h('p', { class: 'vs-line' }, h('b', {}, version), `“${shown}”`) : null,
+      shown
+        ? (shown.toLowerCase() !== (w.en || '').toLowerCase() ? h('p', { class: 'vs-line' }, h('b', {}, version), `“${shown}”`) : null)
+        : h('p', { class: 'vs-line' }, h('b', {}, version), h('span', { class: 'vs-none' }, '(no separate word)')),
+      h('p', { class: 'vs-line' }, h('b', {}, heb ? 'Hebrew order' : 'Greek order'), order),
       w.gram ? h('p', { class: 'vs-line muted' }, w.gram === 'cond' ? 'conditional particle' : w.gram) : null);
   }
+
 
   async function load() {
     cite.textContent = `${v.ref} ${version}`;
@@ -148,9 +159,16 @@ export async function verseSheet(date = null) {
     try { d = await fetchVerse(v.ref, version); } catch (err) { return fill(text, h('span', { class: 'muted' }, err.message)); }
     if (!words.length) { fill(def, h('p', { class: 'muted small' }, 'No word notes for this verse yet.')); return fill(text, d.text); }
     const { parts } = markWords(d.text, words);
-    fill(text, parts.map(p => p.w
-      ? h('button', { class: p.w.key ? 'kw' : 'sw', 'data-i': p.i, onclick: () => define(p.i) }, p.t)
-      : p.t));
+    // Punctuation stays glued to the word before it, so a comma or period never wraps onto a line by itself.
+    const out = [];
+    parts.forEach((p, k) => {
+      if (!p.w) { out.push(p.t); return; }
+      const btn = h('button', { class: p.w.key ? 'kw' : 'sw', 'data-i': p.i, onclick: () => define(p.i) }, p.t);
+      const nx = parts[k + 1];
+      const m = nx && !nx.w ? nx.t.match(/^[.,;:!?”’)\]]+/) : null;
+      if (m) { nx.t = nx.t.slice(m[0].length); out.push(h('span', { class: 'nw' }, btn, m[0])); } else out.push(btn);
+    });
+    fill(text, out);
     // Nothing is marked until you pick a word; the panel says how to start.
     if (current >= 0) define(current);
     else fill(def, h('p', { class: 'vs-hint' }, `Underlined words have the ${heb ? 'Hebrew' : 'Greek'} behind them. Tap one.`),
