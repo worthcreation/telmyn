@@ -4,6 +4,8 @@ import { h, toast, fill, fitText } from './dom.js';
 import { state, addEvent, addFood, undoFood, removeEvent } from '../state.js';
 import * as db from '../db.js';
 import { FOODS } from '../foods.js';
+import { fluidTotals } from '../schema.js';
+import { paceStatus, overdueStatus, staleStatus } from '../status.js';
 import { nextBlock, blockStatus } from '../program/index.js';
 import { hhmm, daysBetween } from '../clock.js';
 import { runBlock } from './runner.js';
@@ -29,6 +31,16 @@ export function renderToday(root, rerender) {
   const closed = plan.blocks.filter(status);
   const open = plan.blocks.filter(b => !status(b));
   const pumps = events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps').length;
+  // Every quick chip carries its own state: red when behind or overdue, green when met, plain when on track.
+  const { TARGETS } = plan.program.data;
+  const totals = fluidTotals(day, state.fluids);
+  const st = {
+    pumps: overdueStatus(events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps').pop()?.at, 30),
+    fluid: paceStatus('fluids', (totals.water_oz || 0) + (totals.other_drinks_oz || 0), TARGETS.fluids_oz[0]),
+    protein: paceStatus('protein', day.protein_g, TARGETS.protein_g[0]),
+    huel: events.some(e => e.type === 'food' && e.food === 'huel') ? 'met' : null,
+  };
+  const chipClass = s => `chip raised${s ? ` ${s}` : ''}`;
 
   const dayList = h('ol', { class: 'daylist' },
     closed.length ? h('li', { class: 'closed-summary' }, h('span', { class: 'dl-mark' }, '✓'),
@@ -56,7 +68,7 @@ export function renderToday(root, rerender) {
   const weightChip = h('button', { class: 'chip raised weight-chip', onclick: () => weightSheet(rerender) }, 'Weight');
   lastWeight().then(({ value, date }) => {
     const age = date ? daysBetween(date, state.date) : null;
-    weightChip.classList.toggle('warn', age === null || age >= 1);
+    const s2 = staleStatus(age); weightChip.classList.toggle('behind', s2 === 'behind'); weightChip.classList.toggle('met', s2 === 'met');
     weightChip.title = value === null ? 'Not logged yet' : `${value} lb, ${age === 0 ? 'today' : `${age} day${age === 1 ? '' : 's'} ago`}`;
   });
 
@@ -87,10 +99,10 @@ export function renderToday(root, rerender) {
     nextCard,
     h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList),
     h('section', { class: 'quick', 'aria-label': 'Quick add' },
-      h('button', { class: 'chip raised', 'aria-label': `Ankle pumps, ${pumps} today`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`),
-      h('button', { class: 'chip raised', onclick: fluidSheet }, 'Fluid'),
-      h('button', { class: 'chip raised', onclick: proteinSheet }, 'Protein'),
-      FOODS.map(f => h('button', { class: 'chip raised', onclick: async () => {
+      h('button', { class: chipClass(st.pumps), 'aria-label': `Ankle pumps, ${pumps} today`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`),
+      h('button', { class: chipClass(st.fluid), onclick: fluidSheet }, 'Fluid'),
+      h('button', { class: chipClass(st.protein), onclick: proteinSheet }, 'Protein'),
+      FOODS.map(f => h('button', { class: chipClass(f.key === 'huel' ? st.huel : null), onclick: async () => {
         const e = await addFood(f);
         const parts = [f.protein_g ? `${f.protein_g} g protein` : '', f.fluid ? `${f.fluid.oz} oz water` : ''].filter(Boolean).join(', ');
         toast(`${f.label}: ${parts}`, { label: 'Undo', fn: async () => { await undoFood(e); toast(`${f.label} removed`); } });

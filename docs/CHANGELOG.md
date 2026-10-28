@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.2 (2026-10-28)
+Every quick chip and the Grip pill carry their state: red when behind or overdue, green when met, plain when on
+track. Fluids and protein are judged against a pace line through the day (fluids 7 am to 11 pm, protein 7 am to 9 pm)
+with some slack; pumps and grip by time since the last one on workdays; Huel green once had; weight as before.
+One module (status.js) makes these calls, and the reminders use the same ones.
+
 ## 0.12.1 (2026-10-28)
 Weight is a chip in Today's quick row (red when a day or more old), not a full row. Its entry sheet is compact: a big
 number box prefilled with the last reading, half-pound nudges, the last reading's date, Save or the keyboard's Go.

@@ -3,6 +3,7 @@ import { h, fill, toast } from './dom.js';
 import { state, logGripBreak, removeEvent } from '../state.js';
 import { fluidTotals } from '../schema.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
+import { overdueStatus } from '../status.js';
 import { TEST, hhmm } from '../clock.js';
 import { fluidSheet, proteinSheet } from './forms.js';
 import { renderToday } from './today.js';
@@ -24,7 +25,8 @@ function gripPill(day, rerender) {
   const hist = hourlyHistory(day, state.events);
   const np = nextPalms(hist) || 'down';
   const arrow = np === 'up' ? '↑' : '↓';
-  return h('button', { class: 'pill grip', 'aria-label': `Grip break, ${hist.length} today. Tap to log one, palms ${np}.`, onclick: async () => {
+  const over = overdueStatus(state.events.filter(e => e.type === 'block_done' && e.block === 'hourly').pop()?.at, 60);
+  return h('button', { class: `pill grip${over ? ' behind' : ''}`, 'aria-label': `Grip break, ${hist.length} today. Tap to log one, palms ${np}.`, onclick: async () => {
     const { e, n, palms } = await logGripBreak();
     rerender();
     toast(`Grip break ${n}, palms ${palms}`, { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); } });

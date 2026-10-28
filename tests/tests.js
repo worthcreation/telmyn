@@ -106,6 +106,7 @@ test('template choices left in a handoff are not imported as values', () => {
 });
 test('Sunday offers the optional walk', () => eq(planFor('2026-11-01').blocks.some(b => b.id === 'walk'), true));
 test('weekdays have no walk', () => eq(planFor('2026-11-02').blocks.some(b => b.id === 'walk'), false));
+test('status: met at target, blank never crashes', async () => { const { paceStatus, staleStatus } = await import('../js/status.js'); eq([paceStatus('fluids', 100, 100), paceStatus('protein', null, 160) === 'met', staleStatus(0), staleStatus(null), staleStatus(2)], ['met', false, 'met', 'behind', 'behind']); });
 test('no data stays blank', () => eq(fluidTotals(blankDay('2026-10-27'), []), { water_oz: null, other_drinks_oz: null }));
 test('hourly: imported 3 plus 1 in app', () => {
   const { day, sets } = parseHandoff(SAMPLE);

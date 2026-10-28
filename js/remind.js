@@ -7,8 +7,8 @@ import * as db from './db.js';
 import { state } from './state.js';
 import { now, hhmm } from './clock.js';
 import { toast } from './ui/dom.js';
+import { overdueStatus } from './status.js';
 
-const WORK = ['08:00', '17:00'];
 const sent = {};   // tag -> last time we nudged (ms)
 
 export const remindersOn = () => db.getMeta('reminders', false);
@@ -38,14 +38,11 @@ async function notify(tag, title, body) {
 async function check() {
   if (!(await remindersOn()) || Notification.permission !== 'granted') return;
   const t = now(), clock = hhmm(t), ms = t.getTime();
-  const workday = t.getDay() >= 1 && t.getDay() <= 5 && clock >= WORK[0] && clock <= WORK[1];
-  const lastAt = pred => state.events.filter(pred).map(e => new Date(e.at).getTime()).sort((a, b) => b - a)[0] || null;
-  if (workday && state.plan.hourly) {
+  const lastAt = pred => state.events.filter(pred).pop()?.at || null;
+  if (state.plan.hourly) {
     const grip = lastAt(e => e.type === 'block_done' && e.block === 'hourly');
-    const base = grip ?? new Date(`${state.date}T${WORK[0]}:00`).getTime();
-    if (ms - base > 60 * 60000) notify('grip', 'Grip break', grip ? 'It has been an hour since the last one.' : 'First grip break of the day.');
-    const pumps = lastAt(e => e.type === 'habit' && e.habit === 'ankle_pumps');
-    if (ms - (pumps ?? base) > 30 * 60000) notify('pumps', 'Ankle pumps', '20 per foot. It has been over 30 minutes.');
+    if (overdueStatus(grip, 60) === 'behind') notify('grip', 'Grip break', grip ? 'It has been an hour since the last one.' : 'First grip break of the day.');
+    if (overdueStatus(lastAt(e => e.type === 'habit' && e.habit === 'ankle_pumps'), 30) === 'behind') notify('pumps', 'Ankle pumps', '20 per foot. It has been over 30 minutes.');
   }
   if (clock >= '06:00' && (state.day.weight_lb === null || state.day.weight_lb === undefined)) {
     const days = (await db.all('days')).filter(d => d.weight_lb !== null && d.weight_lb !== undefined && d.date < state.date);
