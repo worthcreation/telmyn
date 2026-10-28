@@ -1,5 +1,5 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.12.6';
+const VERSION = '0.12.7';
 const CACHE = `telmyn-${VERSION}`;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/app.css',

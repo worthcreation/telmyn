@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.7 (2026-10-28)
+No text crowds or clips inside a button. Quick chips share the row by their content, so a longer label gets more width,
+and keep 8 px inside each edge; the Start button's name scales with the screen width instead of cutting off. A new
+button sweep checks every button on every screen at 360 and 412 px wide before each release.
+
 ## 0.12.6 (2026-10-28)
 Today makes room for the whole verse: the day list's rows scale with the screen's height, and on phones up to 800 px the
 next card's buttons and ring and the quick chips are a little shorter. The verse no longer cuts off with "…" at any
