@@ -153,7 +153,7 @@ export const BLOCKS = {
 
   hangs: {
     name: 'Dead hangs', summary: 'Warm-up, 3 active hangs of 10-20 sec, cooldown', minutes: 7, video: 'dead_hang',
-    note: 'Bend knees back for a full straight-arm hang. Can replace one hourly block.',
+    note: 'Bend knees back for a full straight-arm hang. Can replace one grip break.',
     steps: [
       ...phase('Warm-up', [
         ...armCircles,

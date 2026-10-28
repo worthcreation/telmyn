@@ -4,6 +4,7 @@
 import { h, fill } from './dom.js';
 import { state } from '../state.js';
 import { getCreator, fetchVideos, fetchDaily, CREATORS } from '../scripture.js';
+import { enterLandscape, exitLandscape, rotateButton } from './media.js';
 
 let apiReady;
 export function loadApi() {
@@ -19,11 +20,11 @@ export function loadApi() {
 const decode = t => { const e = document.createElement('textarea'); e.innerHTML = t; return e.value; };
 
 // daily: a /daily source name; the block then shows that channel's video of the day instead of the verse study video.
-export function studyPlayer(container, { daily = null } = {}) {
+export function studyPlayer(container, { daily = null, landscape = false } = {}) {
   let player = null, video = null, armed = false, ours = false, playing = false, duckTimer = null;
 
   const runner = () => container.closest('.runner');
-  const close = () => { player?.destroy?.(); player = null; armed = false; playing = false; runner()?.classList.remove('video-mode', 'video-fit'); drawBar(); };
+  const close = () => { exitLandscape(); player?.destroy?.(); player = null; armed = false; playing = false; runner()?.classList.remove('video-mode', 'video-fit'); drawBar(); };
 
   function drawBar() {
     if (!video) return fill(container);
@@ -34,6 +35,8 @@ export function studyPlayer(container, { daily = null } = {}) {
   }
 
   async function open() {
+    // Must start inside the tap that opened the video: browsers allow fullscreen only from a tap.
+    if (landscape && runner()) enterLandscape(runner());
     container.className = 'study open';
     runner()?.classList.add('video-mode');
     const slot = h('div', { class: 'study-frame' });
@@ -44,7 +47,7 @@ export function studyPlayer(container, { daily = null } = {}) {
     fill(container,
       h('div', { class: 'study-backdrop', style: video.thumb ? `background-image:url('${video.thumb}')` : '' }),
       slot,
-      h('div', { class: 'study-tools' }, fitBtn, h('button', { class: 'study-close', 'aria-label': 'Close video', onclick: close }, '✕')));
+      h('div', { class: 'study-tools' }, fitBtn, rotateButton(runner(), 'study-fit'), h('button', { class: 'study-close', 'aria-label': 'Close video', onclick: close }, '✕')));
     await loadApi();
     player = new window.YT.Player(slot, {
       videoId: video.id,

@@ -11,6 +11,7 @@ import { hourlyHistory, nextPalms } from '../hourly.js';
 import { studyPlayer } from './study-player.js';
 import { DAILY_VIDEO } from '../config.js';
 import { runVideoBlock } from './video-block.js';
+import { watchButton, exitLandscape } from './media.js';
 
 let wakeLock = null;
 const lockScreen = async () => { try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* optional */ } };
@@ -40,7 +41,8 @@ export function runBlock(block, opts = {}) {
   // Re-lay out when the study video opens or closes (video mode moves the timer into its own corner chip).
   new MutationObserver(() => render()).observe(root, { attributes: true, attributeFilter: ['class'] });
   document.body.append(root);
-  const study = studyPlayer(studyEl);
+  // Long blocks (row, legs up) turn the study video sideways so it can be watched properly.
+  const study = studyPlayer(studyEl, { landscape: (block.minutes || 0) >= 15 });
   const cue = name => { study.duck(); sounds[name](); };
   addEvent('block_start', { block: block.id });
 
@@ -52,7 +54,8 @@ export function runBlock(block, opts = {}) {
 
   // Android back gesture: ask before leaving instead of dropping the block silently.
   history.pushState({ telmynRunner: true }, '');
-  const onPop = () => { if (!root.isConnected) return; history.pushState({ telmynRunner: true }, ''); closeMenu(); };
+  // A video opened over the block pops back to the block's own entry; that is not leaving the block.
+  const onPop = e => { if (!root.isConnected || e.state?.telmynRunner) return; history.pushState({ telmynRunner: true }, ''); closeMenu(); };
   addEventListener('popstate', onPop);
 
   const lastSet = ex => [...state.sets].reverse().find(s => s.exercise === ex);
@@ -166,6 +169,7 @@ export function runBlock(block, opts = {}) {
     study.destroy();
     removeEventListener('popstate', onPop);
     if (history.state?.telmynRunner) history.back();
+    exitLandscape();
     // Already counted at the cooldown: finishing or leaving the cooldown adds nothing more.
     if (!counted) await addEvent(type, { block: block.id, started_at: startedAt, done_at: now().toISOString(), palms: entry.palms || null });
     if (type === 'block_done') burst(innerWidth / 2, innerHeight * 0.45);
@@ -193,9 +197,11 @@ export function runBlock(block, opts = {}) {
   function videoLinks(s) {
     const ex = EXERCISES[s.exercise] || (i === 0 && block.video ? EXERCISES[block.video] : null);
     if (!ex?.video) return null;
+    // Watching a demo pauses any running timer; it stays paused until you resume.
+    const hooks = { onOpen: () => { if (timer && timer.kind !== 'countup') pause(); study.hold(); } };
     return h('div', { class: 'links' },
-      h('a', { href: ex.video, target: '_blank', rel: 'noopener' }, 'Watch'),
-      ex.alt ? h('a', { href: ex.alt.video, target: '_blank', rel: 'noopener' }, ex.alt.label) : null);
+      watchButton('Watch', ex.video, hooks, ex.name),
+      ex.alt ? watchButton(ex.alt.label, ex.alt.video, hooks, `${ex.name}: ${ex.alt.label}`) : null);
   }
 
   function stepper(s) {

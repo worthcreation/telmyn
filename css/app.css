@@ -513,3 +513,36 @@ button.test-banner { border: 0; font: inherit; font-size: 13px; width: 100%; }
 /* Grip break: one button */
 .grip-btn { flex: none; width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--s2); min-height: 48px; font-size: 17px; }
 .grip-btn small { font-weight: 500; opacity: .8; font-size: 14px; }
+
+/* ---------- Watch buttons: one quiet pill everywhere, plays in the app ---------- */
+.links { display: flex; flex-wrap: wrap; gap: var(--s2); justify-content: center; }
+.watch-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border-radius: var(--r-pill);
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink); font-weight: 600; font-size: 14px; }
+.watch-chip .wc-i { font-size: 10px; opacity: .8; }
+.runner.video-mode .watch-chip { background: rgb(255 255 255 / .1); border-color: rgb(255 255 255 / .16); color: #fff; }
+
+/* In-app player and the landscape switch */
+.vplayer { z-index: 40; }
+.vb-rotate { top: calc(var(--safe-top) + 10px); right: 12px; width: 36px; height: 36px; padding: 0; font-size: 18px; }
+.vblock:has(.vb-done) .vb-rotate { right: 104px; }
+.vb-title { position: absolute; left: 60px; right: 60px; top: calc(var(--safe-top) + 16px); margin: 0; text-align: center; color: rgb(255 255 255 / .8);
+  font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; z-index: 2; }
+.study-tools .vb-rotate { position: static; width: auto; height: auto; }
+
+/* Landscape: whole video visible, controls tucked into the corners */
+@media (orientation: landscape) {
+  .vblock iframe { padding: 0; }
+  .runner.video-mode { grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto; padding: 8px 12px; }
+  .runner.video-mode .lanes { display: none; }
+  .runner.video-mode .study { grid-column: 1 / -1; grid-row: 1 / -1; }
+  .runner.video-mode .runner-head { grid-column: 1; grid-row: 1; justify-self: start; align-self: start; }
+  .runner.video-mode .runner-main .step-text { font-size: 20px; }
+  .runner.video-mode .clock { font-size: 32px; }
+  .runner.video-mode .runner-main { grid-column: 1; grid-row: 3; align-self: end; max-width: 420px; margin: 0; }
+  .runner.video-mode .runner-foot { grid-column: 2; grid-row: 3; align-self: end; justify-self: end; width: min(340px, 100%); margin: 0; }
+  .runner.video-mode .study-frame, .runner.video-mode .study iframe { top: 0; left: 0; transform: none; width: 100%; height: 100%; }
+  .runner.video-mode .timer-chip { top: 56px; left: 12px; }
+  .runner.video-mode .study-tools { top: 8px; right: 12px; }
+}
+
+.runner.video-mode .runner-foot .btn.ghost { color: #F3F4F1; background: rgb(255 255 255 / .08); border-color: rgb(255 255 255 / .16); box-shadow: none; }

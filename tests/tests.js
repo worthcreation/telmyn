@@ -143,6 +143,21 @@ if (typeof document !== 'undefined') {
   const site = fs.readFileSync(new URL('../js/site.js', import.meta.url), 'utf8');
   results.push(['real app ships as live, not test', /SITE = 'live'/.test(site)]);
   if (!/SITE = 'live'/.test(site)) failed.push(results[results.length - 1]);
+  // Every Watch video in the library must play in the app (YouTube or Facebook), and nothing opens another site.
+  const { parseVideo } = await import('../js/ui/media.js');
+  const { EXERCISES } = await import('../js/program/v1_1.js');
+  const urls = Object.values(EXERCISES).flatMap(e => [e.video, e.alt?.video]).filter(Boolean);
+  const bad = urls.filter(u => !parseVideo(u));
+  results.push(['every Watch video plays in the app', !bad.length, bad.join(', ')]);
+  if (bad.length) failed.push(results[results.length - 1]);
+  const fv = parseVideo('https://www.youtube.com/watch?v=mLVLLGUbyfU&t=36s');
+  results.push(['forearm video starts at 0:36', fv?.id === 'mLVLLGUbyfU' && fv.start === 36]);
+  if (!(fv?.id === 'mLVLLGUbyfU' && fv.start === 36)) failed.push(results[results.length - 1]);
+  const { readdirSync } = await import('fs');
+  const jsFiles = ['js', 'js/ui', 'js/program'].flatMap(d => readdirSync(new URL(`../${d}/`, import.meta.url)).filter(f => f.endsWith('.js')).map(f => `${d}/${f}`));
+  const ext = jsFiles.filter(f => /target:\s*'_blank'/.test(fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')));
+  results.push(['no links open another site', !ext.length, ext.join(', ')]);
+  if (ext.length) failed.push(results[results.length - 1]);
   for (const [n, ok, m] of results) console.log(`${ok ? 'PASS' : 'FAIL'} ${n}${m ? ': ' + m : ''}`);
   console.log(failed.length ? `${failed.length} failed` : `All ${results.length} passed`);
   if (failed.length) process.exitCode = 1;

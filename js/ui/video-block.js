@@ -7,6 +7,7 @@ import { state, addEvent } from '../state.js';
 import { now } from '../clock.js';
 import { fetchDaily } from '../scripture.js';
 import { loadApi } from './study-player.js';
+import { rotateButton, exitLandscape } from './media.js';
 
 export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
   let video;
@@ -20,12 +21,13 @@ export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
     slot,
     h('button', { class: 'vb-btn vb-x', 'aria-label': 'Leave', onclick: () => leaveMenu() }, '✕'),
     h('button', { class: 'vb-btn vb-done', onclick: () => finish(true) }, '✓ Done'));
+  root.append(rotateButton(root));
   document.body.append(root);
   try { await navigator.wakeLock?.request('screen'); } catch { /* optional */ }
   addEvent('block_start', { block: block.id, video: video.id });
 
   history.pushState({ telmynRunner: true }, '');
-  const onPop = () => { if (!root.isConnected) return; history.pushState({ telmynRunner: true }, ''); leaveMenu(); };
+  const onPop = e => { if (!root.isConnected || e.state?.telmynRunner) return; history.pushState({ telmynRunner: true }, ''); leaveMenu(); };
   addEventListener('popstate', onPop);
 
   // No YouTube within 8 seconds (offline): drop the video and run the steps instead.
@@ -61,6 +63,7 @@ export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
     done = true;
     removeEventListener('popstate', onPop);
     if (history.state?.telmynRunner) history.back();
+    exitLandscape();
     player?.destroy?.();
     await addEvent(ok ? 'block_done' : type, { block: block.id, started_at: startedAt, done_at: now().toISOString(), video: video.id, palms: null });
     if (ok) burst(innerWidth / 2, innerHeight * 0.45);
