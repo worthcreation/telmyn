@@ -10,7 +10,7 @@ export async function journalSheet() {
   const { verseSheet } = await import('./verse.js');
   const days = (await db.all('days')).filter(d => d.verse_applied_notes).sort((a, b) => b.date.localeCompare(a.date));
   const body = days.length
-    ? h('ol', { class: 'journal' }, days.map(d => h('li', {}, h('button', { class: 'j-entry', onclick: () => verseSheet(d.date) },
+    ? h('ol', { class: 'journal' }, days.map(d => h('li', {}, h('button', { class: 'j-entry card spirit', onclick: () => verseSheet(d.date) },
         h('p', { class: 'j-head' }, h('span', { class: 'j-ref' }, d.verse_ref || verseFor(d.date).ref), h('span', { class: 'j-date' }, pretty(d.date))),
         h('p', { class: 'j-note' }, d.verse_applied_notes),
         h('span', { class: 'j-open' }, 'Open that day ›')))))

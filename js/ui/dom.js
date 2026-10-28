@@ -92,6 +92,27 @@ export function noteField(label, value, { placeholder = '', onSave, readOnly = f
   return el;
 }
 
+// The one way text is sized to fit a box. Steps the size down from max to min (defaults: the verse tokens), counting
+// the box's padding, gaps and other children; if it still won't fit and clamp is on, ends the text with … .
+export function fitText(box, text, { max, min, clamp = false } = {}) {
+  if (!box.clientHeight) return;
+  const root = getComputedStyle(document.documentElement);
+  max ??= parseFloat(root.getPropertyValue('--fs-verse-max')); min ??= parseFloat(root.getPropertyValue('--fs-verse-min'));
+  const cs = getComputedStyle(box);
+  const others = () => [...box.children].filter(c => c !== text).reduce((a, c) => a + c.offsetHeight, 0)
+    + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + (parseFloat(cs.rowGap) || 0) * (box.children.length - 1);
+  text.style.webkitLineClamp = ''; text.classList.remove('clamped');
+  let size = max;
+  text.style.fontSize = `${size}px`;
+  const over = () => text.offsetHeight + others() > box.clientHeight + 1;
+  while (over() && size > min) { size -= 1; text.style.fontSize = `${size}px`; }
+  if (clamp && over()) {
+    const lh = parseFloat(getComputedStyle(text).lineHeight) || size * 1.5;
+    text.style.webkitLineClamp = String(Math.max(1, Math.floor((box.clientHeight - others()) / lh)));
+    text.classList.add('clamped');
+  }
+}
+
 export function toast(msg, action = null) {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const hide = () => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); };

@@ -1,6 +1,6 @@
 // Today tab: date and verse, the next block with the day ring, the rest of the day, verse text in spare space,
 // hourly palms, and quick adds. Status pills and tabs live in the shell.
-import { h, toast, fill } from './dom.js';
+import { h, toast, fill, fitText } from './dom.js';
 import { state, addEvent, addFood, undoFood, removeEvent } from '../state.js';
 import { FOODS } from '../foods.js';
 import { nextBlock, blockStatus } from '../program/index.js';
@@ -21,24 +21,6 @@ function ring(done, total) {
     `<circle cx="32" cy="32" r="${r}" class="ring-fg" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - p)}"/></svg>`;
   return h('div', { class: 'ring', role: 'img', 'aria-label': `${done} of ${total} blocks done` },
     h('div', { html: svg }), h('span', { class: 'ring-n' }, h('b', {}, done), `/${total}`));
-}
-
-// The verse is always on Today, right under the date, and takes the spare space. The type shrinks to fit (28 down
-// to 15 px); a very long passage on a small screen ends with … and tap opens the whole thing. It is never hidden.
-// Refit whenever the card changes size, so it can't get stuck hidden by an early measurement.
-const LINE = 1.45;
-function fitVerse(el) {
-  const t = el.querySelector('.vp-text');
-  if (!t || !el.clientHeight) return;
-  t.style.webkitLineClamp = ''; t.classList.remove('clamped');
-  let size = 28;
-  t.style.fontSize = `${size}px`;
-  while (el.scrollHeight > el.clientHeight + 1 && size > 15) { size -= 1; t.style.fontSize = `${size}px`; }
-  if (el.scrollHeight > el.clientHeight + 1) {
-    const room = el.clientHeight - (el.scrollHeight - t.scrollHeight);
-    t.style.webkitLineClamp = String(Math.max(1, Math.floor(room / (size * LINE))));
-    t.classList.add('clamped');
-  }
 }
 
 export function renderToday(root, rerender) {
@@ -62,11 +44,12 @@ export function renderToday(root, rerender) {
   const verseRef = h('span', { class: 'vp-ref' }, verse.ref);
   const versePanel = h('button', { class: 'verse-card', onclick: verseSheet, 'aria-label': `Today's verse, ${verse.ref}` },
     h('span', { class: 'vp-theme' }, verse.theme), verseText, verseRef);
-  new ResizeObserver(() => fitVerse(versePanel)).observe(versePanel);
+  const fit = () => fitText(versePanel, verseText, { clamp: true });
+  new ResizeObserver(fit).observe(versePanel);
   getVersion().then(v => fetchVerse(verse.ref, v)).then(d => {
     verseText.textContent = d.text; verseText.classList.remove('loading');
     verseRef.textContent = `${verse.ref} ${d.version}`;
-    requestAnimationFrame(() => fitVerse(versePanel));
+    requestAnimationFrame(fit);
   }).catch(() => { verseText.textContent = 'Tap to read today’s verse.'; verseText.classList.remove('loading'); verseText.classList.add('offline'); });
 
   // Grip break (the hourly block): one button. Logs the next palms in the alternation; Undo if it was wrong.
@@ -106,10 +89,10 @@ export function renderToday(root, rerender) {
     h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList),
     hourly,
     h('section', { class: 'quick', 'aria-label': 'Quick add' },
-      h('button', { class: 'chip-btn', 'aria-label': `Ankle pumps, ${pumps} today`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`),
-      h('button', { class: 'chip-btn', onclick: fluidSheet }, '+ Fluid'),
-      h('button', { class: 'chip-btn', onclick: proteinSheet }, '+ Protein'),
-      FOODS.map(f => h('button', { class: 'chip-btn food', onclick: async () => {
+      h('button', { class: 'chip raised', 'aria-label': `Ankle pumps, ${pumps} today`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`),
+      h('button', { class: 'chip raised', onclick: fluidSheet }, '+ Fluid'),
+      h('button', { class: 'chip raised', onclick: proteinSheet }, '+ Protein'),
+      FOODS.map(f => h('button', { class: 'chip raised', onclick: async () => {
         const e = await addFood(f);
         const parts = [f.protein_g ? `${f.protein_g} g protein` : '', f.fluid ? `${f.fluid.oz} oz water` : ''].filter(Boolean).join(', ');
         toast(`${f.label}: ${parts}`, { label: 'Undo', fn: async () => { await undoFood(e); toast(`${f.label} removed`); } });

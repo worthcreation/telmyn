@@ -61,7 +61,7 @@ export async function renderProgress(root) {
   const fluidOn = d => { const t = fluidTotals(dayRec[d] || {}, fluids.filter(f => f.date === d)); return t.water_oz === null && t.other_drinks_oz === null ? null : (t.water_oz || 0) + (t.other_drinks_oz || 0); };
   const fluidDays = past.filter(d => (fluidOn(d) || 0) >= TARGETS.fluids_oz[0]).length;
   const avg = vals => { const v = vals.filter(x => x !== null && x !== undefined); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null; };
-  const avgTile = (label, v, unit, n) => h('div', { class: 'avg-tile' }, h('span', { class: 'avg-l' }, label), h('b', {}, v === null ? '–' : `${Math.round(v)}`), h('small', {}, v === null ? 'not logged' : `${unit} avg, ${n} day${n === 1 ? '' : 's'}`));
+  const avgTile = (label, v, unit, n) => h('div', { class: 'tile' }, h('span', { class: 'tile-l' }, label), h('b', {}, v === null ? '–' : `${Math.round(v)}`), h('small', {}, v === null ? 'not logged' : `${unit} avg, ${n} day${n === 1 ? '' : 's'}`));
   const proteinVals = past.map(d => dayRec[d]?.protein_g ?? null), fluidVals = past.map(fluidOn), weightVals = past.map(d => dayRec[d]?.weight_lb ?? null);
   const nOf = v => v.filter(x => x !== null && x !== undefined).length;
 

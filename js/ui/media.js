@@ -53,7 +53,7 @@ async function savePick(key, v) {
 export const watchButton = (label, url, hooks = {}, title = label, pick = null) => {
   if (!parseVideo(url)) return null;
   // Look up the pick at tap time, so a replacement chosen a moment ago is used right away.
-  return h('button', { class: 'watch-chip', onclick: () => playVideo(pick ? videoFor(pick.key, url) : url, title, { ...hooks, pick }) },
+  return h('button', { class: 'chip pill', onclick: () => playVideo(pick ? videoFor(pick.key, url) : url, title, { ...hooks, pick }) },
     h('span', { class: 'wc-i', 'aria-hidden': 'true' }, '▶'), label);
 };
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.0 (2026-10-28)
+One design system for the whole app. tokens.css now holds everything the look is made of: one type scale (12 sizes
+with names, from micro to clock), line heights, control heights, glass tokens for over-video controls and the layer
+order; app.css is rewritten from scratch as one rule per component (455 lines, down from 891) with no layered
+overrides, two size conditions (short screens, landscape) instead of 21, and only token names for sizes and colors.
+One shared fitText routine in dom.js sizes the Today verse and the study verse. Shared pieces got one name each
+(chip, tile, card, lbl). Four guard tests fail any release that uses a size outside the scale, a color outside the
+tokens, defines a selector twice, or fits text anywhere but the shared routine. No visual redesign: every screen was
+compared before and after at three phone sizes.
+
 ## 0.10.11 (2026-10-28)
 Verse study: the word panel's content is centered vertically; the verse refits after the serif font loads, so the
 citation is never clipped.

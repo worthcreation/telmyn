@@ -202,6 +202,33 @@ if (typeof document !== 'undefined') {
       if (!ok) failed.push(results[results.length - 1]);
     }
   }
+  // Design-system guards: every size and color comes from tokens.css, every selector is defined once, and text is
+  // only ever fitted by the one routine in dom.js.
+  {
+    const css = fs.readFileSync(new URL('../css/app.css', import.meta.url), 'utf8');
+    const rawSize = [...css.matchAll(/font(?:-size)?\s*:\s*([^;}]*)/g)].map(m => m[1]).filter(v => /\d+px/.test(v) && !/var\(--fs-/.test(v));
+    results.push(['no text size outside the type scale', !rawSize.length, rawSize.slice(0, 3).join(' | ')]);
+    if (rawSize.length) failed.push(results[results.length - 1]);
+    const rawColor = [...css.matchAll(/#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)/g)].map(m => m[0]).filter(c => !/^#000$|^rgb\((0 0 0|255 255 255|16 18 21)\b/.test(c));
+    results.push(['no color outside the tokens', !rawColor.length, rawColor.slice(0, 3).join(' | ')]);
+    if (rawColor.length) failed.push(results[results.length - 1]);
+    // Selectors defined twice in the same scope (top level, or inside the same @media block).
+    const scopes = [];
+    let depth = 0, cur = [], mediaKey = 'top';
+    for (const line of css.split('\n')) {
+      const t = line.trim();
+      if (t.startsWith('@media')) { mediaKey = t.replace(/\s*\{.*$/, ''); cur = []; scopes.push([mediaKey, cur]); depth = 1; continue; }
+      if (depth === 1 && t === '}') { depth = 0; mediaKey = 'top'; continue; }
+      const m = t.match(/^([^@{}/][^{]*)\{/);
+      if (m) { const target = depth === 1 ? cur : (scopes.find(x => x[0] === 'top') || scopes[scopes.push(['top', []]) - 1])[1]; target.push(m[1].trim().replace(/\s+/g, ' ')); }
+    }
+    const dupes = scopes.flatMap(([k, list]) => list.filter((x, i) => list.indexOf(x) !== i).map(x => `${x} (${k})`));
+    results.push(['every selector defined once per scope', !dupes.length, [...new Set(dupes)].slice(0, 4).join(' | ')]);
+    if (dupes.length) failed.push(results[results.length - 1]);
+    const sizers = jsFiles.filter(f => !f.endsWith('dom.js') && /style\.fontSize/.test(fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')));
+    results.push(['text is fitted only by dom.js fitText', !sizers.length, sizers.join(', ')]);
+    if (sizers.length) failed.push(results[results.length - 1]);
+  }
   for (const [n, ok, m] of results) console.log(`${ok ? 'PASS' : 'FAIL'} ${n}${m ? ': ' + m : ''}`);
   console.log(failed.length ? `${failed.length} failed` : `All ${results.length} passed`);
   if (failed.length) process.exitCode = 1;

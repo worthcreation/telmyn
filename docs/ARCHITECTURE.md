@@ -9,7 +9,10 @@
    - Daily fields: `js/schema.js` (form, import and export all read it)
    - Program content: `js/program/vN.js`, chosen by date in `js/program/index.js`
    - Version: `js/version.js`
-   - Look: `css/tokens.css`
+   - Look: `css/tokens.css` holds every color, text size, line height, space, radius, control height and layer order.
+     `css/app.css` is one rule per component in reading order and uses only token names; nothing is appended as an
+     override. Shared components: btn, chip, tile, card, lbl, note-field, layer. Text that must fit a box is sized
+     only by `fitText` in `js/ui/dom.js`. tests/tests.js fails a release that breaks any of this.
 4. Record facts, derive everything else. Totals, statuses, handoff text and XP are computed from events, sets and fluids.
 5. Screens fit one phone screen: no page scrolling and no visible scrollbars. Spare space gets useful content, not padding.
 6. Blank means not recorded. 0 means recorded as zero. Non-numbers never become numbers.

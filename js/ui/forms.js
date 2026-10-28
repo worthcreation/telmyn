@@ -103,7 +103,7 @@ export async function logSheet(date = state.date, group = null) {
     const fluids = (t.water_oz ?? null) === null && (t.other_drinks_oz ?? null) === null ? null : Math.round(((t.water_oz || 0) + (t.other_drinks_oz || 0)) * 10) / 10;
     const rowMin = ctx.sets.filter(x => x.exercise === 'row').reduce((a, x) => a + (x.min || 0), 0) || ctx.rec.row_min || null;
     const hourly = plan.hourly ? hourlyHistory(ctx.rec, ctx.events).length : null;
-    const tile = (label, v, unit) => h('div', { class: 'ds-tile' }, h('span', { class: 'ds-tl' }, label), h('b', {}, v === null || v === undefined ? '–' : `${v}`), unit ? h('small', {}, ` ${unit}`) : null);
+    const tile = (label, v, unit) => h('div', { class: 'tile' }, h('span', { class: 'tile-l' }, label), h('b', {}, v === null || v === undefined ? '–' : `${v}`), unit ? h('small', {}, ` ${unit}`) : null);
     return [
       h('ol', { class: 'ds-list', 'aria-label': 'Blocks' }, rows),
       h('div', { class: 'ds-tiles' }, tile('Fluids', fluids, 'oz'), tile('Protein', ctx.rec.protein_g, 'g'),

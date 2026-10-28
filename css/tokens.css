@@ -1,30 +1,67 @@
-/* Design tokens. Change the look here, nowhere else. */
+/* Design tokens: the one place the look is decided. Colors, type, spacing, radii, control sizes, glass, layers.
+   app.css uses only these names. A new size or color starts here, never in a component rule. */
 :root {
   color-scheme: light dark;
-  --paper: #EEF0EE;      /* neutral light */
+
+  /* Color. Graphite base; blue for the main action only; gold for the verse and Spirit; green for done. */
+  --paper: #EEF0EE;
   --surface: #FFFFFF;
   --ink: #1B1F24;
   --ink-2: #5A626B;
   --line: #D6DAD6;
-  --lane: #2B57C9;       /* track blue: the main action only */
+  --lane: #2B57C9;
   --lane-ink: #FFFFFF;
-  --spirit: #A97A1F;     /* verse and Spirit, old gold */
+  --spirit: #A97A1F;
   --ok: #2F7D4F;
   --warn: #B4472F;
+  /* Over video: frosted dark glass, always light text. */
+  --glass: rgb(16 18 21 / .5);
+  --glass-strong: rgb(16 18 21 / .85);
+  --glass-line: rgb(255 255 255 / .14);
+  --glass-ink: #F3F4F1;
+  --glass-ink-2: rgb(243 244 241 / .75);
+  --blur: blur(16px) saturate(1.1);
 
+  /* Type: three families, one scale. Every text element uses exactly one of these sizes. */
   --font-display: 'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', sans-serif;
   --font-body: 'Barlow', -apple-system, 'Segoe UI', sans-serif;
   --font-verse: 'Source Serif 4', Georgia, serif;
+  --font-greek: 'SBL Greek', 'Noto Serif', var(--font-verse);
+  --font-hebrew: 'SBL Hebrew', 'Noto Serif Hebrew', 'Times New Roman', serif;
+  --fs-micro: 11px;     /* badges, tiny captions under numbers */
+  --fs-caption: 12px;   /* labels, dates, secondary notes */
+  --fs-small: 14px;     /* secondary text, chips */
+  --fs-body: 16px;      /* reading text */
+  --fs-lead: 18px;      /* emphasized body, big buttons */
+  --fs-title: 22px;     /* section and runner titles */
+  --fs-heading: 26px;   /* layer titles */
+  --fs-display: 30px;   /* day type, big names */
+  --fs-hero: 40px;      /* the next block's name, the timer in video mode */
+  --fs-clock: 96px;     /* the timer */
+  --fs-verse-min: 18px; /* verse text: fitted between these by the one fit routine */
+  --fs-verse-max: 30px;
+  --fs-original: 28px;  /* a Greek or Hebrew word */
+  --lh-tight: 1.1;
+  --lh-body: 1.4;
+  --lh-verse: 1.5;
 
+  /* Space and shape. */
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 36px;
   --r-btn: 12px; --r-card: 20px; --r-pill: 999px;
+  --h-ctrl: 48px;       /* buttons */
+  --h-tap: 44px;        /* the smallest comfortable tap target */
+  --h-ctrl-sm: 36px;    /* chips in a row */
+  --max-w: 560px;
+
+  /* Layers, lowest to highest. */
+  --z-layer: 20; --z-runner: 30; --z-player: 40; --z-fx: 45; --z-toast: 50; --z-update: 60;
+
   --safe-top: env(safe-area-inset-top, 0px);
   /* Android standalone can draw behind the system buttons without reporting their height; main.js sets --nav-fallback there. */
   --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--nav-fallback, 0px));
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    /* graphite base so the few accents stand out: blue = main action, gold = verse/Spirit, green = done */
     --paper: #1B1D20; --surface: #25282C; --ink: #EDEEEA; --ink-2: #9AA1A9; --line: #34383E;
     --lane: #6E93F0; --lane-ink: #0F1520; --spirit: #E1B65A; --ok: #6CC08B; --warn: #E3846A;
   }

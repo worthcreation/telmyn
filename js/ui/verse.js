@@ -4,7 +4,7 @@
 // and where it was applied today.
 // Rules carried over: verse text never italic; original-language notes show word, transliteration and meaning only.
 // Everything shows inside the app; nothing opens another site.
-import { h, fill, layer, noteField } from './dom.js';
+import { h, fill, layer, noteField, fitText } from './dom.js';
 import * as db from '../db.js';
 import { verseFor } from '../verses.js';
 import { state, setField } from '../state.js';
@@ -101,7 +101,7 @@ export function markWords(text, words) {
 // Kept for the test from 0.10.1.
 export const markKeyWords = markWords;
 
-const screen = (title, body) => layer(title, body, { cls: 'study' });
+const screen = (title, body) => layer(title, body, { cls: 'verse-study' });
 
 // Today's verse to study and apply, or (from the journal) a past day's verse with what was written, read-only.
 export async function verseSheet(date = null) {
@@ -118,7 +118,7 @@ export async function verseSheet(date = null) {
 
   const text = h('p', { class: 'vs-text' }, 'Loading…');
   const cite = h('p', { class: 'vs-cite' }, `${v.ref} ${version}`);
-  const def = h('div', { class: 'vs-def' });
+  const def = h('div', { class: 'vs-def card' });
   const select = h('select', { class: 'vs-version', 'aria-label': 'Bible version', onchange: async e => { version = e.target.value; await setVersion(version); load(); } });
 
   // One original word at a time, right under the verse. ‹ › walk every word in order.
@@ -220,7 +220,7 @@ export async function verseSheet(date = null) {
     const more = () => {
       const list = h('div', { class: 'vs-vlist' });
       let last = null;
-      for (const x of groups) { if (x.group !== last) { list.append(h('p', { class: 'vs-label' }, x.group)); last = x.group; } list.append(card(x)); }
+      for (const x of groups) { if (x.group !== last) { list.append(h('p', { class: 'lbl' }, x.group)); last = x.group; } list.append(card(x)); }
       screen('Videos', list);
     };
     // Lead video: no picture, just what it covers, its title and who made it, with More on the same card.
@@ -228,7 +228,7 @@ export async function verseSheet(date = null) {
       h('span', { class: 'vs-lead-i', 'aria-hidden': 'true' }, '▶'),
       h('span', { class: 'vs-lead-t' }, h('small', {}, `${first.group} · ${decode(first.channel || 'BibleProject')}`), h('b', {}, decode(first.title))));
     fill(watch, h('div', { class: 'vs-leadrow' }, lead,
-      rest.length ? h('button', { class: 'vs-morelink', onclick: more }, `More (${rest.length}) ›`) : null));
+      rest.length ? h('button', { class: 'chip pill', onclick: more }, `More (${rest.length}) ›`) : null));
   });
 
   listVersions().then(list => {
@@ -245,26 +245,16 @@ export async function verseSheet(date = null) {
   const body = h('div', { class: 'vs' },
     h('div', { class: 'vs-top' },
       h('span', { class: 'vs-theme' }, past ? `${v.theme} · ${prettyDay(date)}` : v.theme),
-      h('span', { class: 'vs-top-r' }, h('button', { class: 'vs-chip', onclick: chapter }, `${r.book} ${r.ch} ›`), select)),
-    h('blockquote', { class: 'vs-verse' }, text, cite),
+      h('span', { class: 'vs-top-r' }, h('button', { class: 'chip pill', onclick: chapter }, `${r.book} ${r.ch} ›`), select)),
+    h('blockquote', { class: 'vs-verse card spirit' }, text, cite),
     def,
     watch,
     h('div', { class: 'vs-apply' }, note, past ? null : h('button', { class: 'btn ghost', onclick: journalSheet }, 'Journal')));
   screen(v.ref, body);
   // The verse keeps a large, readable size; it only shrinks (down to 17 px) if a long passage would not fit.
-  // The verse takes whatever room is left: type starts at 30 px and steps down (to 18) until nothing scrolls.
+  // The verse takes whatever room is left; one shared routine sizes it (tokens set the range).
   const scroller = body.closest('.layer-body');
-  const fit = () => {
-    if (!scroller?.clientHeight) return;
-    let size = 30;
-    text.style.fontSize = `${size}px`;
-    const box = body.querySelector('.vs-verse');
-    const cs = getComputedStyle(box);
-    const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + parseFloat(cs.rowGap || 0);
-    // Room the verse needs: its text, the citation and the box's padding, measured directly.
-    const over = () => scroller.scrollHeight > scroller.clientHeight + 1 || text.offsetHeight + cite.offsetHeight + pad > box.clientHeight;
-    while (over() && size > 18) { size -= 1; text.style.fontSize = `${size}px`; }
-  };
+  const fit = () => fitText(body.querySelector('.vs-verse'), text);
   new ResizeObserver(fit).observe(scroller);
   // Refit once the serif font has loaded: it sets taller than the fallback, which clipped the citation.
   document.fonts?.ready.then(() => requestAnimationFrame(fit));
