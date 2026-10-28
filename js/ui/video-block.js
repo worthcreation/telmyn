@@ -19,7 +19,7 @@ export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
   const slot = h('div', { class: 'vb-frame' });
   const root = h('div', { class: 'vblock', role: 'dialog', 'aria-label': block.name },
     slot,
-    h('button', { class: 'vb-btn vb-x', 'aria-label': 'Leave', onclick: () => leaveMenu() }, '✕'),
+    h('button', { class: 'vb-btn vb-x', 'aria-label': 'Leave', onclick: () => finish(false, null) }, '✕'),
     h('button', { class: 'vb-btn vb-done', onclick: () => finish(true) }, '✓ Done'));
   root.append(rotateButton(root));
   document.body.append(root);
@@ -27,7 +27,7 @@ export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
   addEvent('block_start', { block: block.id, video: video.id });
 
   history.pushState({ ...(history.state || {}), telmynRunner: true }, '');
-  const onPop = e => { if (!root.isConnected || e.state?.telmynRunner) return; history.pushState({ telmynRunner: true }, ''); leaveMenu(); };
+  const onPop = e => { if (!root.isConnected || e.state?.telmynRunner) return; finish(false, null); };
   addEventListener('popstate', onPop);
 
   // No YouTube within 8 seconds (offline): drop the video and run the steps instead.
@@ -50,16 +50,6 @@ export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
     },
   });
 
-  function leaveMenu() {
-    if (root.querySelector('.runner-menu')) return;
-    const menu = h('div', { class: 'runner-menu' },
-      h('p', {}, `Leave ${block.name}?`),
-      h('button', { class: 'btn', onclick: () => finish(true) }, 'Mark done'),
-      h('button', { class: 'btn ghost', onclick: () => finish(false, 'block_partial') }, 'Mark partial'),
-      h('button', { class: 'btn ghost', onclick: () => menu.remove() }, 'Keep watching'));
-    root.append(menu);
-  }
-
   async function finish(ok, type = 'block_done') {
     if (done) return;
     done = true;
@@ -67,7 +57,7 @@ export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
     if (history.state?.telmynRunner) history.back();
     exitLandscape();
     player?.destroy?.();
-    await addEvent(ok ? 'block_done' : type, { block: block.id, started_at: startedAt, done_at: now().toISOString(), video: video.id, palms: null });
+    if (ok || type) await addEvent(ok ? 'block_done' : type, { block: block.id, started_at: startedAt, done_at: now().toISOString(), video: video.id, palms: null });
     if (ok) burst(innerWidth / 2, innerHeight * 0.45);
     root.classList.add('closing');
     setTimeout(() => { root.remove(); onExit?.(); }, 200);

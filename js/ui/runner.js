@@ -2,7 +2,8 @@
 // Flow: tap Start once and every timed step chains into the next. Each timed step gets a short
 // transition countdown first (0, 5 or 10 sec), ticks at 3-2-1, a held tone as it starts, and a
 // double beep when it ends. Rests run and advance by themselves. Steps counted in reps wait for Done.
-import { h, chime, sounds, unlockAudio, fill } from './dom.js';
+import { h, chime, sounds, unlockAudio, fill, toast } from './dom.js';
+import * as db from '../db.js';
 import { burst } from './fx.js';
 import { state, addEvent, addSet, setField } from '../state.js';
 import { now, fmtSec } from '../clock.js';
@@ -31,6 +32,7 @@ export function runBlock(block, opts = {}) {
   let paused = false;          // when paused, nothing starts by itself
   let entry = {};              // current set input
   const startedAt = now().toISOString();
+  const resumeKey = `resume:${block.id}:${state.date}`;
   const root = h('div', { class: 'runner', role: 'dialog', 'aria-label': block.name });
   const headEl = h('header', { class: 'runner-head' }), lanesEl = h('div', { class: 'lanes', 'aria-hidden': 'true' });
   const studyEl = h('section', { class: 'study' }), mainEl = h('main', { class: 'runner-main' }), footEl = h('footer', { class: 'runner-foot' });
@@ -55,7 +57,7 @@ export function runBlock(block, opts = {}) {
   // Android back gesture: ask before leaving instead of dropping the block silently.
   history.pushState({ ...(history.state || {}), telmynRunner: true }, '');
   // A video opened over the block pops back to the block's own entry; that is not leaving the block.
-  const onPop = e => { if (!root.isConnected || e.state?.telmynRunner) return; history.pushState({ telmynRunner: true }, ''); closeMenu(); };
+  const onPop = e => { if (!root.isConnected || e.state?.telmynRunner) return; leave(); };
   addEventListener('popstate', onPop);
 
   const lastSet = ex => [...state.sets].reverse().find(s => s.exercise === ex);
@@ -171,7 +173,8 @@ export function runBlock(block, opts = {}) {
     if (history.state?.telmynRunner) history.back();
     exitLandscape();
     // Already counted at the cooldown: finishing or leaving the cooldown adds nothing more.
-    if (!counted) await addEvent(type, { block: block.id, started_at: startedAt, done_at: now().toISOString(), palms: entry.palms || null });
+    if (type || counted) await db.setMeta(resumeKey, null);
+    if (!counted && type) await addEvent(type, { block: block.id, started_at: startedAt, done_at: now().toISOString(), palms: entry.palms || null });
     if (type === 'block_done') burst(innerWidth / 2, innerHeight * 0.45);
     root.classList.add('closing');
     setTimeout(() => { root.remove(); onExit?.(); }, 200);
@@ -179,21 +182,14 @@ export function runBlock(block, opts = {}) {
 
   function back() { entry = { palms: entry.palms }; if (i > 0) enter(i - 1, false); }
 
-  function closeMenu() {
-    if (root.querySelector('.runner-menu')) return;
-    const menu = counted
-      ? h('div', { class: 'runner-menu' },
-        h('p', {}, 'Block is logged as done. Leave the cooldown?'),
-        h('button', { class: 'btn', onclick: () => finish('block_done') }, 'Leave'),
-        h('button', { class: 'btn ghost', onclick: () => menu.remove() }, 'Keep going'))
-      : h('div', { class: 'runner-menu' },
-      h('p', {}, 'Leave this block?'),
-      h('button', { class: 'btn', onclick: () => finish('block_partial') }, 'Mark partial'),
-      h('button', { class: 'btn ghost', onclick: () => finish('block_skip') }, 'Mark skipped'),
-      h('button', { class: 'btn ghost', onclick: () => menu.remove() }, 'Keep going'));
-    root.append(menu);
+  // ✕ and the back gesture mean the same thing everywhere in the app: close this, record nothing.
+  // Leaving mid-block remembers the step, so the block resumes there; a block already counted at its cooldown
+  // simply closes (it is done). Skip lives on Today; Done comes from finishing.
+  async function leave() {
+    if (counted) return finish('block_done');
+    if (i > 0) await db.setMeta(resumeKey, { i, at: now().toISOString() });
+    finish(null);
   }
-
   function videoLinks(s) {
     const exKey = EXERCISES[s.exercise] ? s.exercise : (i === 0 && block.video ? block.video : null);
     const ex = exKey ? EXERCISES[exKey] : null;
@@ -268,7 +264,7 @@ export function runBlock(block, opts = {}) {
       : h('button', { class: 'btn ghost', onclick: back, disabled: i === 0 }, 'Back');
 
     fill(headEl,
-      h('button', { class: 'icon-btn', 'aria-label': 'Leave block', onclick: closeMenu }, '✕'),
+      h('button', { class: 'icon-btn', 'aria-label': 'Leave block', onclick: leave }, '✕'),
       h('span', { class: 'runner-title' }, block.name),
       h('span', { class: 'runner-count' }, `${i + 1} of ${steps.length}`));
     fill(mainEl,
@@ -285,5 +281,9 @@ export function runBlock(block, opts = {}) {
     if (running) study.play(); else study.hold();
   }
 
-  enter(0, true);
+  // Pick up where this block was left earlier today.
+  db.getMeta(resumeKey).then(r => {
+    if (r && r.i > 0 && r.i < steps.length) { enter(r.i, false); toast(`Resumed at step ${r.i + 1} of ${steps.length}`); }
+    else enter(0, true);
+  });
 }

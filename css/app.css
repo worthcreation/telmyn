@@ -314,8 +314,6 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .round { width: 64px; height: 64px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); font-size: var(--fs-display); }
 .runner-foot { display: grid; grid-template-columns: 1fr 2fr; gap: var(--s2); max-width: var(--max-w); width: 100%; margin: 0 auto; }
 .pulse { animation: pulse 1s ease-in-out 3; }
-.runner-menu { position: absolute; left: var(--s4); right: var(--s4); top: 30%; display: grid; gap: var(--s2); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: var(--s4); box-shadow: 0 12px 40px rgb(0 0 0 / .25); }
-.runner-menu p { margin-bottom: var(--s2); font-weight: 600; }
 .study:empty { display: none; }
 .study { margin: 0 0 var(--s2); position: relative; }
 .study-bar { width: 100%; display: flex; align-items: center; gap: var(--s3); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--spirit); border-radius: var(--r-btn); padding: var(--s2) var(--s3); color: var(--ink); text-align: left; }
@@ -373,7 +371,6 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .vb-rotate { right: 12px; width: var(--h-ctrl-sm); padding: 0; font-size: var(--fs-lead); }
 .vblock:has(.vb-done) .vb-rotate { right: 104px; }
 .vb-title { position: absolute; left: 60px; right: 60px; top: calc(var(--safe-top) + 16px); text-align: center; color: var(--glass-ink-2); font-size: var(--fs-small); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; z-index: 2; }
-.vblock .runner-menu { z-index: 3; }
 .vb-error { position: absolute; left: var(--s5); right: var(--s5); top: 30%; z-index: 3; display: grid; gap: 6px; text-align: center; color: var(--glass-ink); background: var(--glass-strong); border: 1px solid var(--glass-line); border-radius: var(--r-card); padding: var(--s4); }
 .vb-error span { font-size: var(--fs-small); color: var(--glass-ink-2); }
 .vb-error .btn { margin-top: 6px; }

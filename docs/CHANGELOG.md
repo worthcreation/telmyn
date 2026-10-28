@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.2 (2026-10-28)
+Leaving a block no longer asks anything. ✕ and the back gesture mean the same thing everywhere: close this, record
+nothing. A block left mid-way remembers its step and resumes there (Today's button says Resume); a block already
+counted at its cooldown simply closes as done. Skip stays on Today; Done comes from finishing.
+
 ## 0.11.1 (2026-10-28)
 No drop shadows on buttons or chips. A press now shrinks the control slightly (one token, --press) and darkens it.
 Today's verse refits after the serif font loads, so it no longer ends in … when there is room.

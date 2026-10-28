@@ -2,6 +2,7 @@
 // hourly palms, and quick adds. Status pills and tabs live in the shell.
 import { h, toast, fill, fitText } from './dom.js';
 import { state, addEvent, addFood, undoFood, removeEvent } from '../state.js';
+import * as db from '../db.js';
 import { FOODS } from '../foods.js';
 import { nextBlock, blockStatus } from '../program/index.js';
 import { hhmm } from '../clock.js';
@@ -75,10 +76,13 @@ export function renderToday(root, rerender) {
       next ? h('p', { class: 'next-sum' }, next.summary || `${next.steps.length} steps`) : h('h1', { class: 'next-name' }, 'Day done'),
       next && after ? h('p', { class: 'next-then' }, `Then: ${after.name}`) : null,
       next ? h('button', { class: 'btn big go', 'aria-label': `Start ${next.name}`, onclick: () => runBlock(next, { onExit: rerender }) },
-        h('span', { class: 'go-i', 'aria-hidden': 'true' }, '▶'), h('span', {}, next.name)) : null),
+        h('span', { class: 'go-i', 'aria-hidden': 'true' }, '▶'), h('span', { class: 'go-name' }, next.name)) : null),
     h('div', { class: 'next-side' },
       ring(closed.length, plan.blocks.length),
       next ? h('button', { class: 'btn ghost', onclick: async () => { await addEvent('block_skip', { block: next.id }); rerender(); } }, next.optional ? 'Not today' : 'Skip') : null));
+
+  // A block left mid-way earlier today offers to resume.
+  if (next) db.getMeta(`resume:${next.id}:${state.date}`).then(r => { if (r?.i > 0) { const n = root.querySelector('.go-name'); if (n) n.textContent = `Resume ${next.name}`; } });
 
   fill(root,
     h('header', { class: 'top' },
