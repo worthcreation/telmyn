@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.2 (2026-10-28)
+Verse study: every word is reachable. Key words stay highlighted; every other word that maps to an original word is
+tappable too, and the word panel steps through every original word in order (‹ ›, "7 of 19"). Videos: the BibleProject
+book overview is the one shown; their videos on the verse's main word sit behind "More videos". More room between parts.
+
 ## 0.10.1 (2026-10-28)
 Verse study rebuilt as one screen that goes deeper than the Today card instead of repeating it: the verse with its key
 words highlighted in the text (tap one for the Greek or Hebrew word, transliteration and meaning, shown right under the

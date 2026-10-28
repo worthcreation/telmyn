@@ -1,6 +1,7 @@
 // Verse study: one screen that goes deeper than the Today card instead of repeating it.
-// The verse with its key words highlighted (tap one for its Greek or Hebrew meaning, shown right under the verse),
-// then the chapter, a BibleProject video on this book or word, and where it was applied today.
+// Every word of the verse is reachable: key words are highlighted in the text, the rest are tappable too, and the
+// word panel steps through every original word in order (‹ ›). Then the chapter, one BibleProject video (more on tap),
+// and where it was applied today.
 // Rules carried over: verse text never italic; original-language notes show word, transliteration and meaning only.
 // Everything shows inside the app; nothing opens another site.
 import { h, sheet, fill } from './dom.js';
@@ -24,37 +25,41 @@ async function original(ref) {
 
 // Small words that never carry a key word's meaning on their own.
 const STOP = new Set(['the', 'a', 'an', 'of', 'to', 'and', 'he', 'she', 'it', 'they', 'you', 'we', 'i', 'is', 'be', 'will', 'should', 'shall', 'may', 'one', 'in', 'on', 'for', 'with', 'from', 'by', 'that', 'this', 'his', 'her', 'their', 'not', 'let', 'have', 'has', 'was', 'were', 'are', 'who', 'which', 'what', 'him', 'them', 'us', 'me', 'my', 'your', 'our']);
-const content = en => (en || '').toLowerCase().replace(/[^a-z' -]/g, ' ').split(/[\s-]+/).filter(w => w.length > 2 && !STOP.has(w));
+const tokens = en => (en || '').toLowerCase().replace(/[^a-z' -]/g, ' ').split(/[\s-]+/).filter(Boolean);
 // Loose match so "gives" finds "gives", "giving" finds "give", "reproaching" finds "reproach".
 const stem = w => w.replace(/(ing|ed|es|s|ly)$/, '');
 
-// Find each key word's English in the verse text, in order. Returns the text split into plain and highlighted parts,
-// plus the key words that could not be placed (another version may word it differently).
-export function markKeyWords(text, words) {
+// Place every original word's English in the verse text. Key words match loosely on their meaning words;
+// the small words match exactly. Order is preferred but not required (Greek and English order differ).
+// Returns the text split into plain and word parts, plus key words this version words differently.
+export function markWords(text, words) {
   const marks = [];
-  let from = 0;
   const lower = text.toLowerCase();
+  const free = (a, b) => !marks.some(x => a < x.end && b > x.at);
   const leftover = [];
-  for (const w of words.filter(x => x.key)) {
+  let from = 0;
+  // Key words first, so they claim their words before the small words do.
+  const order = [...words.map((w, i) => ({ w, i }))].sort((a, b) => (b.w.key - a.w.key) || (a.i - b.i));
+  for (const { w, i } of order) {
+    const cands = w.key ? tokens(w.en).filter(t => t.length > 2 && !STOP.has(t)).reverse() : tokens(w.en).reverse();
     let hit = null;
-    // Prefer the next unused match after the previous key word (Greek and English order mostly agree),
-    // otherwise any unused match: word order differs between languages ("giving God" / "God, who gives").
-    const free = (a, b) => !marks.some(x => a < x.end && b > x.at);
-    for (const c of content(w.en).reverse()) {
-      const re = new RegExp(`\\b${stem(c).replace(/[^a-z']/g, '')}[a-z']*`, 'g');
-      const all = [...lower.matchAll(re)].map(m => ({ at: m.index, end: m.index + m[0].length, w })).filter(m => free(m.at, m.end));
+    for (const c of cands) {
+      const pat = w.key ? `\\b${stem(c).replace(/[^a-z']/g, '')}[a-z']*` : `\\b${c.replace(/[^a-z']/g, '')}\\b`;
+      const all = [...lower.matchAll(new RegExp(pat, 'g'))].map(m => ({ at: m.index, end: m.index + m[0].length, w, i })).filter(m => free(m.at, m.end));
       hit = all.find(m => m.at >= from) || all[0] || null;
       if (hit) break;
     }
-    if (hit) { marks.push(hit); from = hit.end; } else leftover.push(w);
+    if (hit) { marks.push(hit); if (w.key) from = hit.end; } else if (w.key) leftover.push(w);
   }
   marks.sort((a, b) => a.at - b.at);
   const parts = [];
-  let i = 0;
-  for (const m of marks) { if (m.at > i) parts.push({ t: text.slice(i, m.at) }); parts.push({ t: text.slice(m.at, m.end), w: m.w }); i = m.end; }
-  if (i < text.length) parts.push({ t: text.slice(i) });
+  let p = 0;
+  for (const m of marks) { if (m.at > p) parts.push({ t: text.slice(p, m.at) }); parts.push({ t: text.slice(m.at, m.end), w: m.w, i: m.i }); p = m.end; }
+  if (p < text.length) parts.push({ t: text.slice(p) });
   return { parts, leftover };
 }
+// Kept for the test from 0.10.1.
+export const markKeyWords = markWords;
 
 export async function verseSheet() {
   const v = state.verse;
@@ -62,41 +67,48 @@ export async function verseSheet() {
   let version = await getVersion();
   const o = await original(v.ref).catch(() => null);
   const heb = o?.lang === 'hebrew';
+  const words = o?.words || [];
+  let current = -1;
 
   const text = h('p', { class: 'vs-text' }, 'Loading…');
   const cite = h('p', { class: 'vs-cite' }, `${v.ref} ${version}`);
   const def = h('div', { class: 'vs-def' });
   const select = h('select', { class: 'vs-version', 'aria-label': 'Bible version', onchange: async e => { version = e.target.value; await setVersion(version); load(); } });
 
-  // Meaning of one word, right under the verse.
-  function define(w, el) {
-    text.querySelectorAll('.kw.on, .kw-extra.on').forEach(x => x.classList.remove('on'));
-    el?.classList.add('on');
+  // One original word at a time, right under the verse. ‹ › walk every word in order.
+  function define(i) {
+    current = i;
+    const w = words[i];
+    text.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
+    text.querySelectorAll(`[data-i="${i}"]`).forEach(x => x.classList.add('on'));
     fill(def,
       h('div', { class: 'vs-def-top' },
         h('span', { class: `vs-orig${heb ? ' hebrew' : ''}`, lang: heb ? 'he' : 'grc', dir: heb ? 'rtl' : 'ltr' }, w.w),
-        h('span', { class: 'vs-tr' }, w.t)),
-      w.g ? h('p', { class: 'vs-line' }, h('b', {}, 'Meaning '), w.g) : null,
-      h('p', { class: 'vs-line' }, h('b', {}, 'Here '), w.en || '(not translated)'),
-      w.gram ? h('p', { class: 'vs-line muted' }, w.gram) : null);
+        h('span', { class: 'vs-tr' }, w.t),
+        h('span', { class: 'vs-nav' },
+          h('button', { class: 'icon-btn', 'aria-label': 'Previous word', disabled: i === 0, onclick: () => define(i - 1) }, '‹'),
+          h('span', { class: 'vs-count' }, `${i + 1} of ${words.length}`),
+          h('button', { class: 'icon-btn', 'aria-label': 'Next word', disabled: i === words.length - 1, onclick: () => define(i + 1) }, '›'))),
+      h('p', { class: 'vs-line' }, h('b', {}, 'Meaning'), w.g || '(none listed)'),
+      h('p', { class: 'vs-line' }, h('b', {}, 'Here'), w.en || '(not translated)'),
+      w.gram ? h('p', { class: 'vs-line muted' }, w.gram === 'cond' ? 'conditional particle' : w.gram) : null);
   }
 
   async function load() {
     cite.textContent = `${v.ref} ${version}`;
     let d;
     try { d = await fetchVerse(v.ref, version); } catch (err) { return fill(text, h('span', { class: 'muted' }, err.message)); }
-    if (!o?.words?.length) { fill(def, h('p', { class: 'muted small' }, 'No word notes for this verse yet.')); return fill(text, d.text); }
-    const { parts, leftover } = markKeyWords(d.text, o.words);
-    const firstEl = [];
-    fill(text, parts.map(p => {
-      if (!p.w) return p.t;
-      const el = h('button', { class: 'kw', onclick: e => define(p.w, e.currentTarget) }, p.t);
-      firstEl.push([p.w, el]);
-      return el;
-    }));
+    if (!words.length) { fill(def, h('p', { class: 'muted small' }, 'No word notes for this verse yet.')); return fill(text, d.text); }
+    const { parts, leftover } = markWords(d.text, words);
+    fill(text, parts.map(p => p.w
+      ? h('button', { class: p.w.key ? 'kw' : 'sw', 'data-i': p.i, onclick: () => define(p.i) }, p.t)
+      : p.t));
     // Key words this version words differently still get a tap target, after the verse.
-    if (leftover.length) text.append(h('span', { class: 'kw-more' }, leftover.map(w => h('button', { class: 'kw-extra', onclick: e => define(w, e.currentTarget) }, w.en || w.t))));
-    if (firstEl.length) define(...firstEl[0]); else if (leftover.length) define(leftover[0], text.querySelector('.kw-extra'));
+    if (leftover.length) text.append(h('span', { class: 'kw-more' }, leftover.map(w => {
+      const i = words.indexOf(w);
+      return h('button', { class: 'kw-extra', 'data-i': i, onclick: () => define(i) }, w.en || w.t);
+    })));
+    define(current >= 0 ? current : Math.max(0, words.findIndex(w => w.key)));
   }
 
   // The whole chapter, today's verses highlighted, in its own reading sheet.
@@ -113,16 +125,21 @@ export async function verseSheet() {
     } catch (err) { fill(body, h('p', { class: 'muted small' }, err.message)); }
   }
 
-  // BibleProject only: their overview of this book, plus any of their videos on this verse's main word.
+  // BibleProject: the book overview is the one shown (it is about this passage); videos on the verse's main
+  // word wait behind "More videos".
+  const card = x => h('button', { class: 'vs-video', onclick: () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title)) },
+    h('span', { class: 'vb-thumb', style: x.thumb ? `background-image:url('${x.thumb}')` : '' }),
+    h('span', { class: 'vs-vt' }, h('b', {}, decode(x.title)), h('small', {}, 'BibleProject')));
   const watch = h('div', { class: 'vs-watch' }, h('p', { class: 'muted small' }, 'Finding BibleProject videos…'));
-  const topic = o?.words?.find(w => w.key && /noun/.test(w.gram || ''))?.g?.split(/[\s/,]/)[0] || null;
+  const topic = words.find(w => w.key && /noun/.test(w.gram || ''))?.g?.split(/[\s/,]/)[0] || null;
   Promise.all([fetchVideos(v.ref), topic ? fetchVideos(v.ref, 'bibleproject', topic).catch(() => []) : []]).then(([book, word]) => {
-    // Word video first when there is one (it is about this verse's idea), then the book overview.
-    const vids = [...word, ...book].filter((x, i, a) => a.findIndex(y => y.id === x.id) === i);
-    if (!vids.length) return fill(watch, h('p', { class: 'muted small' }, 'No BibleProject video on this book yet.'));
-    fill(watch, vids.slice(0, 2).map(x => h('button', { class: 'vs-video', onclick: () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title)) },
-      h('span', { class: 'vb-thumb', style: x.thumb ? `background-image:url('${x.thumb}')` : '' }),
-      h('span', {}, h('b', {}, decode(x.title)), h('small', {}, 'BibleProject')))));
+    const all = [...book, ...word].filter((x, i, a) => a.findIndex(y => y.id === x.id) === i);
+    if (!all.length) return fill(watch, h('p', { class: 'muted small' }, 'No BibleProject video on this passage yet.'));
+    const [first, ...rest] = all;
+    fill(watch, card(first), rest.length ? h('button', { class: 'vs-morevids', onclick: () => {
+      sheet('BibleProject videos', h('div', { class: 'vs-vlist' },
+        h('p', { class: 'muted small' }, `On ${r.book}${topic ? ` and on ${topic}` : ''}.`), all.map(card)), { full: true });
+    } }, `More videos (${rest.length}) ›`) : null);
   }).catch(err => fill(watch, h('p', { class: 'muted small' }, err.message)));
 
   listVersions().then(list => {
