@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.4 (2026-10-28)
+The space kept for Android's system buttons is measured, not assumed: it is reserved only when the app is drawn behind
+the buttons, and rechecked whenever the window changes. Before, a fixed 48 px was always added, which left a gap at the
+bottom and pushed everything up once Chrome started keeping the app above the buttons itself. The test app shows the
+measurement on Me.
+
 ## 0.12.3 (2026-10-28)
 Every page checked at eight phone heights (640 to 915 px): nothing scrolls, nothing sits under the tab bar, nothing
 clips sideways. Spacing now scales with the screen's height (one token, --gap-v), so pages breathe on tall phones and

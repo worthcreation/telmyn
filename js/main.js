@@ -11,9 +11,17 @@ const root = document.getElementById('app');
 
 // Android Chrome can draw an installed app behind the system buttons without reporting their height.
 // Reserve their usual height (48px) so nothing tappable sits under them.
+// Android: reserve room for the system buttons only when the app is actually drawn behind them, measured each time
+// the window changes (rotation, Chrome updates, call banners), never assumed. If the page already ends above the
+// buttons, nothing extra is reserved, so the layout cannot drift up.
 function reserveAndroidNav() {
-  const standalone = matchMedia('(display-mode: standalone)').matches;
-  if (standalone && /Android/i.test(navigator.userAgent)) document.documentElement.style.setProperty('--nav-fallback', '48px');
+  const set = () => {
+    const standalone = matchMedia('(display-mode: standalone)').matches;
+    const behind = standalone && /Android/i.test(navigator.userAgent) && innerHeight >= screen.height - 8;
+    document.documentElement.style.setProperty('--nav-fallback', behind ? '48px' : '0px');
+    document.documentElement.dataset.screen = `${innerWidth}x${innerHeight} of ${screen.width}x${screen.height}, ${behind ? 'behind buttons' : 'above buttons'}`;
+  };
+  set(); addEventListener('resize', set);
 }
 
 // Layers size themselves to the visible screen, so the keyboard never covers what you are writing.

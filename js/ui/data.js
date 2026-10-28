@@ -73,6 +73,7 @@ export async function dataActions() {
     h('p', { class: 'muted small' }, 'Grip hourly, pumps every 30 min, weight daily. Only when overdue.'),
     h('p', { class: `muted small${last === null || days >= 7 ? ' warn' : ''}` }, backupLine),
     h('p', { class: 'fine center' }, `Version ${APP_VERSION}${TEST ? ', test app' : ''}. ${persisted ? 'Storage protected.' : 'Add to Home Screen to protect storage.'}`),
+    TEST ? h('p', { class: 'fine center' }, `Screen ${document.documentElement.dataset.screen || ''}`) : null,
     null);
 }
 
