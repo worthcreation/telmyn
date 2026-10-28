@@ -53,15 +53,15 @@ export async function dataActions() {
       h('button', { class: 'btn ghost', onclick: async () => {
         try { await copyBackup(); } catch (err) { toast(`Copy failed: ${err?.message || err}`); }
       } }, 'Copy full record')),
-    h('div', { class: 'bar' },
+    h('div', { class: TEST ? 'bar' : '' },
       h('label', { class: 'btn ghost file' }, 'Restore backup',
         h('input', { type: 'file', accept: 'application/json,.json,text/plain', onchange: async e => {
           try { await db.importAll(JSON.parse(await e.target.files[0].text())); toast('Backup restored'); location.reload(); }
           catch (err) { toast(err.message); }
         } })),
-      h('button', { class: `btn ${TEST ? '' : 'ghost'}`, onclick: testSheet }, TEST ? 'Test controls' : 'Test mode')),
+      TEST ? h('button', { class: 'btn ghost', onclick: testSheet }, 'Test controls') : null),
     h('p', { class: 'muted small' }, persisted ? 'Storage is protected from automatic clearing.' : 'Add to Home Screen to protect storage from being cleared.'),
-    h('p', { class: 'muted small' }, `Version ${APP_VERSION}${TEST ? ', test mode (separate data)' : ''}`),
+    h('p', { class: 'muted small' }, `Version ${APP_VERSION}${TEST ? ', test app (separate data)' : ''}`),
     h('p', { class: 'muted small' }, 'Alarms for scheduled blocks arrive in phase 2.'));
 }
 
@@ -81,29 +81,29 @@ function pasteSheet() {
     h('p', { class: 'muted small' }, 'Fills blanks only. Anything already logged in the app is kept.')), { full: true });
 }
 
-// Test mode: a separate database plus a fake clock (date, time, speed), so nothing touches real logs.
-// The URL carries the settings: ?test&date=YYYY-MM-DD&time=HH:MM&speed=N
+// Test app controls (only in the separate test app). Fake clock via the URL: ?date=YYYY-MM-DD&time=HH:MM&speed=N
+// Real data can come in only one way: you copy it in the real app and paste it here. Nothing ever goes back.
 export function testSheet() {
+  if (!TEST) return;
   const d = now();
   const date = h('input', { type: 'date', value: isoDate(d), 'aria-label': 'Test date' });
   const time = h('input', { type: 'time', value: hhmm(d), 'aria-label': 'Test time' });
-  let speed = TEST ? SPEED : 1;
+  let speed = SPEED;
   const speeds = h('div', { class: 'seg' });
   const drawSpeeds = () => fill(speeds, [1, 10, 60].map(n => h('button', { class: speed === n ? 'on' : '', onclick: () => { speed = n; drawSpeeds(); } }, `${n}x`)));
   drawSpeeds();
-  const go = () => { location.href = `${location.pathname}?test&date=${date.value}&time=${time.value}&speed=${speed}#today`; };
+  const paste = h('textarea', { rows: 3, placeholder: 'Paste a full record copied from the real app', 'aria-label': 'Full record' });
   const body = h('div', { class: 'stack' },
-    h('p', { class: 'muted small' }, TEST ? 'You are in test mode. Real data is untouched.' : 'Practice with a separate copy. Your real logs are never touched.'),
-    h('div', { class: 'field' }, h('span', { class: 'lbl' }, 'Date'), date),
-    h('div', { class: 'field' }, h('span', { class: 'lbl' }, 'Start time'), time),
-    h('div', { class: 'field' }, h('span', { class: 'lbl' }, 'Clock speed'), speeds),
-    h('button', { class: 'btn', onclick: go }, TEST ? 'Restart test clock' : 'Enter test mode'),
-    TEST ? h('div', { class: 'bar' },
+    h('p', { class: 'muted small' }, 'Separate app, separate storage. Nothing here can reach your real data.'),
+    h('div', { class: 'row' }, date, time),
+    speeds,
+    h('button', { class: 'btn', onclick: () => { location.href = `${location.pathname}?date=${date.value}&time=${time.value}&speed=${speed}#today`; } }, 'Restart clock'),
+    paste,
+    h('div', { class: 'bar' },
       h('button', { class: 'btn ghost', onclick: async () => {
-        try { await db.clearAll(); await db.importAll(await db.readAllFrom('telmyn')); toast('Real data copied into test'); setTimeout(() => location.reload(), 600); }
-        catch (err) { toast(`Copy failed: ${err.message}`); }
-      } }, 'Copy real data in'),
-      h('button', { class: 'btn ghost', onclick: async () => { await db.clearAll(); toast('Test data cleared'); setTimeout(() => location.reload(), 600); } }, 'Clear test data')) : null,
-    TEST ? h('button', { class: 'btn ghost', onclick: () => { location.href = `${location.pathname}#today`; } }, 'Exit test mode') : null);
-  sheet(TEST ? 'Test controls' : 'Test mode', body);
+        try { await db.importAll(JSON.parse(paste.value), { replace: true }); toast('Copy loaded'); setTimeout(() => location.reload(), 600); }
+        catch (err) { toast(err.message.startsWith('That') ? err.message : 'That is not a full record.'); }
+      } }, 'Load pasted copy'),
+      h('button', { class: 'btn ghost', onclick: async () => { await db.clearAll(); toast('Test data cleared'); setTimeout(() => location.reload(), 600); } }, 'Clear test data')));
+  sheet('Test controls', body);
 }

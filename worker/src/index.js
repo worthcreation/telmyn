@@ -5,6 +5,8 @@
 // Reads the public Bible Gateway passage page, keeps only the verse text, caches for 7 days.
 
 const ALLOWED_ORIGINS = ['https://telmyn.worthcreation.com', 'http://localhost:8000'];
+// The separate test app on Cloudflare Pages (telmyn-test.pages.dev, plus its per-deploy preview addresses).
+const TEST_ORIGIN = /^https:\/\/([a-z0-9]+\.)?telmyn-test[a-z0-9-]*\.pages\.dev$/;
 const BG = 'https://www.biblegateway.com';
 const UA = 'Mozilla/5.0 (Telmyn personal app)';
 const WEEK = 60 * 60 * 24 * 7;
@@ -12,7 +14,7 @@ const WEEK = 60 * 60 * 24 * 7;
 function cors(req) {
   const o = req.headers.get('Origin');
   return {
-    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(o) ? o : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(o) || TEST_ORIGIN.test(o || '') ? o : ALLOWED_ORIGINS[0],
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     Vary: 'Origin',
   };

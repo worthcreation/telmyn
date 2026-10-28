@@ -16,8 +16,11 @@ function reserveAndroidNav() {
 
 async function boot() {
   reserveAndroidNav();
-  // Test mode writes to its own database so practice runs never touch real logs.
-  await db.open(TEST ? 'telmyn-test' : 'telmyn');
+  // The test app lives at its own web address, so its storage is separate from the real app's by browser design.
+  await db.open(TEST ? 'telmyn-test-app' : 'telmyn');
+  if (TEST) document.title = 'Telmyn Test';
+  // Remove the old in-app test copy from 0.9.3 (a separate database, never the real one).
+  else indexedDB.deleteDatabase?.('telmyn-test');
   navigator.storage?.persist?.();
   onChange(() => { if (!document.querySelector('.sheet-wrap .log-form')) renderShell(root); });
   startShell(root);
@@ -36,7 +39,7 @@ async function boot() {
 }
 
 function registerSW() {
-  if (!('serviceWorker' in navigator) || TEST) return;
+  if (!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.register('sw.js').then(reg => {
     reg.addEventListener('updatefound', () => {
       const w = reg.installing;

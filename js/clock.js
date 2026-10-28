@@ -1,9 +1,11 @@
 // Single source of time. Every module asks clock.now(), never new Date() directly,
-// so ?test mode can fake the date, the time and the speed of the whole app.
-// Test URL example: ?test&date=2026-10-29&time=06:25&speed=60
+// so the separate test app can fake the date, the time and the speed of the whole app.
+// Test app URL example: ?date=2026-10-29&time=06:25&speed=60 (ignored in the real app).
+
+import { SITE } from './site.js';
 
 const params = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
-export const TEST = params.has('test');
+export const TEST = SITE === 'test';
 const speed = TEST ? Number(params.get('speed') || 1) : 1;
 const realStart = Date.now();
 let base = realStart;

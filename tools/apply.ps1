@@ -42,6 +42,9 @@ if ((git diff --name-only $before HEAD) -match '^worker/') {
   & (Join-Path $repo 'tools\cf.ps1') deploy
 }
 
+# Keep the separate test app in step with the real one. A failure here never affects the real app.
+& (Join-Path $repo 'tools\test-site.ps1')
+
 $all | Remove-Item
 Get-ChildItem $dl -Filter 'telmyn*.zip' -ErrorAction SilentlyContinue | Remove-Item
 $version = (Select-String -Path 'js\version.js' -Pattern "'(.+)'").Matches[0].Groups[1].Value

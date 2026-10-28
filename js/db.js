@@ -68,20 +68,4 @@ export async function importAll(data, { replace = false } = {}) {
   for (const s of STORES) for (const row of data.stores[s] || []) await put(s, row);
 }
 
-// Read every store of another database (test mode copies the real data this way). Read-only, then closed.
-export function readAllFrom(name) {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(name, DB_VERSION);
-    req.onupgradeneeded = e => { for (let v = e.oldVersion + 1; v <= DB_VERSION; v++) MIGRATIONS[v](req.result, req.transaction); };
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => {
-      const other = req.result, out = { format: 'telmyn-export', db_version: DB_VERSION, stores: {} };
-      const t = other.transaction(STORES, 'readonly');
-      for (const s of STORES) { const r = t.objectStore(s).getAll(); r.onsuccess = () => { out.stores[s] = r.result; }; }
-      t.oncomplete = () => { other.close(); resolve(out); };
-      t.onerror = t.onabort = () => { other.close(); reject(t.error); };
-    };
-  });
-}
-
 export async function clearAll() { for (const s of STORES) await tx(s, 'readwrite', o => o.clear()); }

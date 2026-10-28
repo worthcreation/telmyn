@@ -139,6 +139,10 @@ if (typeof document !== 'undefined') {
   catch (e) { results.push(['sw.js parses', false, e.message]); failed.push(results[results.length - 1]); }
   results.push(['version.js and sw.js versions match', app === sw, app === sw ? '' : `version.js ${app}, sw.js ${sw}`]);
   if (app !== sw) failed.push(results[results.length - 1]);
+  // The real app must never ship as the test app.
+  const site = fs.readFileSync(new URL('../js/site.js', import.meta.url), 'utf8');
+  results.push(['real app ships as live, not test', /SITE = 'live'/.test(site)]);
+  if (!/SITE = 'live'/.test(site)) failed.push(results[results.length - 1]);
   for (const [n, ok, m] of results) console.log(`${ok ? 'PASS' : 'FAIL'} ${n}${m ? ': ' + m : ''}`);
   console.log(failed.length ? `${failed.length} failed` : `All ${results.length} passed`);
   if (failed.length) process.exitCode = 1;
