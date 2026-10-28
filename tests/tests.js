@@ -218,7 +218,7 @@ if (typeof document !== 'undefined') {
     let depth = 0, cur = [], mediaKey = 'top';
     for (const line of css.split('\n')) {
       const t = line.trim();
-      if (t.startsWith('@media')) { mediaKey = t.replace(/\s*\{.*$/, ''); cur = []; scopes.push([mediaKey, cur]); depth = 1; continue; }
+      if (t.startsWith('@media')) { if (/\}\s*$/.test(t) && (t.match(/\{/g) || []).length === (t.match(/\}/g) || []).length) continue; mediaKey = t.replace(/\s*\{.*$/, ''); cur = []; scopes.push([mediaKey, cur]); depth = 1; continue; }
       if (depth === 1 && t === '}') { depth = 0; mediaKey = 'top'; continue; }
       const m = t.match(/^([^@{}/][^{]*)\{/);
       if (m) { const target = depth === 1 ? cur : (scopes.find(x => x[0] === 'top') || scopes[scopes.push(['top', []]) - 1])[1]; target.push(m[1].trim().replace(/\s+/g, ' ')); }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.3 (2026-10-28)
+Every page checked at eight phone heights (640 to 915 px): nothing scrolls, nothing sits under the tab bar, nothing
+clips sideways. Spacing now scales with the screen's height (one token, --gap-v), so pages breathe on tall phones and
+fit on short ones. Progress spreads its rows over the space; Gear cards share it; Me's buttons spread evenly; the Me
+footer is one line. tests/layout_sweep.py is the sweep, run before every release.
+
 ## 0.12.2 (2026-10-28)
 Every quick chip and the Grip pill carry their state: red when behind or overdue, green when met, plain when on
 track. Fluids and protein are judged against a pace line through the day (fluids 7 am to 11 pm, protein 7 am to 9 pm)

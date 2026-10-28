@@ -70,10 +70,9 @@ export async function dataActions() {
         } })),
       TEST ? h('button', { class: 'btn ghost', onclick: testSheet }, 'Test controls') : null),
     h('button', { class: `btn ghost${on ? ' on' : ''}`, onclick: async () => { const v = await setReminders(!on); if (v !== !on && !on) return; location.reload(); } }, on ? 'Reminders on' : 'Reminders off'),
-    h('p', { class: 'muted small' }, 'Grip break after an hour, ankle pumps after 30 min, weight once a day. Only when overdue.'),
+    h('p', { class: 'muted small' }, 'Grip hourly, pumps every 30 min, weight daily. Only when overdue.'),
     h('p', { class: `muted small${last === null || days >= 7 ? ' warn' : ''}` }, backupLine),
-    h('p', { class: 'muted small' }, persisted ? 'Storage is protected from automatic clearing.' : 'Add to Home Screen to protect storage from being cleared.'),
-    h('p', { class: 'muted small' }, `Version ${APP_VERSION}${TEST ? ', test app (separate data)' : ''}`),
+    h('p', { class: 'fine center' }, `Version ${APP_VERSION}${TEST ? ', test app' : ''}. ${persisted ? 'Storage protected.' : 'Add to Home Screen to protect storage.'}`),
     null);
 }
 

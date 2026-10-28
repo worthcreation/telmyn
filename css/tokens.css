@@ -47,6 +47,8 @@
 
   /* Space and shape. */
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 36px;
+  /* Vertical rhythm that scales with the screen's height, so every page breathes on tall phones and still fits on short ones. */
+  --gap-v: clamp(4px, 1.5vh, 14px);
   --r-btn: 12px; --r-card: 20px; --r-pill: 999px;
   --press: .97;         /* how far a control shrinks while pressed; no drop shadows anywhere */
   --h-ctrl: 48px;       /* buttons */

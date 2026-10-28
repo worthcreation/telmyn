@@ -20,6 +20,7 @@ test-site/ on a temporary copy. Fake clock there: ?date=2026-11-02&time=06:25&sp
 ```
 node tests/tests.js
 ```
+Before every release Claude also runs tests/layout_sweep.py: every page and sheet at eight phone heights (640 to 915 px).
 Or open /tests/ in a browser.
 
 ## Release (how updates ship)
