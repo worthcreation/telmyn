@@ -409,3 +409,40 @@ button.stat { background: none; border: 0; padding: 0; text-align: left; color: 
   .clock { font-size: 56px; }
   .step-cue { font-size: 15px; }
 }
+
+/* ---------- Video mode: the study video fills the screen, everything else floats on frosted glass ---------- */
+.runner.video-mode { background: #000; }
+.runner.video-mode .study { position: absolute; inset: 0; margin: 0; z-index: 0; overflow: hidden; }
+.runner.video-mode .study-backdrop { position: absolute; inset: -40px; background: #000 center / cover no-repeat; filter: blur(28px) brightness(.55); }
+.runner.video-mode .study-frame, .runner.video-mode .study iframe {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-height: none; border-radius: 0;
+  width: max(100%, calc(100dvh * 16 / 9)); height: max(100%, calc(100vw * 9 / 16)); aspect-ratio: auto;
+}
+.runner.video-mode.video-fit .study-frame, .runner.video-mode.video-fit .study iframe { width: 100%; height: calc(100vw * 9 / 16); }
+.runner.video-mode > :not(.study) { position: relative; z-index: 1; }
+.runner.video-mode .runner-head, .runner.video-mode .runner-main, .runner.video-mode .runner-foot, .runner.video-mode .clock-wrap {
+  background: rgb(16 18 21 / .5); -webkit-backdrop-filter: blur(16px) saturate(1.2); backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid rgb(255 255 255 / .12); border-radius: var(--r-card); color: #F3F4F1;
+}
+.runner.video-mode .runner-head { padding: 6px var(--s3); }
+.runner.video-mode .runner-count, .runner.video-mode .step-kind, .runner.video-mode .step-note { color: rgb(243 244 241 / .75); }
+.runner.video-mode .lanes { margin: 6px 0; }
+.runner.video-mode .runner-main { align-self: end; justify-content: flex-end; padding: var(--s3) var(--s4); margin-bottom: var(--s2); overflow: visible; }
+.runner.video-mode .step-text { font-size: clamp(24px, 6.5vw, 32px); }
+.runner.video-mode .step-cue { background: rgb(255 255 255 / .08); font-size: 16px; }
+.runner.video-mode .runner-foot { padding: var(--s2); }
+/* The timer becomes a chip in the video's upper-left corner */
+.runner { grid-template-rows: auto auto auto 1fr auto; }
+.runner.video-mode { grid-template-rows: auto auto 1fr auto; }
+.runner.video-mode .runner-main { grid-row: 3; }
+.runner.video-mode .runner-foot { grid-row: 4; }
+.timer-chip:empty { display: none; }
+.runner.video-mode .timer-chip { position: absolute; top: calc(var(--safe-top) + 96px); left: var(--s4); z-index: 2; }
+.runner.video-mode .clock-wrap { width: auto; min-width: 120px; padding: var(--s2) var(--s3); gap: 4px; justify-items: start; }
+.runner.video-mode .clock { font-size: 48px; line-height: 1; color: #fff; }
+.runner.video-mode .clock-bar { width: 100%; height: 5px; }
+.runner.video-mode .getready-label, .runner.video-mode .countup-hint { font-size: 12px; max-width: 16ch; }
+.runner.video-mode .study-tools { position: fixed; top: calc(var(--safe-top) + 96px); right: var(--s4); display: flex; gap: var(--s2); z-index: 2; }
+.study-fit { background: rgb(16 18 21 / .5); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgb(255 255 255 / .12); color: #fff; border-radius: var(--r-pill); padding: 6px var(--s3); font-size: 13px; font-weight: 600; }
+.runner.video-mode .study-close { position: static; width: 34px; height: 34px; background: rgb(16 18 21 / .5); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgb(255 255 255 / .12); }
+.runner.video-mode .links a { color: #A9C0FF; }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.1 (2026-10-27)
+Video mode: once the study video starts, it fills the screen behind the block. The timer floats as a frosted-glass
+chip in the upper-left corner; the step, its instructions and the buttons sit on frosted glass at the bottom;
+"Show whole video" letterboxes it over a blurred backdrop, "Fill screen" goes back; ✕ closes the video.
+
 ## 0.9.0 (2026-10-27)
 Study while you train: inside any block, a bar offers a Bible study video on today's verse (your chosen creator).
 Once you start it, it plays while timers run, pauses when the app waits on you (reps, logging), and its volume dips

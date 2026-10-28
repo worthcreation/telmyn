@@ -28,7 +28,10 @@ export function runBlock(block, { onExit } = {}) {
   const root = h('div', { class: 'runner', role: 'dialog', 'aria-label': block.name });
   const headEl = h('header', { class: 'runner-head' }), lanesEl = h('div', { class: 'lanes', 'aria-hidden': 'true' });
   const studyEl = h('section', { class: 'study' }), mainEl = h('main', { class: 'runner-main' }), footEl = h('footer', { class: 'runner-foot' });
-  root.append(headEl, lanesEl, studyEl, mainEl, footEl);
+  const timerEl = h('div', { class: 'timer-chip' });
+  root.append(headEl, lanesEl, studyEl, mainEl, footEl, timerEl);
+  // Re-lay out when the study video opens or closes (video mode moves the timer into its own corner chip).
+  new MutationObserver(() => render()).observe(root, { attributes: true, attributeFilter: ['class'] });
   document.body.append(root);
   const study = studyPlayer(studyEl);
   const cue = name => { study.duck(); sounds[name](); };
@@ -241,6 +244,8 @@ export function runBlock(block, { onExit } = {}) {
       videoLinks(s),
       ...body);
     fill(footEl, secondary, primary);
+    const cw = mainEl.querySelector('.clock-wrap');
+    if (root.classList.contains('video-mode') && cw) fill(timerEl, cw); else fill(timerEl);
     // Study video follows the timers: plays while one runs, pauses while the app waits on you.
     if (running) study.play(); else study.hold();
   }

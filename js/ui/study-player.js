@@ -21,7 +21,8 @@ const decode = t => { const e = document.createElement('textarea'); e.innerHTML 
 export function studyPlayer(container) {
   let player = null, video = null, armed = false, ours = false, playing = false, duckTimer = null;
 
-  const close = () => { player?.destroy?.(); player = null; armed = false; playing = false; drawBar(); };
+  const runner = () => container.closest('.runner');
+  const close = () => { player?.destroy?.(); player = null; armed = false; playing = false; runner()?.classList.remove('video-mode', 'video-fit'); drawBar(); };
 
   function drawBar() {
     if (!video) return fill(container);
@@ -33,8 +34,16 @@ export function studyPlayer(container) {
 
   async function open() {
     container.className = 'study open';
+    runner()?.classList.add('video-mode');
     const slot = h('div', { class: 'study-frame' });
-    fill(container, slot, h('button', { class: 'study-close', 'aria-label': 'Close video', onclick: close }, '✕'));
+    const fitBtn = h('button', { class: 'study-fit', onclick: () => {
+      const r = runner(); r?.classList.toggle('video-fit');
+      fitBtn.textContent = r?.classList.contains('video-fit') ? 'Fill screen' : 'Show whole video';
+    } }, 'Show whole video');
+    fill(container,
+      h('div', { class: 'study-backdrop', style: video.thumb ? `background-image:url('${video.thumb}')` : '' }),
+      slot,
+      h('div', { class: 'study-tools' }, fitBtn, h('button', { class: 'study-close', 'aria-label': 'Close video', onclick: close }, '✕')));
     await loadApi();
     player = new window.YT.Player(slot, {
       videoId: video.id,
