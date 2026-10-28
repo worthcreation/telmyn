@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.9 (2026-10-28)
+Writing fields at rest show one whole phrase of what was written, with "…" before and/or after when there is more
+("… to come the wise person and presence he has called me to be. …"), never a line cut off under the edge. Read-only
+fields open the full text. The writing layer's focus ring is clean.
+
 ## 0.10.8 (2026-10-28)
 Word panel: nothing clips (long words wrap beside a fixed stepper; grammar wraps). Every word now shows its place in
 the Greek or Hebrew order, two words each side read literally ("he should ask from [the One] giving God"), each one

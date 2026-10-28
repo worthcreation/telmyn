@@ -67,11 +67,28 @@ export function compose(title, value, { placeholder = '', onSave }) {
   requestAnimationFrame(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); });
   return l;
 }
-// The resting form of a writing field: shows what's written (or the prompt), opens compose on tap.
+// A short piece of what was written, for resting fields: one whole phrase, never cut mid-word, with "…" before
+// and/or after when there is more on that side. Prefers the first phrase; skips ones too short to say anything.
+export function excerpt(text, max = 50) {
+  const t = (text || '').replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const pieces = [...t.matchAll(/[^.,;:!?]+[.,;:!?]*/g)].map(m => ({ s: m[0].trim(), at: m.index, end: m.index + m[0].length }));
+  let pick = pieces.find(p => p.s.length >= 18 && p.s.length <= max) || pieces[0];
+  let s = pick.s;
+  if (s.length > max) { s = s.slice(0, max); s = s.slice(0, s.lastIndexOf(' ')); }
+  s = s.replace(/[,;:]$/, '');
+  const before = pick.at > 0, after = pick.end < t.length || s.length < pick.s.length;
+  return `${before ? '… ' : ''}${s}${after ? ' …' : ''}`;
+}
+
+// The resting form of a writing field: a piece of what's written (or the prompt); tap to read or write it in full.
 export function noteField(label, value, { placeholder = '', onSave, readOnly = false } = {}) {
-  const el = h('button', { class: `note-field${value ? '' : ' empty'}${readOnly ? ' readonly' : ''}`, 'aria-label': label, disabled: readOnly && !value },
-    value || placeholder);
-  if (!readOnly) el.addEventListener('click', () => compose(label, value, { placeholder, onSave: async v => { await onSave(v); value = v; el.textContent = v || placeholder; el.classList.toggle('empty', !v); } }));
+  const el = h('button', { class: `note-field${value ? '' : ' empty'}${readOnly ? ' readonly' : ''}`, 'aria-label': value ? `${label}: ${value}` : label },
+    h('span', { class: 'nf-text' }, value ? excerpt(value) : placeholder));
+  el.addEventListener('click', () => {
+    if (readOnly) { if (value) layer(label, h('p', { class: 'note-read' }, value)); return; }
+    compose(label, value, { placeholder, onSave: async v => { await onSave(v); value = v; el.firstChild.textContent = v ? excerpt(v) : placeholder; el.classList.toggle('empty', !v); } });
+  });
   return el;
 }
 

@@ -862,3 +862,13 @@ button.test-banner { border: 0; font: inherit; font-size: 13px; width: 100%; }
 @media (min-height: 681px) { .layer.study .vs-def { min-height: 212px; align-content: start; } }
 @media (max-height: 680px) { .layer.study .vs-def { min-height: 140px; align-content: start; } }
 .nw { white-space: nowrap; }
+
+/* Resting writing fields 0.10.9: a whole phrase of what was written, clipped only inside its own text box so no
+   line ever peeks out under the padding. */
+.note-field { display: flex; align-items: center; -webkit-line-clamp: unset; overflow: visible; min-height: 56px; }
+.note-field .nf-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.45; }
+.note-read { margin: 0; font-size: 18px; line-height: 1.6; white-space: pre-wrap; }
+.compose-text:focus { outline: none; border-color: var(--lane); box-shadow: 0 0 0 2px color-mix(in srgb, var(--lane) 35%, transparent); }
+.vs-apply { align-items: stretch; }
+.vs-apply .btn.ghost { min-height: 56px; }
+.layer.study .vs-def:has(.vs-hint) { align-content: center; justify-items: center; text-align: center; } .vs-def:has(.vs-hint) .vs-start { justify-self: center; }
