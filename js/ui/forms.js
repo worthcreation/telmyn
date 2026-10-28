@@ -1,4 +1,4 @@
-import { h, sheet, toast, fill } from './dom.js';
+import { h, sheet, toast, fill, noteField } from './dom.js';
 import { state, setField, addFluid, undoFluid, addProtein, addEvent, load } from '../state.js';
 import * as db from '../db.js';
 import { planFor, blockStatus } from '../program/index.js';
@@ -70,7 +70,8 @@ export async function logSheet(date = state.date, group = null) {
     if (f.type === 'choice') {
       input = h('div', { class: 'seg' }, f.options.map(o => h('button', { class: val === o ? 'on' : '', onclick: async () => { await save(ctx.rec[f.key] === o ? '' : o); draw(); } }, o)));
     } else if (f.type === 'textarea') {
-      input = h('textarea', { id, rows: 2, onchange: e => save(e.target.value) }, val ?? '');
+      // Longer writing opens the shared writing layer, same as everywhere else in the app.
+      input = noteField(f.label, val ?? null, { placeholder: 'Tap to write', onSave: v => save(v ?? '') });
     } else {
       input = h('input', { id, type: f.type === 'number' ? 'number' : f.type, inputmode: f.type === 'number' ? 'decimal' : null, step: f.step || null, value: val ?? '', onchange: e => save(e.target.value) });
     }

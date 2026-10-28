@@ -15,8 +15,15 @@ function reserveAndroidNav() {
   if (standalone && /Android/i.test(navigator.userAgent)) document.documentElement.style.setProperty('--nav-fallback', '48px');
 }
 
+// Layers size themselves to the visible screen, so the keyboard never covers what you are writing.
+function trackVisibleHeight() {
+  const set = () => document.documentElement.style.setProperty('--vvh', `${(visualViewport?.height || innerHeight)}px`);
+  set(); visualViewport?.addEventListener('resize', set); addEventListener('resize', set);
+}
+
 async function boot() {
   reserveAndroidNav();
+  trackVisibleHeight();
   // The test app lives at its own web address, so its storage is separate from the real app's by browser design.
   await db.open(TEST ? 'telmyn-test-app' : 'telmyn');
   if (TEST) document.title = 'Telmyn Test';
@@ -24,7 +31,7 @@ async function boot() {
   else indexedDB.deleteDatabase?.('telmyn-test');
   navigator.storage?.persist?.();
   await loadPicks();
-  onChange(() => { if (!document.querySelector('.sheet-wrap .log-form')) renderShell(root); });
+  onChange(() => { if (!document.querySelector('.layer .log-form')) renderShell(root); });
   startShell(root);
   await load(isoDate());
 
@@ -34,7 +41,7 @@ async function boot() {
     const d = now();
     if (isoDate(d) !== state.date) return load(isoDate(d));
     const m = d.getMinutes();
-    if (m !== minute && !document.querySelector('.runner, .sheet-wrap')) { minute = m; renderShell(root); }
+    if (m !== minute && !document.querySelector('.runner, .layer')) { minute = m; renderShell(root); }
   }, 1000);
 
   registerSW();

@@ -37,7 +37,8 @@ registered in program/index.js. Past days keep showing the program that was in e
 - Video block: Fab Five is Gator's newest video, done when it ends; steps are the fallback.
 - In-app player (media.js): every Watch button; landscape switch on every video.
 - Progress: week strip (tap a day for its log), bars, weekly averages. Gear. Me: Day log, handoff, backups.
-- Sheets: fluid, protein, Day log (any date, tabbed, no scrolling), verse, test controls (test app only).
+- Layers (dom.js layer/sheet/compose): every sheet and full-screen view shares one frosted look and one back behavior;
+  writing opens the shared compose layer. Fluid, protein, Day log, verse study, chapter, videos, journal, test controls.
 
 ## Server (worker/)
 telmyn-api, a Cloudflare Worker. Answers only Telmyn's own addresses. /verse and /versions relay Bible Gateway text

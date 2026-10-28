@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.5 (2026-10-28)
+One layer system for the whole app: every sheet and full-screen view (verse study, chapter, videos, journal, Day log,
+fluid and protein, import, test controls) is frosted glass over the app, sized to the visible screen so the keyboard
+never covers it, and ✕ or the back gesture closes only the top layer. Writing anywhere (where the verse was applied,
+Day log notes) opens one roomy writing layer instead of a squeezed box. Verse journal entries open that day's verse
+study (verse, words, video) with what was written, read-only.
+
 ## 0.10.4 (2026-10-28)
 Verse study fills the whole screen with nothing scrolling and nothing left empty. The verse starts large (26 px) and
 gives up size only until the lead video's picture has a useful height; the lead video takes all remaining room, with

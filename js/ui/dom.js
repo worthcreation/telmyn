@@ -17,21 +17,64 @@ export const fill = (el, ...kids) => el.replaceChildren(...kids.flat().filter(k 
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 
-// Bottom sheet that slides up over the current screen.
-export function sheet(title, body, { onClose, full = false } = {}) {
-  const root = $('#sheet-root');
-  const close = () => { wrap.classList.remove('open'); setTimeout(() => wrap.remove(), 220); onClose?.(); };
-  const wrap = h('div', { class: 'sheet-wrap' },
-    h('div', { class: 'sheet-scrim', onclick: close }),
-    h('section', { class: `sheet${full ? ' full' : ''}`, role: 'dialog', 'aria-label': title },
-      h('header', { class: 'sheet-head' }, h('span', { class: 'icon-btn', 'aria-hidden': 'true' }), h('h2', {}, title), h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: close }, '✕')),
-      h('div', { class: 'sheet-body' }, body)));
-  root.append(wrap);
-  requestAnimationFrame(() => wrap.classList.add('open'));
+// Layers: every sheet and full-screen view in the app shares one look (frosted glass over the app, so you keep your
+// place) and one behavior (✕ or the back gesture closes only the top layer). Full layers cover the screen; half layers
+// rise from the bottom for quick entries. Layers stay above the keyboard (--vvh tracks the visible height).
+const layers = [];
+let skipPops = 0;
+if (typeof addEventListener === 'function') addEventListener('popstate', e => {
+  if (skipPops) { skipPops--; return; }
+  const keep = e.state?.telmynLayer || 0;
+  while (layers.length > keep) layers[layers.length - 1].dismiss();
+});
+export const layerDepth = () => layers.length;
+
+export function layer(title, body, { onClose, full = true, cls = '' } = {}) {
+  const panel = h('section', { class: 'layer-panel', role: 'dialog', 'aria-label': title },
+    h('header', { class: 'layer-head' }, h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: () => close() }, '✕'), h('h2', {}, title), h('span', { class: 'icon-btn', 'aria-hidden': 'true' })),
+    h('div', { class: 'layer-body' }, body));
+  const wrap = h('div', { class: `layer ${full ? 'full' : 'half'} ${cls}` }, full ? null : h('div', { class: 'layer-scrim', onclick: () => close() }), panel);
+  const entry = { dismiss };
+  function dismiss() {
+    const i = layers.indexOf(entry);
+    if (i < 0) return;
+    layers.splice(i, 1);
+    wrap.classList.add('closing');
+    setTimeout(() => wrap.remove(), 180);
+    onClose?.();
+  }
+  function close() {
+    const top = layers[layers.length - 1] === entry;
+    if (layers.indexOf(entry) < 0) return;
+    dismiss();
+    if (top && history.state?.telmynLayer) { skipPops++; history.back(); }
+  }
+  layers.push(entry);
+  history.pushState({ ...(history.state || {}), telmynLayer: layers.length }, '');
+  $('#sheet-root').append(wrap);
   return { close, el: wrap };
 }
+// Kept name: quick sheets are half layers, full sheets are full layers.
+export const sheet = (title, body, { onClose, full = false } = {}) => layer(title, body, { onClose, full });
 
-// Short message at the bottom. Optional action: { label, fn } adds a button (Undo) and keeps it up longer.
+// Writing anything longer than a word: one roomy, frosted writing layer above the keyboard, used everywhere.
+export function compose(title, value, { placeholder = '', onSave }) {
+  const ta = h('textarea', { class: 'compose-text', placeholder, 'aria-label': title }, value ?? '');
+  const l = layer(title, h('div', { class: 'compose' }, ta,
+    h('div', { class: 'compose-actions' },
+      h('button', { class: 'btn ghost', onclick: () => l.close() }, 'Cancel'),
+      h('button', { class: 'btn', onclick: async () => { await onSave(ta.value.trim() || null); l.close(); } }, 'Save'))), { cls: 'compose-layer' });
+  requestAnimationFrame(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); });
+  return l;
+}
+// The resting form of a writing field: shows what's written (or the prompt), opens compose on tap.
+export function noteField(label, value, { placeholder = '', onSave, readOnly = false } = {}) {
+  const el = h('button', { class: `note-field${value ? '' : ' empty'}${readOnly ? ' readonly' : ''}`, 'aria-label': label, disabled: readOnly && !value },
+    value || placeholder);
+  if (!readOnly) el.addEventListener('click', () => compose(label, value, { placeholder, onSave: async v => { await onSave(v); value = v; el.textContent = v || placeholder; el.classList.toggle('empty', !v); } }));
+  return el;
+}
+
 export function toast(msg, action = null) {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const hide = () => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); };

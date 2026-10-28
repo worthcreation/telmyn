@@ -78,7 +78,7 @@ export async function playVideo(url, title = 'Video', { onOpen, onClose, pick = 
   root.append(h('button', { class: 'vb-btn vb-x', 'aria-label': 'Close video', onclick: close }, '✕'), rotateButton(root),
     h('p', { class: 'vb-title' }, title));
   document.body.append(root);
-  history.pushState({ telmynVideo: true }, '');
+  history.pushState({ ...(history.state || {}), telmynVideo: true }, '');
   const onPop = () => { if (root.isConnected) { removeEventListener('popstate', onPop); exitLandscape(); player?.destroy?.(); root.remove(); onClose?.(); } };
   addEventListener('popstate', onPop);
 

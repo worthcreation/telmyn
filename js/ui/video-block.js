@@ -26,7 +26,7 @@ export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
   try { await navigator.wakeLock?.request('screen'); } catch { /* optional */ }
   addEvent('block_start', { block: block.id, video: video.id });
 
-  history.pushState({ telmynRunner: true }, '');
+  history.pushState({ ...(history.state || {}), telmynRunner: true }, '');
   const onPop = e => { if (!root.isConnected || e.state?.telmynRunner) return; history.pushState({ telmynRunner: true }, ''); leaveMenu(); };
   addEventListener('popstate', onPop);
 

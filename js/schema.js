@@ -16,7 +16,7 @@ export const DAY_FIELDS = [
   { key: 'pinch_level', label: 'Pinch', type: 'choice', options: ['none', 'squeeze', 'sharp'], group: 'Watch' },
   { key: 'pinch_notes', label: 'Pinch notes', type: 'text', group: 'Watch' },
   { key: 'ankles_feet_notes', label: 'Ankles and feet', type: 'textarea', group: 'Watch' },
-  { key: 'verse_applied_notes', label: 'Verse applied', type: 'text', group: 'Notes' },
+  { key: 'verse_applied_notes', label: 'Verse applied', type: 'textarea', group: 'Notes' },
   { key: 'energy_notes', label: 'Energy', type: 'textarea', group: 'Notes' },
   { key: 'flags_notes', label: 'Flags for tomorrow', type: 'textarea', group: 'Notes' },
   { key: 'tomorrow_notes', label: 'Tomorrow', type: 'textarea', group: 'Notes' },

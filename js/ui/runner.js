@@ -53,7 +53,7 @@ export function runBlock(block, opts = {}) {
   const logDone = () => addEvent('block_done', { block: block.id, started_at: startedAt, done_at: now().toISOString(), palms: entry.palms || entry.palmsSaved || null });
 
   // Android back gesture: ask before leaving instead of dropping the block silently.
-  history.pushState({ telmynRunner: true }, '');
+  history.pushState({ ...(history.state || {}), telmynRunner: true }, '');
   // A video opened over the block pops back to the block's own entry; that is not leaving the block.
   const onPop = e => { if (!root.isConnected || e.state?.telmynRunner) return; history.pushState({ telmynRunner: true }, ''); closeMenu(); };
   addEventListener('popstate', onPop);

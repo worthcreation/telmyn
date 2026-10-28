@@ -4,7 +4,9 @@
 // and where it was applied today.
 // Rules carried over: verse text never italic; original-language notes show word, transliteration and meaning only.
 // Everything shows inside the app; nothing opens another site.
-import { h, fill } from './dom.js';
+import { h, fill, layer, noteField } from './dom.js';
+import * as db from '../db.js';
+import { verseFor } from '../verses.js';
 import { state, setField } from '../state.js';
 import { journalSheet } from './journal.js';
 import { playVideo } from './media.js';
@@ -99,29 +101,14 @@ export function markWords(text, words) {
 // Kept for the test from 0.10.1.
 export const markKeyWords = markWords;
 
-// Full-screen study layer over the app, slightly see-through so you keep your place. Back gesture closes it.
-function screen(title, body, { onClose } = {}) {
-  const close = () => {
-    removeEventListener('popstate', onPop);
-    if (history.state?.telmynScreen) history.back();
-    root.classList.add('closing'); setTimeout(() => root.remove(), 180); onClose?.();
-  };
-  // Back closes only the top layer: each layer owns one history entry, so the pop belongs to the newest one.
-  const onPop = () => {
-    if (!root.isConnected || [...document.querySelectorAll('.vscreen:not(.closing)')].pop() !== root) return;
-    removeEventListener('popstate', onPop); root.remove(); onClose?.();
-  };
-  const root = h('section', { class: 'vscreen', role: 'dialog', 'aria-label': title },
-    h('header', { class: 'vscreen-head' }, h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: close }, '✕'), h('h2', {}, title), h('span', { class: 'icon-btn', 'aria-hidden': 'true' })),
-    h('div', { class: 'vscreen-body' }, body));
-  document.body.append(root);
-  history.pushState({ telmynScreen: true }, '');
-  addEventListener('popstate', onPop);
-  return { close, root };
-}
+const screen = (title, body) => layer(title, body, { cls: 'study' });
 
-export async function verseSheet() {
-  const v = state.verse;
+// Today's verse to study and apply, or (from the journal) a past day's verse with what was written, read-only.
+export async function verseSheet(date = null) {
+  if (typeof date !== 'string') date = null;   // called straight from a tap handler with the click event
+  const past = date && date !== state.date;
+  const v = past ? verseFor(date) : state.verse;
+  const dayRec = past ? (await db.get('days', date)) || {} : state.day;
   const r = parseRef(v.ref);
   let version = await getVersion();
   const o = await original(v.ref).catch(() => null);
@@ -221,26 +208,25 @@ export async function verseSheet() {
     fill(select, list.map(x => h('option', { value: x.abbr, selected: x.abbr === version }, x.abbr)));
   });
 
-  // Where it was applied today: saved to today's log and collected in the verse journal.
-  const note = h('textarea', { class: 'vs-applied', rows: 1, onfocus: e => { e.target.rows = 3; }, onblur: e => { if (!e.target.value) e.target.rows = 1; }, 'aria-label': 'Where I applied it today', placeholder: 'Where I applied it today' }, state.day.verse_applied_notes ?? '');
-  const saveBtn = h('button', { class: 'btn', onclick: async () => {
-    await setField('verse_applied_notes', note.value.trim() || null);
-    saveBtn.textContent = 'Saved'; setTimeout(() => { saveBtn.textContent = 'Save'; }, 1500);
-  } }, 'Save');
+  // Where it was applied: today's opens the writing layer; a past day's shows what was written.
+  const prettyDay = d => { const [y, m, dd] = d.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
+  const note = noteField(past ? `Applied, ${prettyDay(date)}` : 'Where I applied it today', dayRec.verse_applied_notes ?? null, {
+    placeholder: past ? 'Nothing written that day.' : 'Where I applied it today', readOnly: past,
+    onSave: v2 => setField('verse_applied_notes', v2) });
 
   const body = h('div', { class: 'vs' },
     h('div', { class: 'vs-top' },
-      h('span', { class: 'vs-theme' }, v.theme),
+      h('span', { class: 'vs-theme' }, past ? `${v.theme} · ${prettyDay(date)}` : v.theme),
       h('span', { class: 'vs-top-r' }, h('button', { class: 'vs-chip', onclick: chapter }, `${r.book} ${r.ch} ›`), select)),
     h('blockquote', { class: 'vs-verse' }, text, cite),
     def,
     watch,
-    h('div', { class: 'vs-apply' }, note, h('div', { class: 'applied-actions' }, h('button', { class: 'btn ghost', onclick: journalSheet }, 'Journal'), saveBtn)));
+    h('div', { class: 'vs-apply' }, note, past ? null : h('button', { class: 'btn ghost', onclick: journalSheet }, 'Journal')));
   screen(v.ref, body);
   // The verse keeps a large, readable size; it only shrinks (down to 17 px) if a long passage would not fit.
   // Balance the two big pieces: the verse starts large (26 px) and gives up size only until the lead video's
   // picture has a useful height (110 px). Nothing scrolls; nothing is left empty.
-  const scroller = body.closest('.vscreen-body');
+  const scroller = body.closest('.layer-body');
   const fit = () => {
     if (!scroller?.clientHeight) return;
     const hero = () => body.querySelector('.vs-video.hero');
