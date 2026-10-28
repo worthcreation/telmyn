@@ -62,6 +62,7 @@
   --safe-top: env(safe-area-inset-top, 0px);
   /* Android: main.js sets --nav-fallback to the button height only when it measures the app drawn behind the buttons. */
   --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--nav-fallback, 0px));
+  --inset-probe: env(safe-area-inset-bottom, 0px);
 }
 @media (prefers-color-scheme: dark) {
   :root {

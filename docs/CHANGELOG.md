@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.5 (2026-10-28)
+Fixes 0.12.4's button-area check, which missed the common case (app under the buttons but below the status bar) and let
+the tab bar slide under the buttons. Now: if the phone reports the button area, use it; otherwise reserve 48 px when the
+app's height falls short of the screen by less than 45 px (only the status bar), else nothing. The test app's Me tab
+shows the numbers.
+
 ## 0.12.4 (2026-10-28)
 The space kept for Android's system buttons is measured, not assumed: it is reserved only when the app is drawn behind
 the buttons, and rechecked whenever the window changes. Before, a fixed 48 px was always added, which left a gap at the

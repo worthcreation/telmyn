@@ -17,9 +17,13 @@ const root = document.getElementById('app');
 function reserveAndroidNav() {
   const set = () => {
     const standalone = matchMedia('(display-mode: standalone)').matches;
-    const behind = standalone && /Android/i.test(navigator.userAgent) && innerHeight >= screen.height - 8;
+    // The app's height falls short of the screen by the bars it is NOT drawn under: about 40 px for the status bar,
+    // about 48 px for the buttons. Short by less than 45 means the buttons are covering the app, so reserve them.
+    const short = screen.height - innerHeight;
+    const insetSet = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--inset-probe')) > 0;
+    const behind = standalone && /Android/i.test(navigator.userAgent) && !insetSet && short < 45;
     document.documentElement.style.setProperty('--nav-fallback', behind ? '48px' : '0px');
-    document.documentElement.dataset.screen = `${innerWidth}x${innerHeight} of ${screen.width}x${screen.height}, ${behind ? 'behind buttons' : 'above buttons'}`;
+    document.documentElement.dataset.screen = `${innerWidth}x${innerHeight} of ${screen.width}x${screen.height} (short ${short}), inset ${insetSet ? 'reported' : 'none'}, ${behind ? 'reserving 48 for buttons' : 'no reserve'}`;
   };
   set(); addEventListener('resize', set);
 }
