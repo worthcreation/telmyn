@@ -40,18 +40,17 @@ export async function listVersions() {
 
 export const passageUrl = (ref, version) => `https://www.biblegateway.com/passage/?search=${encodeURIComponent(ref)}&version=${encodeURIComponent(version)}`;
 
-// Bible study videos for a verse from one creator, cached on the phone for 30 days.
-export const CREATORS = [
-  ['bibleproject', 'BibleProject'], ['lookatthebook', 'Look at the Book'], ['mikewinger', 'Mike Winger'], ['gotquestions', 'GotQuestions'],
-].map(([key, name]) => ({ key, name }));
-export const getCreator = () => getMeta('study_creator', 'bibleproject');
-export const setCreator = c => setMeta('study_creator', c);
+// Bible study videos: BibleProject only (Ross's call: the others were often off-topic). Their overview of the book,
+// plus their videos on the verse's main word when there are any. Cached on the phone for 30 days.
+export const CREATORS = [{ key: 'bibleproject', name: 'BibleProject' }];
+export const getCreator = async () => 'bibleproject';
 
-export async function fetchVideos(ref, creator) {
-  const key = `videos:${creator}:${ref}`;
+export async function fetchVideos(ref, creator = 'bibleproject', topic = null) {
+  const key = `videos:${creator}:${ref}${topic ? `:${topic}` : ''}`;
   const cached = await getMeta(key);
   if (cached && Date.now() - cached.at < 30 * 86400000) return cached.list;
-  const r = await fetch(`${API_BASE}/videos?ref=${encodeURIComponent(ref)}&creator=${encodeURIComponent(creator)}`)
+  const q = `ref=${encodeURIComponent(ref)}&creator=${encodeURIComponent(creator)}${topic ? `&topic=${encodeURIComponent(topic)}` : ''}`;
+  const r = await fetch(`${API_BASE}/videos?${q}`)
     .catch(() => { throw new Error('Could not reach the verse service. Check the connection and try again.'); });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || 'Could not load videos.');
@@ -59,8 +58,6 @@ export async function fetchVideos(ref, creator) {
   return data.videos;
 }
 
-// Today's follow-along video for a block (newest upload from a fixed channel). Fixed for the whole day once loaded,
-// so the same video plays at 6:30 and again later, and it works offline after the first load.
 export async function fetchDaily(source, date) {
   const key = `daily:${source}:${date}`;
   const cached = await getMeta(key);

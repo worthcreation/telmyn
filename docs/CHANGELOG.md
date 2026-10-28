@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.1 (2026-10-28)
+Verse study rebuilt as one screen that goes deeper than the Today card instead of repeating it: the verse with its key
+words highlighted in the text (tap one for the Greek or Hebrew word, transliteration and meaning, shown right under the
+verse; key words a version words differently appear as tap targets after it), the chapter in its own reading sheet with
+today's verses marked, BibleProject videos (the verse's main word, then the book overview) played in the in-app player,
+and where it was applied today. Study videos are BibleProject only; the other creators were often off the passage.
+
 ## 0.10.0 (2026-10-28)
 Videos YouTube won't play inside the app (the library's Shorts) can be replaced on the spot: the player offers
 "Find one that plays", searches through the Worker for videos that are embeddable, allowed outside YouTube and

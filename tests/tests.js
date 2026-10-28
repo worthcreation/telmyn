@@ -181,6 +181,14 @@ if (typeof document !== 'undefined') {
   const log = fs.readFileSync(new URL('../docs/CHANGELOG.md', import.meta.url), 'utf8');
   results.push(['changelog has this version', log.includes(`## ${app} (`), app]);
   if (!log.includes(`## ${app} (`)) failed.push(results[results.length - 1]);
+  // Verse study: key words of James 1:5 are found in the NKJV text and highlighted.
+  const { markKeyWords } = await import('../js/ui/verse.js');
+  const nkjv = 'If any of you lacks wisdom, let him ask of God, who gives to all liberally and without reproach, and it will be given to him.';
+  const mk = markKeyWords(nkjv, orig.verses['James 1:5'].words);
+  const hl = mk.parts.filter(p => p.w).map(p => p.t.toLowerCase());
+  const okKw = ['lacks', 'wisdom', 'ask', 'god'].every(x => hl.includes(x)) && mk.parts.map(p => p.t).join('') === nkjv;
+  results.push(['verse study highlights key words without changing the text', okKw, hl.join(', ')]);
+  if (!okKw) failed.push(results[results.length - 1]);
   for (const [n, ok, m] of results) console.log(`${ok ? 'PASS' : 'FAIL'} ${n}${m ? ': ' + m : ''}`);
   console.log(failed.length ? `${failed.length} failed` : `All ${results.length} passed`);
   if (failed.length) process.exitCode = 1;

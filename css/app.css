@@ -604,3 +604,49 @@ button.test-banner { border: 0; font: inherit; font-size: 13px; width: 100%; }
 .vb-choice small { font-size: 12px; color: rgb(243 244 241 / .7); }
 .vb-error { top: 30%; }
 .vb-choice, .vb-choice b, .vb-choice small { text-align: left; }
+/* ---------- Verse study sheet ---------- */
+.vs { display: grid; gap: var(--s3); grid-template-columns: minmax(0, 1fr); }
+.vs-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
+.vs-theme { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--spirit); }
+.vs-version { width: auto; min-width: 5.5em; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 6px 12px; font: inherit; font-size: 14px; font-weight: 600; }
+.vs-verse { margin: 0; padding: var(--s3) var(--s4); background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--spirit); border-radius: var(--r-card); text-align: center; display: grid; gap: var(--s2); }
+.vs-text { margin: 0; font: 400 22px/1.6 var(--font-verse); font-style: normal; }
+.vs-cite { margin: 0; font: 600 15px var(--font-verse); color: var(--spirit); }
+.kw, .kw-extra { font: inherit; color: inherit; background: color-mix(in srgb, var(--spirit) 12%, transparent); border: 0; border-bottom: 2px dotted var(--spirit); border-radius: 4px; padding: 0 2px; margin: 0; }
+.kw.on, .kw-extra.on { background: color-mix(in srgb, var(--spirit) 30%, transparent); border-bottom-style: solid; }
+.kw-more { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: var(--s2); font: 400 15px var(--font-body); }
+.kw-extra { font: 600 14px var(--font-body); padding: 2px 8px; }
+.vs-def { display: grid; gap: 2px; padding: var(--s2) var(--s3); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--spirit); border-radius: var(--r-btn); min-height: 92px; align-content: start; }
+.vs-def-top { display: flex; align-items: baseline; gap: var(--s3); }
+.vs-orig { font: 400 28px/1.2 'SBL Greek', 'Noto Serif', var(--font-verse); }
+.vs-orig.hebrew { font-family: 'SBL Hebrew', 'Noto Serif Hebrew', 'Times New Roman', serif; }
+.vs-tr { color: var(--ink-2); font-size: 15px; }
+.vs-line { margin: 0; font-size: 15px; }
+.vs-line b { color: var(--ink-2); font-weight: 600; margin-right: 4px; }
+.vs-more { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s2); align-items: stretch; }
+.vs-chapter { display: grid; align-content: center; gap: 2px; text-align: left; padding: var(--s2) var(--s3); color: var(--ink); }
+.vs-chapter small, .vs-video small { font-size: 12px; color: var(--ink-2); font-weight: 500; }
+.vs-watch { display: grid; gap: 6px; min-width: 0; }
+.vs-video { display: grid; grid-template-columns: 72px minmax(0, 1fr); overflow: hidden; gap: var(--s2); align-items: center; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-btn); padding: 4px; color: var(--ink); min-width: 0; }
+.vs-video .vb-thumb { width: 72px; }
+.vs-video > span:last-child { display: grid; min-width: 0; }
+.vs-video b { font-size: 13px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vs-apply { display: grid; gap: var(--s2); }
+.vs-applied { font-size: 16px; min-height: 0; }
+.ctx { padding: 0 var(--s1); }
+.ctx .ctx-text { font-size: 19px; line-height: 1.7; color: var(--ink-2); }
+.vb-thumb { display: block; }
+.vs-video > span:last-child { text-align: left; justify-items: start; }
+@media (max-height: 760px) {
+  .vs { gap: var(--s2); }
+  .vs-text { font-size: 18px; line-height: 1.5; }
+  .vs-verse { padding: var(--s2) var(--s3); gap: 4px; }
+  .kw-more { margin-top: 4px; }
+  .vs-def { min-height: 0; padding: 6px var(--s3); }
+  .vs-orig { font-size: 22px; }
+  .vs-def .vs-line.muted { display: none; }
+  .vs-video { padding: 2px; }
+  .vs-applied { height: 44px; }
+  .vs-apply .btn { min-height: 40px; }
+}
+.vs-video b { display: block; min-width: 0; } .vs-video > span:last-child { overflow: hidden; } .vs-watch, .vs-more > * { min-width: 0; }

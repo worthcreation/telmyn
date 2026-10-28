@@ -62,9 +62,6 @@ async function versions() {
 // Results are filtered to the creator's own channel and cached for 30 days, so searches stay rare.
 const CREATORS = {
   bibleproject: { name: 'BibleProject', channel: /^BibleProject$/i, q: (b) => `BibleProject ${b}` },
-  lookatthebook: { name: 'Look at the Book', channel: /^desiring\s*god$/i, q: (b, c) => `Look at the Book ${b} ${c}` },
-  mikewinger: { name: 'Mike Winger', channel: /^mike\s*winger$/i, q: (b, c) => `Mike Winger ${b} ${c}` },
-  gotquestions: { name: 'GotQuestions', channel: /^gotquestions(\.org)?$/i, q: (b, c, v) => `${b} ${c}:${v} GotQuestions` },
 };
 const MONTH = 60 * 60 * 24 * 30;
 
@@ -74,15 +71,17 @@ async function videos(url, env) {
   const m = ref.match(/^([1-3]?\s?[A-Za-z ]+?)\s(\d+)(?::(\d+))?/);
   if (!who || !m) return { status: 400, body: { error: 'Bad reference or creator.' } };
   if (!env.YOUTUBE_KEY) return { status: 500, body: { error: 'Video search is not set up yet.' } };
+  // topic: the verse's main word (e.g. wisdom). Then the search is for that word, and titles must name it.
+  const topic = (url.searchParams.get('topic') || '').toLowerCase().replace(/[^a-z ]/g, '').trim().slice(0, 30);
   const api = new URL('https://www.googleapis.com/youtube/v3/search');
-  api.search = new URLSearchParams({ part: 'snippet', type: 'video', videoEmbeddable: 'true', relevanceLanguage: 'en', maxResults: '25', q: who.q(m[1], m[2], m[3] || '1'), key: env.YOUTUBE_KEY });
+  api.search = new URLSearchParams({ part: 'snippet', type: 'video', videoEmbeddable: 'true', videoSyndicated: 'true', relevanceLanguage: 'en', maxResults: '25', q: topic ? `BibleProject ${topic}` : who.q(m[1], m[2], m[3] || '1'), key: env.YOUTUBE_KEY });
   const r = await fetch(api);
   const d = await r.json();
   if (!r.ok) return { status: 502, body: { error: d.error?.message || `YouTube returned ${r.status}.` } };
   // Keep only the creator's main channel, and only videos whose title names the book.
   const book = m[1].replace(/^([1-3])\s?/, '$1 ').trim().toLowerCase();
   const decode = t => t.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
-  const list = (d.items || []).filter(x => who.channel.test(x.snippet?.channelTitle || '') && decode(x.snippet?.title || '').toLowerCase().includes(book)).slice(0, 4).map(x => ({
+  const list = (d.items || []).filter(x => who.channel.test(x.snippet?.channelTitle || '') && decode(x.snippet?.title || '').toLowerCase().includes(topic || book)).slice(0, 4).map(x => ({
     id: x.id.videoId, title: x.snippet.title, channel: x.snippet.channelTitle, published: x.snippet.publishedAt,
     thumb: x.snippet.thumbnails?.medium?.url || x.snippet.thumbnails?.default?.url,
   }));
