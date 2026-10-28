@@ -3,7 +3,7 @@ import { state, setField, addFluid, undoFluid, addProtein, addEvent, load } from
 import * as db from '../db.js';
 import { planFor, blockStatus } from '../program/index.js';
 import { hourlyHistory } from '../hourly.js';
-import { now, hhmm, addDays } from '../clock.js';
+import { now, hhmm, addDays, daysBetween } from '../clock.js';
 import { DAY_FIELDS, FLUID_KINDS, ozFromMl, cleanNumber, fluidTotals, blankDay } from '../schema.js';
 
 export function fluidSheet() {
@@ -34,20 +34,23 @@ export async function lastWeight() {
   return days.length ? { value: days[0].weight_lb, date: days[0].date } : { value: null, date: null };
 }
 
-// Weight entry: a number box prefilled with the last reading, plus half-pound nudges.
+// Weight entry: last reading shown, number box prefilled, half-pound nudges, Save (or the keyboard's Go).
 export function weightSheet(onSave) {
-  lastWeight().then(({ value }) => {
-    const input = h('input', { type: 'number', inputmode: 'decimal', step: 0.1, min: 0, value: state.day.weight_lb ?? value ?? '', 'aria-label': 'Weight in pounds' });
+  lastWeight().then(({ value, date }) => {
+    const input = h('input', { class: 'weight-in', type: 'number', inputmode: 'decimal', step: 0.1, min: 0, placeholder: 'lb', value: state.day.weight_lb ?? value ?? '', 'aria-label': 'Weight in pounds',
+      onkeydown: e => { if (e.key === 'Enter') save(); } });
     const nudge = d => () => { input.value = (Math.round(((Number(input.value) || value || 0) + d) * 10) / 10).toFixed(1); };
+    const save = async () => {
+      const n = cleanNumber(input.value);
+      if (n === null) return toast('Enter a weight first');
+      await setField('weight_lb', n); toast(`Weight ${n} lb saved`); s.close(); onSave?.();
+    };
+    const age = date ? daysBetween(date, state.date) : null;
     const s = sheet('Weight', h('div', { class: 'stack' },
       h('div', { class: 'row' }, h('button', { class: 'chip', onclick: nudge(-0.5) }, '−0.5'), input, h('button', { class: 'chip', onclick: nudge(0.5) }, '+0.5')),
-      h('p', { class: 'muted small' }, 'Mornings, after the bathroom, before food. Judge by the weekly average on Progress.'),
-      h('button', { class: 'btn', onclick: async () => {
-        const n = cleanNumber(input.value);
-        if (n === null) return toast('Enter a weight first');
-        await setField('weight_lb', n); toast(`Weight ${n} lb saved`); s.close(); onSave?.();
-      } }, 'Save')));
-    requestAnimationFrame(() => input.focus());
+      h('p', { class: 'muted small center' }, value === null ? 'No weight on record yet.' : `Last: ${value} lb, ${age === 0 ? 'today' : age === 1 ? 'yesterday' : `${age} days ago`}.`),
+      h('button', { class: 'btn', onclick: save }, 'Save')));
+    requestAnimationFrame(() => { input.focus(); input.select(); });
   });
 }
 

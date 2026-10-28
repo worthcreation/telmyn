@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.1 (2026-10-28)
+Weight is a chip in Today's quick row (red when a day or more old), not a full row. Its entry sheet is compact: a big
+number box prefilled with the last reading, half-pound nudges, the last reading's date, Save or the keyboard's Go.
+
 ## 0.12.0 (2026-10-28)
 Grip break moves into the top strip: the Grip pill is the button, its arrow shows the next palms, Undo on the message.
 Its old row on Today is now Weight: last reading and how old it is (red past a day), tap to enter today's. Reminders

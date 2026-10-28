@@ -52,13 +52,12 @@ export function renderToday(root, rerender) {
     requestAnimationFrame(fit);
   }).catch(() => { verseText.textContent = 'Tap to read today’s verse.'; verseText.classList.remove('loading'); verseText.classList.add('offline'); });
 
-  // Weight: one row. Shows the last reading and how old it is; warns past 24 hours; tap to enter today's.
-  const weightRow = h('button', { class: 'btn ghost weight-btn', onclick: () => weightSheet(rerender) }, h('span', {}, 'Weight'), h('small', { class: 'weight-last' }, 'Loading…'));
+  // Weight: a chip in the quick row (used once a day). Red when nothing has been logged for a day or more.
+  const weightChip = h('button', { class: 'chip raised weight-chip', onclick: () => weightSheet(rerender) }, 'Weight');
   lastWeight().then(({ value, date }) => {
     const age = date ? daysBetween(date, state.date) : null;
-    const stale = age === null || age >= 1;
-    weightRow.querySelector('.weight-last').textContent = value === null ? 'Not logged yet. Tap to add.' : `${value} lb, ${age === 0 ? 'today' : age === 1 ? 'yesterday' : `${age} days ago`}`;
-    weightRow.classList.toggle('warn', stale);
+    weightChip.classList.toggle('warn', age === null || age >= 1);
+    weightChip.title = value === null ? 'Not logged yet' : `${value} lb, ${age === 0 ? 'today' : `${age} day${age === 1 ? '' : 's'} ago`}`;
   });
 
   // Two columns, each centered on its own. Left: what's next and what it involves, and the button named for it.
@@ -87,14 +86,14 @@ export function renderToday(root, rerender) {
     versePanel,
     nextCard,
     h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList),
-    weightRow,
     h('section', { class: 'quick', 'aria-label': 'Quick add' },
       h('button', { class: 'chip raised', 'aria-label': `Ankle pumps, ${pumps} today`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`),
-      h('button', { class: 'chip raised', onclick: fluidSheet }, '+ Fluid'),
-      h('button', { class: 'chip raised', onclick: proteinSheet }, '+ Protein'),
+      h('button', { class: 'chip raised', onclick: fluidSheet }, 'Fluid'),
+      h('button', { class: 'chip raised', onclick: proteinSheet }, 'Protein'),
       FOODS.map(f => h('button', { class: 'chip raised', onclick: async () => {
         const e = await addFood(f);
         const parts = [f.protein_g ? `${f.protein_g} g protein` : '', f.fluid ? `${f.fluid.oz} oz water` : ''].filter(Boolean).join(', ');
         toast(`${f.label}: ${parts}`, { label: 'Undo', fn: async () => { await undoFood(e); toast(`${f.label} removed`); } });
-      } }, `+ ${f.label}`))));
+      } }, f.label)),
+      weightChip));
 }
