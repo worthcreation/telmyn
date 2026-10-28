@@ -39,6 +39,8 @@ a { color: var(--lane); }
   border-radius: var(--r-btn); border: 1px solid var(--line); color: var(--ink);
   background: linear-gradient(90deg, var(--fill) calc(var(--p) * 100%), var(--surface) 0); }
 .pill.met { --fill: color-mix(in srgb, var(--ok) 35%, transparent); }
+.pill.grip { background: var(--surface); border-color: var(--line); }
+.pill.grip:active { transform: scale(var(--press)); }
 .pill-l { font-size: var(--fs-micro); font-weight: 600; color: var(--ink-2); }
 .pill-v { font: 700 var(--fs-lead)/var(--lh-tight) var(--font-display); }
 .pill-v small { font: 500 var(--fs-caption) var(--font-body); color: var(--ink-2); }
@@ -59,6 +61,7 @@ a { color: var(--lane); }
 .btn:active { transform: scale(var(--press)); filter: brightness(.9); }
 .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
 .btn.ghost:active { background: color-mix(in srgb, var(--ink) 8%, transparent); filter: none; }
+.btn.ghost.on { border-color: var(--ok); }
 .btn.big { flex: 1; font-size: var(--fs-lead); }
 .btn:disabled { opacity: .35; }
 .btn.file { position: relative; overflow: hidden; }
@@ -103,7 +106,7 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 
 /* ===== Today ===== */
 .next { display: grid; grid-template-columns: 1fr auto; column-gap: var(--s3); align-items: stretch; color: var(--lane-ink); border-radius: var(--r-card); padding: 12px var(--s4) 16px;
-  background: repeating-linear-gradient(90deg, transparent 0 calc(25% - 2px), color-mix(in srgb, var(--lane-ink) 22%, transparent) calc(25% - 2px) 25%), var(--lane); }
+  background: var(--lane); }
 .next.done { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
 .next-main { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 2px; min-width: 0; }
 .next-side { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 10px; }
@@ -126,7 +129,7 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .next.done .ring .ring-fg { stroke: var(--ok); }
 .ring-n { position: absolute; inset: 0; display: flex; align-items: baseline; justify-content: center; padding-top: 15px; white-space: nowrap; font: 600 var(--fs-micro) var(--font-body); }
 .ring-n b { font: 700 var(--fs-lead)/1 var(--font-display); }
-.day { flex: 0 1 auto; min-height: var(--h-tap); overflow-y: auto; }
+.day { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
 .daylist { display: grid; gap: 2px; }
 .daylist button { width: 100%; display: grid; grid-template-columns: 1.6em 1fr auto; align-items: center; gap: var(--s2); background: none; border: 0; border-bottom: 1px solid var(--line); padding: 6px 0; text-align: left; min-height: 40px; }
 .dl-mark { color: var(--ok); font-weight: 700; font-size: var(--fs-small); }
@@ -134,7 +137,7 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .dl-when { color: var(--ink-2); font-size: var(--fs-small); }
 .closed-summary { display: grid; grid-template-columns: 1.6em 1fr; gap: var(--s2); padding: var(--s1) 0; border-bottom: 1px solid var(--line); color: var(--ink-2); font-size: var(--fs-small); }
 .closed-summary .dl-name { font-weight: 500; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.verse-card { flex: 1 1 auto; min-height: clamp(76px, 14vh, 118px); max-height: 42vh; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; text-align: center;
+.verse-card { flex: 1 1 auto; min-height: clamp(150px, 24vh, 280px); max-height: 42vh; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; text-align: center;
   color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--spirit); border-radius: var(--r-card); padding: var(--s3) var(--s4); }
 .vp-theme { font-size: var(--fs-caption); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
 .vp-text { font: 400 var(--fs-verse-max)/var(--lh-verse) var(--font-verse); font-style: normal; }
@@ -142,8 +145,10 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .vp-text.loading { min-height: 3em; }
 .vp-text.offline { font-size: var(--fs-body); color: var(--ink-2); }
 .vp-ref { font: 600 var(--fs-small) var(--font-verse); color: var(--spirit); }
-.grip-btn { width: 100%; font-size: var(--fs-body); }
-.grip-btn small { font-weight: 500; opacity: .8; font-size: var(--fs-small); }
+.weight-btn { width: 100%; font-size: var(--fs-body); }
+.weight-btn small { font-weight: 500; opacity: .8; font-size: var(--fs-small); }
+.weight-btn.warn { color: var(--ink); border-color: var(--warn); }
+.weight-btn.warn small { color: var(--warn); opacity: 1; }
 .quick { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--s2); }
 .quick .chip { padding: var(--s2) var(--s1); font-size: clamp(var(--fs-caption), 3.8vw, var(--fs-body)); }
 
@@ -391,10 +396,13 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .update { position: fixed; top: calc(var(--safe-top) + 8px); left: 50%; transform: translateX(-50%); z-index: var(--z-update); background: var(--spirit); color: var(--lane-ink); border: 0; border-radius: var(--r-pill); padding: var(--s2) var(--s4); font-weight: 600; }
 
 /* ===== Short screens (680px of visible height or less): tighter spacing, nothing hidden that matters ===== */
-@media (max-height: 680px) {
-  .view { gap: var(--s2); }
+/* Up to 800px of visible height (most phones): the next card keeps only its essentials so the verse and the day list both fit. */
+@media (max-height: 800px) {
   .next { padding: var(--s2) var(--s3) 10px; }
   .next-sum, .next-then { display: none; }
+}
+@media (max-height: 680px) {
+  .view { gap: var(--s2); }
   .daylist button { min-height: 34px; padding-top: 2px; padding-bottom: 2px; }
   .closed-summary { padding: 2px 0; }
   .verse-card { min-height: 96px; padding: var(--s2) var(--s3); gap: var(--s1); }

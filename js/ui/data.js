@@ -3,6 +3,7 @@ import * as db from '../db.js';
 import { state, importDay, setField } from '../state.js';
 import { parseHandoff, buildHandoff } from '../handoff.js';
 import { APP_VERSION } from '../version.js';
+import { remindersOn, setReminders } from '../remind.js';
 import { TEST, SPEED, isoDate, hhmm, now } from '../clock.js';
 
 // Android only shares certain file types, so the backup goes out as plain text with a .json name.
@@ -34,6 +35,7 @@ async function copyBackup(text) {
 export async function dataActions() {
   const persisted = await navigator.storage?.persisted?.();
   // How old the last backup is; after 7 days it gets the warning color.
+  const on = await remindersOn();
   const last = await db.getMeta('last_export');
   const days = last ? Math.floor((Date.now() - new Date(last)) / 86400000) : null;
   const backupLine = last === null ? 'No backup yet. Export one to keep a copy off the phone.'
@@ -67,6 +69,8 @@ export async function dataActions() {
           catch (err) { toast(err.message); }
         } })),
       TEST ? h('button', { class: 'btn ghost', onclick: testSheet }, 'Test controls') : null),
+    h('button', { class: `btn ghost${on ? ' on' : ''}`, onclick: async () => { const v = await setReminders(!on); if (v !== !on && !on) return; location.reload(); } }, on ? 'Reminders on' : 'Reminders off'),
+    h('p', { class: 'muted small' }, 'Grip break after an hour, ankle pumps after 30 min, weight once a day. Only when overdue.'),
     h('p', { class: `muted small${last === null || days >= 7 ? ' warn' : ''}` }, backupLine),
     h('p', { class: 'muted small' }, persisted ? 'Storage is protected from automatic clearing.' : 'Add to Home Screen to protect storage from being cleared.'),
     h('p', { class: 'muted small' }, `Version ${APP_VERSION}${TEST ? ', test app (separate data)' : ''}`),

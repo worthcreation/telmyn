@@ -1,8 +1,8 @@
 // App frame: status pills on top (every tab), the current tab, and the tab bar at the bottom.
-import { h, fill } from './dom.js';
-import { state } from '../state.js';
+import { h, fill, toast } from './dom.js';
+import { state, logGripBreak, removeEvent } from '../state.js';
 import { fluidTotals } from '../schema.js';
-import { hourlyHistory } from '../hourly.js';
+import { hourlyHistory, nextPalms } from '../hourly.js';
 import { TEST, hhmm } from '../clock.js';
 import { fluidSheet, proteinSheet } from './forms.js';
 import { renderToday } from './today.js';
@@ -18,6 +18,20 @@ const TABS = [
   { id: 'me', label: 'Me', icon: '☰', render: renderMe },
 ];
 const current = () => TABS.find(t => `#${t.id}` === location.hash) || TABS[0];
+
+// Grip break lives in the top strip: tap logs one with the next palms; the arrow says which. Undo on the message.
+function gripPill(day, rerender) {
+  const hist = hourlyHistory(day, state.events);
+  const np = nextPalms(hist) || 'down';
+  const arrow = np === 'up' ? '↑' : '↓';
+  return h('button', { class: 'pill grip', 'aria-label': `Grip break, ${hist.length} today. Tap to log one, palms ${np}.`, onclick: async () => {
+    const { e, n, palms } = await logGripBreak();
+    rerender();
+    toast(`Grip break ${n}, palms ${palms}`, { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); } });
+  } },
+    h('span', { class: 'pill-l' }, `Grip ${arrow}`),
+    h('span', { class: 'pill-v' }, String(hist.length), h('small', {}, ' today')));
+}
 
 // Labeled fill bar: the numbers sit inside the bar.
 function pill(label, value, target, unit, onclick) {
@@ -41,7 +55,7 @@ export function renderShell(root) {
     h('nav', { class: 'status', 'aria-label': 'Today at a glance' },
       pill('Fluids', fluids, TARGETS.fluids_oz[0], 'oz', fluidSheet),
       pill('Protein', day.protein_g, TARGETS.protein_g[0], 'g', proteinSheet),
-      plan.hourly ? pill('Grip', hourlyHistory(day, state.events).length, null, 'today', () => { location.hash = '#today'; }) : null),
+      plan.hourly ? gripPill(day, rerender) : null),
     view,
     h('nav', { class: 'tabs-bar', 'aria-label': 'Sections' }, TABS.map(x =>
       h('button', { class: x === tab ? 'on' : '', 'aria-current': x === tab ? 'page' : null, onclick: () => { location.hash = `#${x.id}`; } },

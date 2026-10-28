@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.0 (2026-10-28)
+Grip break moves into the top strip: the Grip pill is the button, its arrow shows the next palms, Undo on the message.
+Its old row on Today is now Weight: last reading and how old it is (red past a day), tap to enter today's. Reminders
+(Me tab, off by default): grip break after an hour, ankle pumps after 30 minutes on a workday, weight once a day; only
+when overdue, nothing when you are on track; they run while the app is open or in the background (alarms with the app
+closed are phase 2). The next block card is plain blue (the lane stripes are gone). Today's verse gets real room again.
+
 ## 0.11.3 (2026-10-28)
 Hangs keep counting after the target beep; the time saved is what was actually held, when you drop and tap Stop.
 

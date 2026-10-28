@@ -39,6 +39,15 @@ export async function addEvent(type, data = {}) {
   return e;
 }
 
+// One grip break: the next palms in the alternation. Returns the event (for Undo).
+export async function logGripBreak() {
+  const { hourlyHistory, nextPalms } = await import('./hourly.js');
+  const hist = hourlyHistory(state.day, state.events);
+  const palms = nextPalms(hist) || 'down';
+  const e = await addEvent('block_done', { block: 'hourly', palms, quick: true });
+  return { e, n: hist.length + 1, palms };
+}
+
 export async function removeEvent(e) {
   await db.del('events', e.id);
   state.events = state.events.filter(x => x.id !== e.id);

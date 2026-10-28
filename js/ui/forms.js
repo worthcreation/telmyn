@@ -27,6 +27,30 @@ export function fluidSheet() {
   const s = sheet('Add fluid', body);
 }
 
+// Most recent weight on record (today's if logged, else the latest earlier day).
+export async function lastWeight() {
+  if (state.day.weight_lb !== null && state.day.weight_lb !== undefined) return { value: state.day.weight_lb, date: state.date };
+  const days = (await db.all('days')).filter(d => d.weight_lb !== null && d.weight_lb !== undefined && d.date < state.date).sort((a, b) => b.date.localeCompare(a.date));
+  return days.length ? { value: days[0].weight_lb, date: days[0].date } : { value: null, date: null };
+}
+
+// Weight entry: a number box prefilled with the last reading, plus half-pound nudges.
+export function weightSheet(onSave) {
+  lastWeight().then(({ value }) => {
+    const input = h('input', { type: 'number', inputmode: 'decimal', step: 0.1, min: 0, value: state.day.weight_lb ?? value ?? '', 'aria-label': 'Weight in pounds' });
+    const nudge = d => () => { input.value = (Math.round(((Number(input.value) || value || 0) + d) * 10) / 10).toFixed(1); };
+    const s = sheet('Weight', h('div', { class: 'stack' },
+      h('div', { class: 'row' }, h('button', { class: 'chip', onclick: nudge(-0.5) }, '−0.5'), input, h('button', { class: 'chip', onclick: nudge(0.5) }, '+0.5')),
+      h('p', { class: 'muted small' }, 'Mornings, after the bathroom, before food. Judge by the weekly average on Progress.'),
+      h('button', { class: 'btn', onclick: async () => {
+        const n = cleanNumber(input.value);
+        if (n === null) return toast('Enter a weight first');
+        await setField('weight_lb', n); toast(`Weight ${n} lb saved`); s.close(); onSave?.();
+      } }, 'Save')));
+    requestAnimationFrame(() => input.focus());
+  });
+}
+
 export function proteinSheet() {
   const body = h('div', { class: 'stack' },
     h('div', { class: 'grid4' }, [20, 30, 40, 50].map(g => h('button', { class: 'chip', onclick: () => add(g) }, `${g} g`))),

@@ -5,6 +5,7 @@ import { renderShell, startShell } from './ui/shell.js';
 import { toast, h } from './ui/dom.js';
 import { APP_VERSION } from './version.js';
 import { loadPicks } from './ui/media.js';
+import { startReminders } from './remind.js';
 
 const root = document.getElementById('app');
 
@@ -45,6 +46,7 @@ async function boot() {
   }, 1000);
 
   registerSW();
+  startReminders();
 }
 
 function registerSW() {

@@ -5,15 +5,13 @@ import { state, addEvent, addFood, undoFood, removeEvent } from '../state.js';
 import * as db from '../db.js';
 import { FOODS } from '../foods.js';
 import { nextBlock, blockStatus } from '../program/index.js';
-import { hhmm } from '../clock.js';
-import { hourlyHistory, nextPalms } from '../hourly.js';
+import { hhmm, daysBetween } from '../clock.js';
 import { runBlock } from './runner.js';
-import { fluidSheet, proteinSheet } from './forms.js';
+import { fluidSheet, proteinSheet, weightSheet, lastWeight } from './forms.js';
 import { verseSheet } from './verse.js';
 import { getVersion, fetchVerse } from '../scripture.js';
 
 const prettyDate = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
-const arrow = p => (p === 'up' ? '↑' : p === 'down' ? '↓' : '–');
 
 // Day ring: blocks closed out of the day's blocks, drawn around the count.
 function ring(done, total) {
@@ -45,7 +43,7 @@ export function renderToday(root, rerender) {
   const verseRef = h('span', { class: 'vp-ref' }, verse.ref);
   const versePanel = h('button', { class: 'verse-card', onclick: verseSheet, 'aria-label': `Today's verse, ${verse.ref}` },
     h('span', { class: 'vp-theme' }, verse.theme), verseText, verseRef);
-  const fit = () => fitText(versePanel, verseText, { clamp: true });
+  const fit = () => requestAnimationFrame(() => fitText(versePanel, verseText, { clamp: true }));
   new ResizeObserver(fit).observe(versePanel);
   document.fonts?.ready.then(() => requestAnimationFrame(fit));
   getVersion().then(v => fetchVerse(verse.ref, v)).then(d => {
@@ -54,17 +52,14 @@ export function renderToday(root, rerender) {
     requestAnimationFrame(fit);
   }).catch(() => { verseText.textContent = 'Tap to read today’s verse.'; verseText.classList.remove('loading'); verseText.classList.add('offline'); });
 
-  // Grip break (the hourly block): one button. Logs the next palms in the alternation; Undo if it was wrong.
-  let hourly = null;
-  if (plan.hourly) {
-    const hist = hourlyHistory(day, events);
-    const np = nextPalms(hist) || 'down';
-    hourly = h('button', { class: 'btn ghost grip-btn', 'aria-label': `Grip break done, palms ${np}. ${hist.length} today.`, onclick: async () => {
-      const e = await addEvent('block_done', { block: 'hourly', palms: np, quick: true });
-      rerender();
-      toast(`Grip break ${hist.length + 1}, palms ${np}`, { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); } });
-    } }, h('span', {}, `Grip break ${arrow(np)}`), h('small', {}, `${hist.length} today`));
-  }
+  // Weight: one row. Shows the last reading and how old it is; warns past 24 hours; tap to enter today's.
+  const weightRow = h('button', { class: 'btn ghost weight-btn', onclick: () => weightSheet(rerender) }, h('span', {}, 'Weight'), h('small', { class: 'weight-last' }, 'Loading…'));
+  lastWeight().then(({ value, date }) => {
+    const age = date ? daysBetween(date, state.date) : null;
+    const stale = age === null || age >= 1;
+    weightRow.querySelector('.weight-last').textContent = value === null ? 'Not logged yet. Tap to add.' : `${value} lb, ${age === 0 ? 'today' : age === 1 ? 'yesterday' : `${age} days ago`}`;
+    weightRow.classList.toggle('warn', stale);
+  });
 
   // Two columns, each centered on its own. Left: what's next and what it involves, and the button named for it.
   // Right: the day ring and Skip.
@@ -92,7 +87,7 @@ export function renderToday(root, rerender) {
     versePanel,
     nextCard,
     h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList),
-    hourly,
+    weightRow,
     h('section', { class: 'quick', 'aria-label': 'Quick add' },
       h('button', { class: 'chip raised', 'aria-label': `Ankle pumps, ${pumps} today`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`),
       h('button', { class: 'chip raised', onclick: fluidSheet }, '+ Fluid'),
