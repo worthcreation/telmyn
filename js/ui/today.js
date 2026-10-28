@@ -1,7 +1,7 @@
 // Today tab: date and verse, the next block with the day ring, the rest of the day, verse text in spare space,
 // hourly palms, and quick adds. Status pills and tabs live in the shell.
 import { h, toast, fill } from './dom.js';
-import { state, addEvent, addFood, undoFood } from '../state.js';
+import { state, addEvent, addFood, undoFood, removeEvent } from '../state.js';
 import { FOODS } from '../foods.js';
 import { nextBlock, blockStatus } from '../program/index.js';
 import { hhmm } from '../clock.js';
@@ -12,7 +12,6 @@ import { verseSheet } from './verse.js';
 import { getVersion, fetchVerse } from '../scripture.js';
 
 const prettyDate = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
-const timeOf = iso => (iso ? hhmm(new Date(iso)) : '');
 const arrow = p => (p === 'up' ? '↑' : p === 'down' ? '↓' : '–');
 
 // Day ring: blocks closed out of the day's blocks, drawn around the count.
@@ -58,20 +57,16 @@ export function renderToday(root, rerender) {
     requestAnimationFrame(() => fitVerse(versePanel));
   }).catch(() => versePanel.classList.add('empty'));
 
+  // Grip break (the hourly block): one button. Logs the next palms in the alternation; Undo if it was wrong.
   let hourly = null;
   if (plan.hourly) {
     const hist = hourlyHistory(day, events);
     const np = nextPalms(hist) || 'down';
-    const other = np === 'up' ? 'down' : 'up';
-    const quick = async palms => { await addEvent('block_done', { block: 'hourly', palms, quick: true }); toast(`Hourly block ${hist.length + 1} logged, palms ${palms}`); rerender(); };
-    hourly = h('section', { class: 'hourly', 'aria-label': 'Hourly blocks' },
-      h('p', { class: 'hourly-line' },
-        h('b', {}, `Hourly ${hist.length}`),
-        h('span', { class: 'arrows' }, hist.map(x => h('span', { class: x.palms || 'none', title: x.at ? timeOf(x.at) : 'from handoff' }, arrow(x.palms))))),
-      h('div', { class: 'hourly-actions' },
-        h('button', { class: 'btn', 'aria-label': `Done, palms ${np}`, onclick: () => quick(np) }, `Done ${arrow(np)}`),
-        h('button', { class: 'btn ghost', 'aria-label': `Done, palms ${other}`, onclick: () => quick(other) }, arrow(other)),
-        h('button', { class: 'btn ghost', onclick: () => runBlock(plan.hourly, { onExit: rerender }) }, 'Guided')));
+    hourly = h('button', { class: 'btn ghost grip-btn', 'aria-label': `Grip break done, palms ${np}. ${hist.length} today.`, onclick: async () => {
+      const e = await addEvent('block_done', { block: 'hourly', palms: np, quick: true });
+      rerender();
+      toast(`Grip break ${hist.length + 1}, palms ${np}`, { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); } });
+    } }, h('span', {}, `Grip break ${arrow(np)}`), h('small', {}, `${hist.length} today`));
   }
 
   // Two columns, each centered on its own. Left: what's next and what it involves, and the button named for it.

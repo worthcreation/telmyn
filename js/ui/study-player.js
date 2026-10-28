@@ -6,7 +6,7 @@ import { state } from '../state.js';
 import { getCreator, fetchVideos, fetchDaily, CREATORS } from '../scripture.js';
 
 let apiReady;
-function loadApi() {
+export function loadApi() {
   if (window.YT?.Player) return Promise.resolve();
   apiReady ||= new Promise(resolve => {
     const prev = window.onYouTubeIframeAPIReady;

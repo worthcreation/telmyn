@@ -106,7 +106,7 @@ export async function logSheet(date = state.date, group = null) {
     return [
       h('ol', { class: 'ds-list', 'aria-label': 'Blocks' }, rows),
       h('div', { class: 'ds-tiles' }, tile('Fluids', fluids, 'oz'), tile('Protein', ctx.rec.protein_g, 'g'),
-        hourly !== null ? tile('Hourly', hourly) : tile('Row', rowMin, 'min'), tile('Weight', ctx.rec.weight_lb, 'lb')),
+        hourly !== null ? tile('Grip', hourly) : tile('Row', rowMin, 'min'), tile('Weight', ctx.rec.weight_lb, 'lb')),
     ];
   }
 

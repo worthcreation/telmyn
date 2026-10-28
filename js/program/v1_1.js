@@ -165,7 +165,7 @@ export const BLOCKS = {
   },
 
   hourly: {
-    name: 'Hourly block', minutes: 3, repeatable: true, workdaysOnly: true,
+    name: 'Grip break', minutes: 3, repeatable: true, workdaysOnly: true,
     note: 'CoC Trainer. Arms extended. Recite the verse during each 5 sec hold.',
     steps: [
       step.do('Palms up or down?', { choice: 'palms', options: ['up', 'down'], cue: 'Alternate each block. The suggestion below follows your last one.' }),

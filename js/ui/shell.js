@@ -41,7 +41,7 @@ export function renderShell(root) {
     h('nav', { class: 'status', 'aria-label': 'Today at a glance' },
       pill('Fluids', fluids, TARGETS.fluids_oz[0], 'oz', fluidSheet),
       pill('Protein', day.protein_g, TARGETS.protein_g[0], 'g', proteinSheet),
-      plan.hourly ? pill('Hourly', hourlyHistory(day, state.events).length, null, 'today', () => { location.hash = '#today'; }) : null),
+      plan.hourly ? pill('Grip', hourlyHistory(day, state.events).length, null, 'today', () => { location.hash = '#today'; }) : null),
     view,
     h('nav', { class: 'tabs-bar', 'aria-label': 'Sections' }, TABS.map(x =>
       h('button', { class: x === tab ? 'on' : '', 'aria-current': x === tab ? 'page' : null, onclick: () => { location.hash = `#${x.id}`; } },

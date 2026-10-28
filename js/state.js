@@ -39,6 +39,12 @@ export async function addEvent(type, data = {}) {
   return e;
 }
 
+export async function removeEvent(e) {
+  await db.del('events', e.id);
+  state.events = state.events.filter(x => x.id !== e.id);
+  emit();
+}
+
 export async function addSet(row) {
   const s = { date: state.date, at: stamp(), source: 'app', ...row };
   s.id = await db.put('sets', s);

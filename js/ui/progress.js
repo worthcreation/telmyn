@@ -71,7 +71,7 @@ export async function renderProgress(root) {
     h('section', { class: 'stats' },
       bar('Strength', strengthDone, strengthPlanned || null, `${strengthDone}/${strengthPlanned} sessions${pulls.length ? `, best pull set ${Math.max(...pulls)}` : ''}`),
       bar('Endurance', rowDone, rowPlanned || null, `${rowDone}/${rowPlanned} rows, ${Math.round(rowMin)} min`),
-      bar('Grip', hangs.length ? Math.max(...hangs) : 0, 20, `${hourly} hourly blocks${hangs.length ? `, best hang ${Math.max(...hangs)} sec` : ''}`),
+      bar('Grip', hangs.length ? Math.max(...hangs) : 0, 20, `${hourly} grip breaks${hangs.length ? `, best hang ${Math.max(...hangs)} sec` : ''}`),
       bar('Mobility', stretchDays, elapsed, `${stretchDays}/${elapsed} morning stretches`),
       bar('Fuel', proteinDays, elapsed, `${proteinDays}/${elapsed} days at ${TARGETS.protein_g[0]} g protein`),
       bar('Hydration', fluidDays, elapsed, `${fluidDays}/${elapsed} days at ${TARGETS.fluids_oz[0]} oz`),

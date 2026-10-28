@@ -10,12 +10,16 @@ import { transitionSec } from '../flow.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
 import { studyPlayer } from './study-player.js';
 import { DAILY_VIDEO } from '../config.js';
+import { runVideoBlock } from './video-block.js';
 
 let wakeLock = null;
 const lockScreen = async () => { try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* optional */ } };
 const unlockScreen = () => { wakeLock?.release?.(); wakeLock = null; };
 
-export function runBlock(block, { onExit } = {}) {
+export function runBlock(block, opts = {}) {
+  // A block with a daily video is the video itself; the steps are only the fallback.
+  if (DAILY_VIDEO[block.id] && !opts.steps) return runVideoBlock(block, DAILY_VIDEO[block.id], { onExit: opts.onExit, fallback: () => runBlock(block, { ...opts, steps: true }) });
+  const { onExit } = opts;
   const { EXERCISES } = state.plan.program.data;
   unlockAudio();
   lockScreen();
@@ -31,10 +35,12 @@ export function runBlock(block, { onExit } = {}) {
   const studyEl = h('section', { class: 'study' }), mainEl = h('main', { class: 'runner-main' }), footEl = h('footer', { class: 'runner-foot' });
   const timerEl = h('div', { class: 'timer-chip' });
   root.append(headEl, lanesEl, studyEl, mainEl, footEl, timerEl);
+  // In video mode the step card stays slim; tap it to show the cue and links.
+  mainEl.addEventListener('click', e => { if (!e.target.closest('button, input, a, label')) root.classList.toggle('show-detail'); });
   // Re-lay out when the study video opens or closes (video mode moves the timer into its own corner chip).
   new MutationObserver(() => render()).observe(root, { attributes: true, attributeFilter: ['class'] });
   document.body.append(root);
-  const study = studyPlayer(studyEl, { daily: DAILY_VIDEO[block.id] || null });
+  const study = studyPlayer(studyEl);
   const cue = name => { study.duck(); sounds[name](); };
   addEvent('block_start', { block: block.id });
 
