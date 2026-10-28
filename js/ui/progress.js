@@ -3,6 +3,8 @@
 import { h, fill } from './dom.js';
 import * as db from '../db.js';
 import { journalSheet } from './journal.js';
+import { logSheet } from './forms.js';
+import { fluidTotals } from '../schema.js';
 import { state } from '../state.js';
 import { planFor, blockStatus, PROGRAMS } from '../program/index.js';
 import { addDays, weekday, WEEKDAYS } from '../clock.js';
@@ -21,7 +23,7 @@ export async function renderProgress(root) {
   const monday = addDays(today, -((weekday(today) + 6) % 7));
   const dates = Array.from({ length: 7 }, (_, k) => addDays(monday, k));
   const inWeek = r => r.date >= monday && r.date <= dates[6];
-  const [days, events, sets] = await Promise.all([db.all('days'), db.all('events'), db.all('sets')]);
+  const [days, events, sets, fluids] = await Promise.all([db.all('days'), db.all('events'), db.all('sets'), db.all('fluids')]);
   const dayRec = Object.fromEntries(days.filter(inWeek).map(d => [d.date, d]));
   const ev = events.filter(inWeek), st = sets.filter(inWeek);
   const evOn = d => ev.filter(e => e.date === d);
@@ -33,7 +35,8 @@ export async function renderProgress(root) {
     const n = p.blocks.filter(b => blockStatus(b.id, evOn(d), dayRec[d] || null, p)).length;
     const frac = p.blocks.length ? n / p.blocks.length : 0;
     const before = d < start;
-    return h('div', { class: `wk${d === today ? ' today' : ''}${d > today ? ' future' : ''}${before ? ' before' : ''}` },
+    const open = d <= today && !before;
+    return h(open ? 'button' : 'div', { class: `wk${d === today ? ' today' : ''}${d > today ? ' future' : ''}${before ? ' before' : ''}`, onclick: open ? () => logSheet(d) : null, 'aria-label': open ? `Open the log for ${d}` : null },
       h('span', { class: 'wk-d' }, WEEKDAYS[weekday(d)][0]),
       h('span', { class: 'wk-dot', style: `--p:${before ? 0 : frac}` }),
       h('span', { class: 'wk-n' }, d > today || before ? '' : `${n}/${p.blocks.length}`));
@@ -54,6 +57,13 @@ export async function renderProgress(root) {
   const legsDays = past.filter(d => done(d, 'evening_legs')).length;
   const proteinDays = past.filter(d => (dayRec[d]?.protein_g || 0) >= TARGETS.protein_g[0]).length;
   const versesApplied = past.filter(d => dayRec[d]?.verse_applied_notes).length;
+  // Fluids per day: imported total plus app entries. Blank days stay out of averages.
+  const fluidOn = d => { const t = fluidTotals(dayRec[d] || {}, fluids.filter(f => f.date === d)); return t.water_oz === null && t.other_drinks_oz === null ? null : (t.water_oz || 0) + (t.other_drinks_oz || 0); };
+  const fluidDays = past.filter(d => (fluidOn(d) || 0) >= TARGETS.fluids_oz[0]).length;
+  const avg = vals => { const v = vals.filter(x => x !== null && x !== undefined); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null; };
+  const avgTile = (label, v, unit, n) => h('div', { class: 'avg-tile' }, h('span', { class: 'avg-l' }, label), h('b', {}, v === null ? '–' : `${Math.round(v)}`), h('small', {}, v === null ? 'not logged' : `${unit} avg, ${n} day${n === 1 ? '' : 's'}`));
+  const proteinVals = past.map(d => dayRec[d]?.protein_g ?? null), fluidVals = past.map(fluidOn), weightVals = past.map(d => dayRec[d]?.weight_lb ?? null);
+  const nOf = v => v.filter(x => x !== null && x !== undefined).length;
 
   fill(root,
     h('header', { class: 'top' }, h('div', { class: 'top-text' }, h('h1', { class: 'daytype' }, 'This week'), h('p', { class: 'date' }, `Week of ${monday}`))),
@@ -64,7 +74,13 @@ export async function renderProgress(root) {
       bar('Grip', hangs.length ? Math.max(...hangs) : 0, 20, `${hourly} hourly blocks${hangs.length ? `, best hang ${Math.max(...hangs)} sec` : ''}`),
       bar('Mobility', stretchDays, elapsed, `${stretchDays}/${elapsed} morning stretches`),
       bar('Fuel', proteinDays, elapsed, `${proteinDays}/${elapsed} days at ${TARGETS.protein_g[0]} g protein`),
+      bar('Hydration', fluidDays, elapsed, `${fluidDays}/${elapsed} days at ${TARGETS.fluids_oz[0]} oz`),
       bar('Recovery', legsDays, elapsed, `${legsDays}/${elapsed} evenings legs up`),
       h('button', { class: 'stat spirit', onclick: journalSheet }, h('div', { class: 'stat-top' }, h('span', { class: 'stat-l' }, 'Spirit'),
-        h('span', { class: 'stat-d' }, `Verse applied on ${versesApplied} of ${elapsed} days. Tap for your journal.`)))));
+        h('span', { class: 'stat-d' }, `Verse applied on ${versesApplied} of ${elapsed} days. Tap for your journal.`)))),
+    h('section', { class: 'avg', 'aria-label': 'Weekly averages' },
+      avgTile('Protein', avg(proteinVals), 'g', nOf(proteinVals)),
+      avgTile('Fluids', avg(fluidVals), 'oz', nOf(fluidVals)),
+      avgTile('Weight', avg(weightVals), 'lb', nOf(weightVals))),
+    h('p', { class: 'muted small progress-hint' }, 'Tap a day above to open or close out its log.'));
 }

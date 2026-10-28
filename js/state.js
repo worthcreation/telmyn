@@ -3,7 +3,8 @@ import * as db from './db.js';
 import { blankDay } from './schema.js';
 import { planFor } from './program/index.js';
 import { verseFor } from './verses.js';
-import { now } from './clock.js';
+import { now, hhmm } from './clock.js';
+import { foodLine, addLine, removeLine } from './foods.js';
 
 export const state = { date: null, plan: null, verse: null, day: null, events: [], sets: [], fluids: [] };
 
@@ -60,6 +61,32 @@ export async function undoFluid() {
 
 export async function addProtein(g) {
   await setField('protein_g', (state.day.protein_g || 0) + g);
+}
+
+// One tap logs a whole food: protein, the fluid it is mixed with, and a timed eating note.
+// Returns the event so the caller can offer Undo.
+export async function addFood(food) {
+  const line = foodLine(food, hhmm());
+  let fluidId = null;
+  if (food.fluid) {
+    const f = { date: state.date, at: stamp(), kind: food.fluid.kind, oz: food.fluid.oz, ml: food.fluid.ml ?? null };
+    fluidId = f.id = await db.put('fluids', f);
+    state.fluids.push(f);
+  }
+  if (food.protein_g) state.day.protein_g = (state.day.protein_g || 0) + food.protein_g;
+  state.day.eating_notes = addLine(state.day.eating_notes, line);
+  await db.put('days', state.day);
+  return addEvent('food', { food: food.key, protein_g: food.protein_g || 0, fluid_id: fluidId, line });
+}
+
+export async function undoFood(e) {
+  if (e.fluid_id) { await db.del('fluids', e.fluid_id); state.fluids = state.fluids.filter(f => f.id !== e.fluid_id); }
+  if (e.protein_g) { const p = (state.day.protein_g || 0) - e.protein_g; state.day.protein_g = p > 0 ? p : null; }
+  state.day.eating_notes = removeLine(state.day.eating_notes, e.line);
+  await db.put('days', state.day);
+  await db.del('events', e.id);
+  state.events = state.events.filter(x => x.id !== e.id);
+  emit();
 }
 
 // Import a parsed handoff. A newer handoff updates the day: every value it carries replaces the stored one,

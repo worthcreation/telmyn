@@ -1,7 +1,8 @@
 // Today tab: date and verse, the next block with the day ring, the rest of the day, verse text in spare space,
 // hourly palms, and quick adds. Status pills and tabs live in the shell.
 import { h, toast, fill } from './dom.js';
-import { state, addEvent } from '../state.js';
+import { state, addEvent, addFood, undoFood } from '../state.js';
+import { FOODS } from '../foods.js';
 import { nextBlock, blockStatus } from '../program/index.js';
 import { hhmm } from '../clock.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
@@ -100,7 +101,12 @@ export function renderToday(root, rerender) {
     versePanel,
     hourly,
     h('section', { class: 'quick', 'aria-label': 'Quick add' },
-      h('button', { class: 'chip-btn', onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Ankle pumps ${pumps}`),
+      h('button', { class: 'chip-btn', 'aria-label': `Ankle pumps, ${pumps} today`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`),
       h('button', { class: 'chip-btn', onclick: fluidSheet }, '+ Fluid'),
-      h('button', { class: 'chip-btn', onclick: proteinSheet }, '+ Protein')));
+      h('button', { class: 'chip-btn', onclick: proteinSheet }, '+ Protein'),
+      FOODS.map(f => h('button', { class: 'chip-btn food', onclick: async () => {
+        const e = await addFood(f);
+        const parts = [f.protein_g ? `${f.protein_g} g protein` : '', f.fluid ? `${f.fluid.oz} oz water` : ''].filter(Boolean).join(', ');
+        toast(`${f.label}: ${parts}`, { label: 'Undo', fn: async () => { await undoFood(e); toast(`${f.label} removed`); } });
+      } }, `+ ${f.label}`))));
 }

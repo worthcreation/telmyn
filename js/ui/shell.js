@@ -9,6 +9,7 @@ import { renderToday } from './today.js';
 import { renderProgress } from './progress.js';
 import { renderGear } from './gear.js';
 import { renderMe } from './me.js';
+import { testSheet } from './data.js';
 
 const TABS = [
   { id: 'today', label: 'Today', icon: '◉', render: renderToday },
@@ -36,7 +37,7 @@ export function renderShell(root) {
   const rerender = () => renderShell(root);
 
   fill(root,
-    TEST ? h('div', { class: 'test-banner' }, `Test mode, ${hhmm()}`) : null,
+    TEST ? h('button', { class: 'test-banner', onclick: testSheet }, `Test mode, ${state.date} ${hhmm()}. Tap for controls.`) : null,
     h('nav', { class: 'status', 'aria-label': 'Today at a glance' },
       pill('Fluids', fluids, TARGETS.fluids_oz[0], 'oz', fluidSheet),
       pill('Protein', day.protein_g, TARGETS.protein_g[0], 'g', proteinSheet),

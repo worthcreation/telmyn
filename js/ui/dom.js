@@ -31,12 +31,15 @@ export function sheet(title, body, { onClose, full = false } = {}) {
   return { close, el: wrap };
 }
 
-export function toast(msg) {
+// Short message at the bottom. Optional action: { label, fn } adds a button (Undo) and keeps it up longer.
+export function toast(msg, action = null) {
   document.querySelectorAll('.toast').forEach(t => t.remove());
-  const t = h('div', { class: 'toast', role: 'status' }, msg);
+  const hide = () => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); };
+  const t = h('div', { class: `toast${action ? ' has-action' : ''}`, role: 'status' }, h('span', {}, msg),
+    action ? h('button', { class: 'toast-act', onclick: () => { hide(); action.fn(); } }, action.label) : null);
   document.body.append(t);
   requestAnimationFrame(() => t.classList.add('show'));
-  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2200);
+  setTimeout(hide, action ? 5000 : 2200);
 }
 
 let audio;

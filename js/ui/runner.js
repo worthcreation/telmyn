@@ -37,6 +37,17 @@ export function runBlock(block, { onExit } = {}) {
   const cue = name => { study.duck(); sounds[name](); };
   addEvent('block_start', { block: block.id });
 
+  // The block counts as done once the work is finished: reaching the cooldown logs it, so leaving during
+  // the cooldown (or the phone closing the app) never loses the block.
+  const cooldownAt = steps.findIndex((s, k) => k > 0 && s.phase === 'Cooldown');
+  let counted = false;
+  const logDone = () => addEvent('block_done', { block: block.id, started_at: startedAt, done_at: now().toISOString(), palms: entry.palms || entry.palmsSaved || null });
+
+  // Android back gesture: ask before leaving instead of dropping the block silently.
+  history.pushState({ telmynRunner: true }, '');
+  const onPop = () => { if (!root.isConnected) return; history.pushState({ telmynRunner: true }, ''); closeMenu(); };
+  addEventListener('popstate', onPop);
+
   const lastSet = ex => [...state.sets].reverse().find(s => s.exercise === ex);
   const suggestPalms = () => nextPalms(hourlyHistory(state.day, state.events));
 
@@ -103,6 +114,7 @@ export function runBlock(block, { onExit } = {}) {
     clearTimers();
     i = k;
     const s = steps[i];
+    if (i === cooldownAt && !counted) { counted = true; logDone(); }
     if (s.kind === 'rest' && !paused) return runRest(s);
     if ((s.kind === 'timed' || isTimedSet(s)) && auto && !paused) {
       const t = transitionSec(steps[i - 1], s);
@@ -145,7 +157,10 @@ export function runBlock(block, { onExit } = {}) {
     clearTimers();
     unlockScreen();
     study.destroy();
-    await addEvent(type, { block: block.id, started_at: startedAt, done_at: now().toISOString(), palms: entry.palms || null });
+    removeEventListener('popstate', onPop);
+    if (history.state?.telmynRunner) history.back();
+    // Already counted at the cooldown: finishing or leaving the cooldown adds nothing more.
+    if (!counted) await addEvent(type, { block: block.id, started_at: startedAt, done_at: now().toISOString(), palms: entry.palms || null });
     if (type === 'block_done') burst(innerWidth / 2, innerHeight * 0.45);
     root.classList.add('closing');
     setTimeout(() => { root.remove(); onExit?.(); }, 200);
@@ -154,7 +169,13 @@ export function runBlock(block, { onExit } = {}) {
   function back() { entry = { palms: entry.palms }; if (i > 0) enter(i - 1, false); }
 
   function closeMenu() {
-    const menu = h('div', { class: 'runner-menu' },
+    if (root.querySelector('.runner-menu')) return;
+    const menu = counted
+      ? h('div', { class: 'runner-menu' },
+        h('p', {}, 'Block is logged as done. Leave the cooldown?'),
+        h('button', { class: 'btn', onclick: () => finish('block_done') }, 'Leave'),
+        h('button', { class: 'btn ghost', onclick: () => menu.remove() }, 'Keep going'))
+      : h('div', { class: 'runner-menu' },
       h('p', {}, 'Leave this block?'),
       h('button', { class: 'btn', onclick: () => finish('block_partial') }, 'Mark partial'),
       h('button', { class: 'btn ghost', onclick: () => finish('block_skip') }, 'Mark skipped'),

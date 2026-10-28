@@ -5,6 +5,7 @@ import { planFor, weekAndDay, nextBlock } from '../js/program/index.js';
 import { cleanNumber, fluidTotals, blankDay } from '../js/schema.js';
 import { transitionSec } from '../js/flow.js';
 import { hourlyHistory, nextPalms } from '../js/hourly.js';
+import { FOODS, foodByKey, foodLine, addLine, removeLine } from '../js/foods.js';
 
 const results = [];
 const test = (name, fn) => { try { fn(); results.push([name, true]); } catch (e) { results.push([name, false, e.message]); } };
@@ -91,6 +92,12 @@ test('fluid entries add up by bucket', () => {
 test('imported total plus new entries', () => {
   const t = fluidTotals({ ...blankDay('2026-10-27'), water_oz: 22.9, other_drinks_oz: 24 }, [{ kind: 'water', oz: 25 }]);
   eq(t, { water_oz: 47.9, other_drinks_oz: 24 });
+});
+test('Huel preset adds 40 g protein and 16.9 oz (500 ml) water', () => { const f = foodByKey('huel'); eq([f.protein_g, f.fluid.kind, f.fluid.oz, f.fluid.ml], [40, 'huel_water', 16.9, 500]); });
+test('food note line adds and undoes cleanly', () => {
+  const line = foodLine(FOODS[0], '08:10');
+  eq(removeLine(addLine(null, line), line), null, 'blank stays blank');
+  eq(removeLine(addLine('Eggs.', line), line), 'Eggs.', 'other notes kept');
 });
 test('no data stays blank', () => eq(fluidTotals(blankDay('2026-10-27'), []), { water_oz: null, other_drinks_oz: null }));
 test('hourly: imported 3 plus 1 in app', () => {
