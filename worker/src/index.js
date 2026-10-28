@@ -137,6 +137,49 @@ async function search(url, env) {
   return { status: 200, body: { q, videos: list } };
 }
 
+// Videos on the day's passage from any teacher: the title must name the passage (book and chapter, ideally the
+// verse), the video must be allowed to play inside apps, and it must be longer than 90 seconds (no Shorts).
+// Well-known Bible teachers rank first; anyone else is included only when the title names the passage.
+// One search (100 units) plus one details lookup (1 unit), cached 30 days.
+const TRUSTED = /^(BibleProject|Desiring God|Ligonier Ministries|Mike Winger|GotQuestions\.org|Truth For Life|The Bible Recap|Grace to You|Gospel in Life|Alistair Begg)$/i;
+const seconds = iso => { const m = (iso || '').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); return m ? (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0) : 0; };
+async function passage(url, env) {
+  const ref = url.searchParams.get('ref') || '';
+  const m = ref.match(/^([1-3]?\s?[A-Za-z ]+?)\s(\d+):(\d+)(?:-(\d+))?$/);
+  if (!m) return { status: 400, body: { error: 'Bad reference.' } };
+  if (!env.YOUTUBE_KEY) return { status: 500, body: { error: 'Video search is not set up yet.' } };
+  const [, book, ch, v1, v2] = m;
+  const api = new URL('https://www.googleapis.com/youtube/v3/search');
+  api.search = new URLSearchParams({ part: 'snippet', type: 'video', videoEmbeddable: 'true', videoSyndicated: 'true', safeSearch: 'strict',
+    relevanceLanguage: 'en', maxResults: '25', q: `${book} ${ch}:${v1}`, key: env.YOUTUBE_KEY });
+  const r = await fetch(api);
+  const d = await r.json();
+  if (!r.ok) return { status: 502, body: { error: d.error?.message || `YouTube returned ${r.status}.` } };
+  const decode = t => t.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+  const bookRe = book.replace(/\s+/g, '\\s*');
+  const titleRe = new RegExp(`\\b${bookRe}\\s*(?:chapter\\s*)?${ch}(?::(\\d+)(?:\\s*[-–]\\s*(\\d+))?)?\\b`, 'i');
+  const want = [Number(v1), Number(v2 || v1)];
+  const scored = (d.items || []).map(x => {
+    const title = decode(x.snippet?.title || '');
+    const t = title.match(titleRe);
+    if (!t) return null;
+    const a = t[1] ? Number(t[1]) : null, b = t[2] ? Number(t[2]) : a;
+    const covers = a === null ? 1 : (a <= want[1] && (b ?? a) >= want[0] ? 3 : 0);
+    if (!covers) return null;
+    return { id: x.id.videoId, title, channel: x.snippet.channelTitle, thumb: x.snippet.thumbnails?.medium?.url || x.snippet.thumbnails?.default?.url,
+      on: a === null ? 'chapter' : 'verse', score: covers + (TRUSTED.test(x.snippet.channelTitle || '') ? 2 : 0) };
+  }).filter(Boolean);
+  if (scored.length) {
+    const det = new URL('https://www.googleapis.com/youtube/v3/videos');
+    det.search = new URLSearchParams({ part: 'contentDetails', id: scored.map(x => x.id).join(','), key: env.YOUTUBE_KEY });
+    const dd = await (await fetch(det)).json().catch(() => ({}));
+    const long = new Set((dd.items || []).filter(x => seconds(x.contentDetails?.duration) > 90).map(x => x.id));
+    for (const x of scored) x.keep = long.has(x.id);
+  }
+  const list = scored.filter(x => x.keep).sort((a, b) => b.score - a.score).slice(0, 8).map(({ keep, score, ...x }) => x);
+  return { status: 200, body: { ref, videos: list } };
+}
+
 async function handle(req, ctx, env) {
   const url = new URL(req.url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors(req) });
@@ -161,6 +204,10 @@ async function handle(req, ctx, env) {
     const out = await videos(url, env);
     if (out.status !== 200) return json(req, out.body, out.status);
     res = new Response(JSON.stringify(out.body), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': `public, max-age=${MONTH}`, ...cors(req) } });
+  } else if (url.pathname === '/passage') {
+    const out = await passage(url, env);
+    if (out.status !== 200) return json(req, out.body, out.status);
+    res = new Response(JSON.stringify(out.body), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': `public, max-age=${MONTH}`, ...cors(req) } });
   } else if (url.pathname === '/search') {
     const out = await search(url, env);
     if (out.status !== 200) return json(req, out.body, out.status);
@@ -174,7 +221,7 @@ async function handle(req, ctx, env) {
     if (!list.length) return json(req, { error: 'Could not read the version list.' }, 502);
     res = json(req, { versions: list });
   } else {
-    return json(req, { ok: true, routes: ['/verse?ref=Galatians%206:9&v=NKJV', '/versions', '/videos?ref=Galatians%206:9&creator=bibleproject', '/daily?source=gator', '/search?q=scapular%20pull%20up'] });
+    return json(req, { ok: true, routes: ['/verse?ref=Galatians%206:9&v=NKJV', '/versions', '/videos?ref=Galatians%206:9&creator=bibleproject', '/daily?source=gator', '/search?q=scapular%20pull%20up', '/passage?ref=James%201:5'] });
   }
   ctx.waitUntil(cache.put(req, res.clone()));
   return res;

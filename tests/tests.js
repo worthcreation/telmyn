@@ -189,6 +189,19 @@ if (typeof document !== 'undefined') {
   const okKw = ['lacks', 'wisdom', 'ask', 'god'].every(x => hl.includes(x)) && mk.parts.map(p => p.t).join('') === nkjv;
   results.push(['verse study highlights key words without changing the text', okKw, hl.join(', ')]);
   if (!okKw) failed.push(results[results.length - 1]);
+  // Every key word lands inside the verse text (no separate chips), for James 1:5 and Galatians 6:9 in NKJV.
+  {
+    const { markWords } = await import('../js/ui/verse.js');
+    const cases = [['James 1:5', nkjv, { liberally: 'generously', 'without reproach': 'finding fault' }],
+      ['Galatians 6:9', 'And let us not grow weary while doing good, for in due season we shall reap if we do not lose heart.', { good: 'in well', season: 'in time', 'lose heart': 'giving up' }]];
+    for (const [ref, t, expect] of cases) {
+      const r = markWords(t, orig.verses[ref].words);
+      const map = Object.fromEntries(r.parts.filter(p => p.w).map(p => [p.t.toLowerCase(), p.w.en]));
+      const ok = !r.leftover.length && r.parts.map(p => p.t).join('') === t && Object.entries(expect).every(([k, v]) => map[k] === v);
+      results.push([`${ref}: every key word sits inside the text`, ok, JSON.stringify(map)]);
+      if (!ok) failed.push(results[results.length - 1]);
+    }
+  }
   for (const [n, ok, m] of results) console.log(`${ok ? 'PASS' : 'FAIL'} ${n}${m ? ': ' + m : ''}`);
   console.log(failed.length ? `${failed.length} failed` : `All ${results.length} passed`);
   if (failed.length) process.exitCode = 1;

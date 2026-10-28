@@ -70,3 +70,16 @@ export async function fetchDaily(source, date) {
   await setMeta(key, out);
   return out;
 }
+
+// Videos on the passage itself from any teacher (titles must name the passage; no Shorts). Cached 30 days.
+export async function fetchPassageVideos(ref) {
+  const key = `videos:passage:${ref}`;
+  const cached = await getMeta(key);
+  if (cached && Date.now() - cached.at < 30 * 86400000) return cached.list;
+  const r = await fetch(`${API_BASE}/passage?ref=${encodeURIComponent(ref)}`)
+    .catch(() => { throw new Error('Could not reach the verse service.'); });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || 'Could not load videos.');
+  await setMeta(key, { at: Date.now(), list: data.videos });
+  return data.videos;
+}

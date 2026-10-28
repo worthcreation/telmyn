@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.3 (2026-10-28)
+Verse study opens full screen over the app (slightly see-through, back gesture closes it). Every key word now sits
+inside the verse: words a version translates differently are fitted to the right words in the text by their
+neighbors ("generously" is NKJV's "liberally", "finding fault" is "without reproach"), so nothing hangs after the
+verse. Small words are clearly tappable too, and the panel shows meaning, the literal English and how the version
+words it. Videos: teaching on the exact passage from any teacher whose title names it (trusted Bible teachers ranked
+first, no Shorts, new Worker route /passage), then BibleProject; one shown large, the rest under a full-width
+More videos. Chapter is a small chip next to the version picker; the picker has proper padding and its own arrow.
+
 ## 0.10.2 (2026-10-28)
 Verse study: every word is reachable. Key words stay highlighted; every other word that maps to an original word is
 tappable too, and the word panel steps through every original word in order (‹ ›, "7 of 19"). Videos: the BibleProject
