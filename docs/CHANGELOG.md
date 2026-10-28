@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.8 (2026-10-28)
+Descenders stay whole: the g in "Dead hangs" was cut off because display text used a line height of 1 inside a box that
+clips. Nothing uses a line height of 1 now (the tightest is 1.15, a token), and a guard test fails any release that adds
+one back.
+
 ## 0.12.7 (2026-10-28)
 No text crowds or clips inside a button. Quick chips share the row by their content, so a longer label gets more width,
 and keep 8 px inside each edge; the Start button's name scales with the screen width instead of cutting off. A new

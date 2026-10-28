@@ -226,6 +226,10 @@ if (typeof document !== 'undefined') {
     const dupes = scopes.flatMap(([k, list]) => list.filter((x, i) => list.indexOf(x) !== i).map(x => `${x} (${k})`));
     results.push(['every selector defined once per scope', !dupes.length, [...new Set(dupes)].slice(0, 4).join(' | ')]);
     if (dupes.length) failed.push(results[results.length - 1]);
+    // Line height 1 cuts off descenders (the g in "hangs") wherever a box clips; nothing may use it.
+    const lh1 = [...css.matchAll(/(?:line-height:\s*1\s*[;}]|\/1\s+var\()/g)].length;
+    results.push(['no line height of 1 (descenders stay whole)', !lh1, `${lh1} found`]);
+    if (lh1) failed.push(results[results.length - 1]);
     const sizers = jsFiles.filter(f => !f.endsWith('dom.js') && /style\.fontSize/.test(fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')));
     results.push(['text is fitted only by dom.js fitText', !sizers.length, sizers.join(', ')]);
     if (sizers.length) failed.push(results[results.length - 1]);

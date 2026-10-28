@@ -41,7 +41,7 @@
   --fs-verse-min: 18px; /* verse text: fitted between these by the one fit routine */
   --fs-verse-max: 30px;
   --fs-original: 28px;  /* a Greek or Hebrew word */
-  --lh-tight: 1.1;
+  --lh-tight: 1.15;      /* the tightest line height anywhere: room for descenders (g, y, p) */
   --lh-body: 1.4;
   --lh-verse: 1.5;
 
