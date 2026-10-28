@@ -151,7 +151,10 @@ export async function verseSheet(date = null) {
     fill(text, parts.map(p => p.w
       ? h('button', { class: p.w.key ? 'kw' : 'sw', 'data-i': p.i, onclick: () => define(p.i) }, p.t)
       : p.t));
-    define(current >= 0 ? current : Math.max(0, words.findIndex(w => w.key)));
+    // Nothing is marked until you pick a word; the panel says how to start.
+    if (current >= 0) define(current);
+    else fill(def, h('p', { class: 'vs-hint' }, `Tap any word to see the ${heb ? 'Hebrew' : 'Greek'} behind it.`),
+      h('button', { class: 'vs-start', onclick: () => define(0) }, `Or step through all ${words.length} words ›`));
   }
 
   // The whole chapter, today's verses marked, on its own study layer.

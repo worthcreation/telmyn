@@ -826,3 +826,10 @@ button.test-banner { border: 0; font: inherit; font-size: 13px; width: 100%; }
 .j-open { font-size: 13px; font-weight: 600; color: var(--ink-2); justify-self: end; }
 .journal { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
 .journal li { background: none; border: 0; padding: 0; }
+
+/* Verse study 0.10.6: the verse reads as plain text until a word is picked. */
+.kw, .sw { background: none; border: 0; border-radius: 4px; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+.kw.on, .sw.on { background: color-mix(in srgb, var(--spirit) 26%, transparent); box-shadow: 0 2px 0 var(--spirit); padding: 0 2px; }
+.vs-hint { margin: 0; color: var(--ink-2); font-size: 15px; }
+.vs-start { justify-self: start; background: none; border: 0; padding: 4px 0; color: var(--ink); font-weight: 600; font-size: 15px; }
+.vs-def:has(.vs-hint) { align-content: center; }

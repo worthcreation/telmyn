@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.6 (2026-10-28)
+Verse study: the verse reads as plain text with nothing highlighted until you tap a word; then that word (or phrase)
+is marked and its Greek or Hebrew shows below. Before a pick, the panel says how to start or steps through every word.
+
 ## 0.10.5 (2026-10-28)
 One layer system for the whole app: every sheet and full-screen view (verse study, chapter, videos, journal, Day log,
 fluid and protein, import, test controls) is frosted glass over the app, sized to the visible screen so the keyboard
