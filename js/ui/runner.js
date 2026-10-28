@@ -98,7 +98,7 @@ export function runBlock(block, opts = {}) {
     cue('go');
     const [lo, hi] = rangeOf(s);
     const start = now().getTime();
-    timer = { kind: 'countup', total: hi || 60, beeped: false };
+    timer = { kind: 'countup', total: hi || 60, beeped: false, topped: false };
     entry.value = 0;
     timer.int = setInterval(() => {
       const sec = Math.floor((now().getTime() - start) / 1000);
@@ -109,7 +109,8 @@ export function runBlock(block, opts = {}) {
       if (bar) bar.style.transform = `scaleX(${Math.min(1, sec / timer.total)})`;
       const hint = root.querySelector('.countup-hint');
       if (lo && lo !== hi && sec >= lo && !timer.beeped) { timer.beeped = true; cue('tick'); cue('tick'); if (hint) hint.textContent = `Minimum reached. Hold to ${hi} or drop and tap Stop.`; }
-      if (hi && sec >= hi) { clearTimers(); entry.value = hi; cue('end'); advance(true); }
+      // Target met: double beep, then keep counting. The real time is what gets saved when you drop and tap Stop.
+      if (hi && sec >= hi && !timer.topped) { timer.topped = true; cue('end'); if (hint) hint.textContent = `${hi} reached. Keep going as long as you can, then tap Stop.`; }
     }, 100);
     render();
   }
@@ -231,7 +232,7 @@ export function runBlock(block, opts = {}) {
       const [lo, hi] = rangeOf(s);
       body.push(h('div', { class: 'clock-wrap' },
         h('p', { class: 'countup-hint' }, counting
-          ? (lo && lo !== hi ? `One beep at ${lo} sec: minimum reached. Double beep at ${hi}: done, it saves itself.` : `Double beep at ${hi} sec: done, it saves itself.`)
+          ? (lo && lo !== hi ? `One beep at ${lo} sec, double beep at ${hi}. It keeps counting; tap Stop when you drop.` : `Double beep at ${hi} sec. It keeps counting; tap Stop when you drop.`)
           : (entry.value ? 'Saved time below. Adjust if needed, or start again.' : 'Get on the bar, then tap Start. It counts up.')),
         h('div', { class: 'clock' }, fmtSec(Number(entry.value) || 0)), h('div', { class: 'clock-bar' }, h('div', { class: 'clock-fill' }))));
     }

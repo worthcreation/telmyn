@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.11.3 (2026-10-28)
+Hangs keep counting after the target beep; the time saved is what was actually held, when you drop and tap Stop.
+
 ## 0.11.2 (2026-10-28)
 Leaving a block no longer asks anything. ✕ and the back gesture mean the same thing everywhere: close this, record
 nothing. A block left mid-way remembers its step and resumes there (Today's button says Resume); a block already
