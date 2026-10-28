@@ -5,13 +5,30 @@ import { parseHandoff, buildHandoff } from '../handoff.js';
 import { APP_VERSION } from '../version.js';
 import { TEST, isoDate } from '../clock.js';
 
-async function shareOrDownload(name, text, type) {
-  const file = new File([text], name, { type });
+// Android only shares certain file types, so the backup goes out as plain text with a .json name.
+// Returns 'shared', 'cancelled', 'downloaded' or throws.
+async function shareOrDownload(name, text) {
+  const file = new File([text], name, { type: 'text/plain' });
   if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: name }); return; } catch { /* cancelled */ return; }
+    try { await navigator.share({ files: [file], title: name }); return 'shared'; }
+    catch (err) { if (err?.name === 'AbortError') return 'cancelled'; /* otherwise fall through to download */ }
   }
-  const a = h('a', { href: URL.createObjectURL(file), download: name });
+  const url = URL.createObjectURL(file);
+  const a = h('a', { href: url, download: name });
   document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  return 'downloaded';
+}
+
+async function backupText() {
+  const data = await db.exportAll(APP_VERSION);
+  await db.setMeta('last_export', new Date().toISOString());
+  return JSON.stringify(data, null, 1);
+}
+
+async function copyBackup(text) {
+  await navigator.clipboard.writeText(text ?? await backupText());
+  toast('Full record copied. Paste it into the chat.');
 }
 
 export async function dataActions() {
@@ -22,11 +39,20 @@ export async function dataActions() {
       toast('Handoff copied');
     } }, 'Copy today’s handoff'),
     h('button', { class: 'btn ghost', onclick: () => pasteSheet() }, 'Import a handoff'),
-    h('button', { class: 'btn ghost', onclick: async () => {
-      const data = await db.exportAll(APP_VERSION);
-      await db.setMeta('last_export', new Date().toISOString());
-      await shareOrDownload(`telmyn-export-${isoDate()}.json`, JSON.stringify(data, null, 1), 'application/json');
-    } }, 'Export backup'),
+    h('div', { class: 'bar' },
+      h('button', { class: 'btn ghost', onclick: async () => {
+        let text;
+        try {
+          text = await backupText();
+          const how = await shareOrDownload(`telmyn-export-${isoDate()}.json`, text);
+          if (how === 'downloaded') toast('Backup saved to Downloads');
+        } catch (err) {
+          try { await copyBackup(text); } catch { toast(`Export failed: ${err?.message || err}`); }
+        }
+      } }, 'Export backup'),
+      h('button', { class: 'btn ghost', onclick: async () => {
+        try { await copyBackup(); } catch (err) { toast(`Copy failed: ${err?.message || err}`); }
+      } }, 'Copy full record')),
     h('label', { class: 'btn ghost file' }, 'Restore backup',
       h('input', { type: 'file', accept: 'application/json,.json', onchange: async e => {
         try { await db.importAll(JSON.parse(await e.target.files[0].text())); toast('Backup restored'); location.reload(); }
