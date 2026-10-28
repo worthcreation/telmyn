@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.9 (2026-10-28)
+Today's verse is always on Today, right under the date, in its own card that takes the spare space. Type shrinks to fit;
+a long passage ends with … and tap opens it. It refits whenever its space changes, so it can no longer vanish.
+Audit UX fixes: Progress fits short phones; Sunday offers the optional walk; copying the handoff offers to mark the day
+complete; the Me tab shows how old the last backup is (warning after 7 days); the Day log has 5 tabs (Day, Body, Fuel,
+Watch, Notes) instead of 8; template choices left in a pasted handoff ("none / squeeze / sharp") are not imported.
+
 ## 0.9.8 (2026-10-28)
 Video playback: every YouTube video uses the privacy-enhanced player with the app's origin declared. When YouTube
 refuses a video, the app says so in its own words and logs it (meta video_errors) for replacement; Fab Five falls

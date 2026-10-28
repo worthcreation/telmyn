@@ -7,6 +7,9 @@ import { verseFor } from './verses.js';
 const KEY = /^\s*([A-Z][A-Z_ ]*[A-Z]):\s?(.*)$/;
 const split = v => (v ?? '').split('|').map(s => s.trim());
 const orNull = v => (v === undefined || v === null || String(v).trim() === '' ? null : String(v).trim());
+// A line still holding the template's choices ("none / squeeze / sharp", "done / skipped") was not filled in.
+const TEMPLATE = /^[a-z ]+(\s\/\s[a-z ]+)+$/i;
+const filled = v => (orNull(v) && !TEMPLATE.test(orNull(v)) ? orNull(v) : null);
 const nums = v => (v ?? '').split('/').map(s => cleanNumber(s.replace(/\(.*\)/, ''))).filter(n => n !== null);
 
 export function parseHandoff(text) {
@@ -24,7 +27,7 @@ export function parseHandoff(text) {
   const sets = [];
 
   day.handoff_raw = text;
-  day.day_status = orNull(raw.STATUS);
+  day.day_status = filled(raw.STATUS);
 
   const prog = split(raw.PROGRAM);
   day.program_version = orNull(prog[0]);
@@ -38,10 +41,10 @@ export function parseHandoff(text) {
   for (const k of ['WEIGHT_LB', 'PROTEIN_G', 'WATER_OZ', 'OTHER_DRINKS_OZ', 'ROW_MIN']) day[k.toLowerCase()] = cleanNumber(raw[k]);
 
   const st = split(raw.STRETCH);
-  day.stretch_status = orNull(st[0]);
+  day.stretch_status = filled(st[0]);
   day.toe_touch_notes = orNull((st.slice(1).join(' | ').match(/reach:\s*(.*)$/i) || [])[1]);
-  day.fab_five_status = orNull(split(raw.FAB_FIVE)[0]);
-  day.routine_status = orNull(split(raw.ROUTINE)[1]);
+  day.fab_five_status = filled(split(raw.FAB_FIVE)[0]);
+  day.routine_status = filled(split(raw.ROUTINE)[1]);
 
   const pu = split(raw.PULLUPS);
   const puEx = /neutral/i.test(pu[1] || '') ? 'neutral_pullup' : 'chin_up';
@@ -64,7 +67,7 @@ export function parseHandoff(text) {
   day.drinks_notes = orNull(raw.DRINKS_NOTES);
   const pinch = split(raw.PINCH);
   day.pinch_level = ['none', 'squeeze', 'sharp'].includes((pinch[0] || '').toLowerCase()) ? pinch[0].toLowerCase() : null;
-  day.pinch_notes = orNull(pinch.slice(day.pinch_level ? 1 : 0).join(' | '));
+  day.pinch_notes = filled(pinch.slice(day.pinch_level ? 1 : 0).join(' | '));
   day.ankles_feet_notes = orNull(raw.ANKLES_FEET);
   const verse = split(raw.VERSE);
   day.verse_ref = orNull(verse[0]);

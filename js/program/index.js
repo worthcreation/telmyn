@@ -35,6 +35,9 @@ export function planFor(iso) {
     ? p.data.dayOrder(type.routine)
     : ['stretch', 'gates', ...(type.routine ? [type.routine] : []), 'hangs', 'evening_legs'];
 
+  // Sunday is off with an optional walk (program spec). Offered before legs up; "Not today" closes it.
+  if (wd === 0 && BLOCKS.walk && !order.includes('walk')) order.splice(Math.max(0, order.indexOf('evening_legs')), 0, 'walk');
+
   const blocks = order.map(id => ({
     id,
     ...BLOCKS[id],

@@ -1,6 +1,6 @@
 import { h, sheet, toast, fill } from './dom.js';
 import * as db from '../db.js';
-import { state, importDay } from '../state.js';
+import { state, importDay, setField } from '../state.js';
 import { parseHandoff, buildHandoff } from '../handoff.js';
 import { APP_VERSION } from '../version.js';
 import { TEST, SPEED, isoDate, hhmm, now } from '../clock.js';
@@ -33,10 +33,17 @@ async function copyBackup(text) {
 
 export async function dataActions() {
   const persisted = await navigator.storage?.persisted?.();
+  // How old the last backup is; after 7 days it gets the warning color.
+  const last = await db.getMeta('last_export');
+  const days = last ? Math.floor((Date.now() - new Date(last)) / 86400000) : null;
+  const backupLine = last === null ? 'No backup yet. Export one to keep a copy off the phone.'
+    : `Last backup ${days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`}.`;
   return h('div', { class: 'stack' },
     h('button', { class: 'btn ghost', onclick: async () => {
       await navigator.clipboard.writeText(buildHandoff(state));
-      toast('Handoff copied');
+      // Copying the handoff is usually the end of the day: offer to close it out.
+      if (state.day.day_status === 'day complete') toast('Handoff copied');
+      else toast('Handoff copied', { label: 'Mark day complete', fn: async () => { await setField('day_status', 'day complete'); toast('Day marked complete'); } });
     } }, 'Copy today’s handoff'),
     h('button', { class: 'btn ghost', onclick: () => pasteSheet() }, 'Import a handoff'),
     h('div', { class: 'bar' },
@@ -60,6 +67,7 @@ export async function dataActions() {
           catch (err) { toast(err.message); }
         } })),
       TEST ? h('button', { class: 'btn ghost', onclick: testSheet }, 'Test controls') : null),
+    h('p', { class: `muted small${last === null || days >= 7 ? ' warn' : ''}` }, backupLine),
     h('p', { class: 'muted small' }, persisted ? 'Storage is protected from automatic clearing.' : 'Add to Home Screen to protect storage from being cleared.'),
     h('p', { class: 'muted small' }, `Version ${APP_VERSION}${TEST ? ', test app (separate data)' : ''}`),
     null);

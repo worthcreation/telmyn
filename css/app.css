@@ -550,3 +550,45 @@ button.test-banner { border: 0; font: inherit; font-size: 13px; width: 100%; }
 .vb-error { position: absolute; left: 24px; right: 24px; top: 40%; z-index: 3; display: grid; gap: 6px; text-align: center; color: #F3F4F1;
   background: rgb(16 18 21 / .85); border: 1px solid rgb(255 255 255 / .14); border-radius: var(--r-card); padding: var(--s4); }
 .vb-error span { font-size: 14px; color: rgb(243 244 241 / .75); }
+
+/* ---------- Today's verse: always shown, under the date, takes the spare space ---------- */
+.verse-card { flex: 1 1 auto; min-height: 118px; max-height: 42vh; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 6px; text-align: center; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--spirit);
+  border-radius: var(--r-card); padding: var(--s3) var(--s4); }
+.vp-theme { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.verse-card .vp-text { font: 400 28px/1.45 var(--font-verse); font-style: normal; border: 0; padding: 0; }
+.verse-card .vp-text.clamped { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.verse-card .vp-text.loading { min-height: 3em; }
+.verse-card .vp-text.offline { font-size: 17px; color: var(--ink-2); }
+.verse-card .vp-ref { font: 600 15px var(--font-verse); color: var(--spirit); padding: 0; border: 0; }
+.muted.warn { color: var(--warn); font-weight: 600; }
+/* Progress fits short phones without scrolling */
+@media (max-height: 760px) {
+  .view-progress .stats { gap: 6px; }
+  .view-progress .stat { gap: 2px; }
+  .view-progress .stat-l { font-size: 16px; }
+  .view-progress .week { margin: 0; }
+  .view-progress .wk { padding: 2px 0; }
+  .view-progress .avg-tile { padding: 4px; }
+  .view-progress .avg-tile b { font-size: 17px; }
+  .view-progress .progress-hint { display: none; }
+}
+.verse-card { min-height: clamp(76px, 14vh, 118px); }
+.view-today .day { flex: 0 1 auto; min-height: 44px; }
+.log-form .seg.tabs { display: grid; grid-template-columns: repeat(5, 1fr); }
+.log-form .seg.tabs button { padding-left: 2px; padding-right: 2px; }
+@media (max-height: 760px) {
+  .log-form, .log-form .fields { gap: 6px; }
+  .log-form .field { gap: 2px; }
+  .log-form textarea { min-height: 46px; height: 46px; }
+  .log-form input { min-height: 40px; padding-top: 6px; padding-bottom: 6px; }
+}
+@media (max-height: 760px) {
+  .daylist button { min-height: 34px; padding-top: 2px; padding-bottom: 2px; }
+  .closed-summary { padding: 2px 0; }
+  .view-today .next { padding: 8px var(--s3) 10px; }
+}
+@media (max-height: 760px) {
+  .view-today .next-sum, .view-today .next-then { display: none; }
+  .verse-card { min-height: 96px; padding: var(--s2) var(--s3); gap: 4px; }
+}

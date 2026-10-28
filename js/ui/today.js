@@ -23,15 +23,22 @@ function ring(done, total) {
     h('div', { html: svg }), h('span', { class: 'ring-n' }, h('b', {}, done), `/${total}`));
 }
 
-// The verse fills whatever space is left. Shrink the type until it fits; if even small type won't fit, hide it
-// rather than cut it off. (Long verses on a busy day hand the space back to the day.)
+// The verse is always on Today, right under the date, and takes the spare space. The type shrinks to fit (28 down
+// to 15 px); a very long passage on a small screen ends with … and tap opens the whole thing. It is never hidden.
+// Refit whenever the card changes size, so it can't get stuck hidden by an early measurement.
+const LINE = 1.45;
 function fitVerse(el) {
   const t = el.querySelector('.vp-text');
-  if (!t) return;
-  let size = 22;
+  if (!t || !el.clientHeight) return;
+  t.style.webkitLineClamp = ''; t.classList.remove('clamped');
+  let size = 28;
   t.style.fontSize = `${size}px`;
   while (el.scrollHeight > el.clientHeight + 1 && size > 15) { size -= 1; t.style.fontSize = `${size}px`; }
-  el.classList.toggle('empty', el.scrollHeight > el.clientHeight + 1);
+  if (el.scrollHeight > el.clientHeight + 1) {
+    const room = el.clientHeight - (el.scrollHeight - t.scrollHeight);
+    t.style.webkitLineClamp = String(Math.max(1, Math.floor(room / (size * LINE))));
+    t.classList.add('clamped');
+  }
 }
 
 export function renderToday(root, rerender) {
@@ -51,11 +58,16 @@ export function renderToday(root, rerender) {
         h('span', { class: 'dl-name' }, b.name),
         h('span', { class: 'dl-when' }, [b.time, b.minutes ? `${b.minutes} min` : ''].filter(Boolean).join(', '))))));
 
-  const versePanel = h('button', { class: 'verse-panel', onclick: verseSheet, 'aria-label': 'Open today’s verse' });
+  const verseText = h('span', { class: 'vp-text loading' }, ' ');
+  const verseRef = h('span', { class: 'vp-ref' }, verse.ref);
+  const versePanel = h('button', { class: 'verse-card', onclick: verseSheet, 'aria-label': `Today's verse, ${verse.ref}` },
+    h('span', { class: 'vp-theme' }, verse.theme), verseText, verseRef);
+  new ResizeObserver(() => fitVerse(versePanel)).observe(versePanel);
   getVersion().then(v => fetchVerse(verse.ref, v)).then(d => {
-    fill(versePanel, h('span', { class: 'vp-text' }, d.text), h('span', { class: 'vp-ref' }, `${verse.ref} ${d.version}`));
+    verseText.textContent = d.text; verseText.classList.remove('loading');
+    verseRef.textContent = `${verse.ref} ${d.version}`;
     requestAnimationFrame(() => fitVerse(versePanel));
-  }).catch(() => versePanel.classList.add('empty'));
+  }).catch(() => { verseText.textContent = 'Tap to read today’s verse.'; verseText.classList.remove('loading'); verseText.classList.add('offline'); });
 
   // Grip break (the hourly block): one button. Logs the next palms in the alternation; Undo if it was wrong.
   let hourly = null;
@@ -88,12 +100,10 @@ export function renderToday(root, rerender) {
     h('header', { class: 'top' },
       h('div', { class: 'top-text' },
         h('h1', { class: 'daytype' }, `${plan.typeLabel} day`),
-        h('p', { class: 'date' }, prettyDate(plan.date), h('span', { class: 'wkday' }, `Week ${plan.week}, Day ${plan.day}`))),
-      h('button', { class: 'verse-pill', onclick: verseSheet, 'aria-label': `Today's verse, ${verse.ref}` },
-        h('span', { class: 'verse-ref' }, verse.ref), h('span', { class: 'pill-theme' }, verse.theme))),
+        h('p', { class: 'date' }, prettyDate(plan.date), h('span', { class: 'wkday' }, `Week ${plan.week}, Day ${plan.day}`)))),
+    versePanel,
     nextCard,
     h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList),
-    versePanel,
     hourly,
     h('section', { class: 'quick', 'aria-label': 'Quick add' },
       h('button', { class: 'chip-btn', 'aria-label': `Ankle pumps, ${pumps} today`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`),

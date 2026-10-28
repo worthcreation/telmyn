@@ -99,6 +99,13 @@ test('food note line adds and undoes cleanly', () => {
   eq(removeLine(addLine(null, line), line), null, 'blank stays blank');
   eq(removeLine(addLine('Eggs.', line), line), 'Eggs.', 'other notes kept');
 });
+test('template choices left in a handoff are not imported as values', () => {
+  const t = SAMPLE.replace(/^PINCH:.*$/m, 'PINCH: none / squeeze / sharp | notes').replace(/^FAB_FIVE:.*$/m, 'FAB_FIVE: done / skipped');
+  const { day } = parseHandoff(t);
+  eq([day.pinch_level, day.fab_five_status], [null, null]);
+});
+test('Sunday offers the optional walk', () => eq(planFor('2026-11-01').blocks.some(b => b.id === 'walk'), true));
+test('weekdays have no walk', () => eq(planFor('2026-11-02').blocks.some(b => b.id === 'walk'), false));
 test('no data stays blank', () => eq(fluidTotals(blankDay('2026-10-27'), []), { water_oz: null, other_drinks_oz: null }));
 test('hourly: imported 3 plus 1 in app', () => {
   const { day, sets } = parseHandoff(SAMPLE);
