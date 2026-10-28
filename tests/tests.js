@@ -158,6 +158,22 @@ if (typeof document !== 'undefined') {
   const ext = jsFiles.filter(f => /target:\s*'_blank'/.test(fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')));
   results.push(['no links open another site', !ext.length, ext.join(', ')]);
   if (ext.length) failed.push(results[results.length - 1]);
+  // Every module the app imports must be in the offline cache list, or the app breaks offline.
+  const swText = fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
+  const { dirname, join, normalize } = await import('path');
+  const seen = new Set(), queue = ['js/main.js'];
+  while (queue.length) {
+    const f = queue.shift(); if (seen.has(f)) continue; seen.add(f);
+    const src = fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
+    for (const m of src.matchAll(/(?:import|from)\s*\(?\s*['"](\.{1,2}\/[^'"]+)['"]/g)) queue.push(normalize(join(dirname(f), m[1])).replace(/\\/g, '/'));
+  }
+  const uncached = [...seen].filter(f => !swText.includes(`'${f}'`));
+  results.push(['every app module is cached for offline', !uncached.length, uncached.join(', ')]);
+  if (uncached.length) failed.push(results[results.length - 1]);
+  // Every release is in the changelog.
+  const log = fs.readFileSync(new URL('../docs/CHANGELOG.md', import.meta.url), 'utf8');
+  results.push(['changelog has this version', log.includes(`## ${app} (`), app]);
+  if (!log.includes(`## ${app} (`)) failed.push(results[results.length - 1]);
   for (const [n, ok, m] of results) console.log(`${ok ? 'PASS' : 'FAIL'} ${n}${m ? ': ' + m : ''}`);
   console.log(failed.length ? `${failed.length} failed` : `All ${results.length} passed`);
   if (failed.length) process.exitCode = 1;

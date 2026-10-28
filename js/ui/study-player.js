@@ -7,6 +7,10 @@ import { getCreator, fetchVideos, fetchDaily, CREATORS } from '../scripture.js';
 import { enterLandscape, exitLandscape, rotateButton } from './media.js';
 
 let apiReady;
+// YouTube player settings shared by every video in the app.
+export const ytHost = 'https://www.youtube-nocookie.com';
+export const ytVars = extra => ({ playsinline: 1, rel: 0, modestbranding: 1, origin: location.origin, ...extra });
+
 export function loadApi() {
   if (window.YT?.Player) return Promise.resolve();
   apiReady ||= new Promise(resolve => {
@@ -50,8 +54,8 @@ export function studyPlayer(container, { daily = null, landscape = false } = {})
       h('div', { class: 'study-tools' }, fitBtn, rotateButton(runner(), 'study-fit'), h('button', { class: 'study-close', 'aria-label': 'Close video', onclick: close }, '✕')));
     await loadApi();
     player = new window.YT.Player(slot, {
-      videoId: video.id,
-      playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
+      videoId: video.id, host: ytHost,
+      playerVars: ytVars(),
       events: {
         onReady: e => { e.target.playVideo(); },
         onStateChange: e => {

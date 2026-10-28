@@ -113,9 +113,18 @@ async function daily(url, env) {
   return { status: 200, body: { source: who.name, video: list[0] } };
 }
 
+// Only Telmyn may use the service: browsers send Origin or Referer, and anything else is refused,
+// so nobody can spend the YouTube quota or use the relay by calling it directly.
+function fromTelmyn(req) {
+  let o = req.headers.get('Origin');
+  if (!o) { try { o = new URL(req.headers.get('Referer') || '').origin; } catch { o = ''; } }
+  return ALLOWED_ORIGINS.includes(o) || TEST_ORIGIN.test(o);
+}
+
 async function handle(req, ctx, env) {
   const url = new URL(req.url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors(req) });
+  if (url.pathname !== '/' && !fromTelmyn(req)) return json(req, { error: 'Not allowed.' }, 403);
 
   const cache = caches.default;
   const hit = await cache.match(req);

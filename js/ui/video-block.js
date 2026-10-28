@@ -6,7 +6,7 @@ import { burst } from './fx.js';
 import { state, addEvent } from '../state.js';
 import { now } from '../clock.js';
 import { fetchDaily } from '../scripture.js';
-import { loadApi } from './study-player.js';
+import { loadApi, ytHost, ytVars } from './study-player.js';
 import { rotateButton, exitLandscape } from './media.js';
 
 export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
@@ -40,11 +40,13 @@ export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
     return fallback();
   }
   player = new window.YT.Player(slot, {
-    videoId: video.id, width: '100%', height: '100%',
-    playerVars: { playsinline: 1, rel: 0, modestbranding: 1, autoplay: 1 },
+    videoId: video.id, width: '100%', height: '100%', host: ytHost,
+    playerVars: ytVars({ autoplay: 1 }),
     events: {
       onReady: e => e.target.playVideo(),
       onStateChange: e => { if (e.data === 0) finish(true); },   // 0 = ended: watching it through completes the block
+      // YouTube refused the video: run the steps instead so the block still happens.
+      onError: () => { if (done) return; done = true; removeEventListener('popstate', onPop); if (history.state?.telmynRunner) history.back(); player?.destroy?.(); root.remove(); toast('Video won’t play here. Running the steps instead.'); fallback(); },
     },
   });
 

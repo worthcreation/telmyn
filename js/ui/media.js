@@ -1,7 +1,8 @@
 // In-app video: every Watch button plays here, never on another site.
 // Also the landscape switch used by any full-screen video (fullscreen + orientation lock, Android Chrome).
 import { h } from './dom.js';
-import { loadApi } from './study-player.js';
+import { loadApi, ytHost, ytVars } from './study-player.js';
+import { getMeta, setMeta } from '../db.js';
 
 // YouTube watch, shorts and youtu.be links (with optional start time), or a Facebook video page.
 export function parseVideo(url) {
@@ -72,8 +73,18 @@ export async function playVideo(url, title = 'Video', { onOpen, onClose } = {}) 
   await loadApi();
   if (!root.isConnected) return;
   player = new window.YT.Player(slot, {
-    videoId: v.id, width: '100%', height: '100%',
-    playerVars: { playsinline: 1, rel: 0, modestbranding: 1, autoplay: 1, start: v.start || 0 },
-    events: { onReady: e => e.target.playVideo() },
+    videoId: v.id, width: '100%', height: '100%', host: ytHost,
+    playerVars: ytVars({ autoplay: 1, start: v.start || 0 }),
+    events: {
+      onReady: e => e.target.playVideo(),
+      // YouTube refused to play it here: say so in the app's own words and keep a record for the next fix.
+      onError: async e => {
+        const list = await getMeta('video_errors', []);
+        list.push({ url, code: e.data, at: new Date().toISOString() });
+        await setMeta('video_errors', list.slice(-20));
+        root.append(h('div', { class: 'vb-error' }, h('b', {}, 'This video won’t play inside the app.'),
+          h('span', {}, 'It’s logged so it can be swapped for one that does.')));
+      },
+    },
   });
 }

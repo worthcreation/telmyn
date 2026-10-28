@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.9.8 (2026-10-28)
+Video playback: every YouTube video uses the privacy-enhanced player with the app's origin declared. When YouTube
+refuses a video, the app says so in its own words and logs it (meta video_errors) for replacement; Fab Five falls
+back to its steps. Audit fixes: the Worker answers only Telmyn (Origin or Referer check), so nobody else can spend
+the YouTube quota; backups hold your data and settings only, not cached verse text or video lists; the import note
+now matches what import does; roadmap text removed from the Me tab. New tests: every app module is in the offline
+cache list, and every release is in this changelog. README, ARCHITECTURE and verses.js comments brought up to date.
+
+## 0.9.7 (2026-10-28)
+Watch buttons play in a full-screen in-app player (YouTube, Shorts, Facebook), never another site; opening one
+pauses a running timer. Landscape switch (⟲) on every video; Row and Legs up open their study video sideways.
+Watch buttons redesigned as quiet pills. Tests: every library video plays in the app, no link opens another site.
+
+## 0.9.6 (2026-10-28)
+Fab Five is the newest video from Gator's channel: full screen, two small controls, done when the video ends,
+steps as the offline fallback. Video overlays reduced to one slim card (tap for the cue). The hourly block is now
+"Grip break": one button, next palms in the alternation, Undo.
+
+## 0.9.5 (2026-10-28)
+Separate test app at telmyn-test.pages.dev (own address, icon and storage), deployed by tools/test-site.ps1 after
+every push. The real app has no test mode. Test: the real app always ships as live.
+
+## 0.9.4 (2026-10-28)
+Worker /daily: newest upload from a fixed channel (Gator), cached one hour; Fab Five shows it.
+
+## 0.9.3 (2026-10-28)
+One-tap Huel (protein, water and eating note together, with Undo). Day log for any date, with blocks markable
+after the fact. Guided blocks count as done once the cooldown starts; the back gesture asks before leaving.
+Progress: Hydration bar, weekly averages, tappable days.
+
+## 0.9.2 (2026-10-28)
+Export backup works on Android (shares as plain text); Copy full record added.
+
 ## 0.9.1 (2026-10-27)
 Video mode: once the study video starts, it fills the screen behind the block. The timer floats as a frosted-glass
 chip in the upper-left corner; the step, its instructions and the buttons sit on frosted glass at the bottom;

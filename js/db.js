@@ -55,9 +55,13 @@ export async function getMeta(key, fallback = null) {
 }
 export const setMeta = (key, value) => put('meta', { key, value });
 
+export const CACHE_KEY = /^(verse|videos|daily):/;
+
 export async function exportAll(appVersion) {
   const out = { format: 'telmyn-export', db_version: DB_VERSION, app_version: appVersion, exported_at: new Date().toISOString(), stores: {} };
   for (const s of STORES) out.stores[s] = await all(s);
+  // Cached verse text and video lists are re-fetchable, so they stay out of backups.
+  out.stores.meta = out.stores.meta.filter(m => !CACHE_KEY.test(m.key));
   return out;
 }
 

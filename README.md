@@ -9,7 +9,12 @@ All logs stay on the phone (IndexedDB). Nothing personal is in this repo. See do
 ```
 python -m http.server 8000
 ```
-Open http://localhost:8000. Test mode with a fake clock: http://localhost:8000/?test&date=2026-11-02&time=06:25&speed=60
+Open http://localhost:8000. The real app has no test mode.
+
+## Test app
+A separate copy at https://telmyn-test.pages.dev, with its own icon (TEST badge) and its own storage, so nothing done
+there can touch real data. tools/test-site.ps1 deploys it (apply.ps1 runs it after every push). It swaps in the files in
+test-site/ on a temporary copy. Fake clock there: ?date=2026-11-02&time=06:25&speed=60, or tap the red banner.
 
 ## Tests
 ```
@@ -29,8 +34,8 @@ powershell -ExecutionPolicy Bypass -File "$HOME\telmyn\tools\apply.ps1"
    applies the newest telmyn patch in Downloads, runs the tests, pushes only if they pass, and deletes all telmyn
    patches and zips from Downloads. If anything fails, nothing is pushed and the files are put back.
 
-## Cloudflare (verse service)
-Telmyn has its own Cloudflare sign-in in `.cfhome` (git-ignored), separate from NFC's. Run Wrangler through
+## Cloudflare (verse service and test app)
+The Worker answers only requests from Telmyn's own addresses. Telmyn has its own Cloudflare sign-in in `.cfhome` (git-ignored), separate from NFC's. Run Wrangler through
 `tools/cf.ps1` (login, whoami, deploy). The worker is also pinned to the personal account in worker/wrangler.toml.
 
 ## Credits

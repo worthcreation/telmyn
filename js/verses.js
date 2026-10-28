@@ -1,6 +1,6 @@
 // Daily verse: theme by weekday, rotating one verse per week per theme (NKJV).
-// Verse text is NOT stored yet. Text gets added only after it is checked word for word against the NKJV,
-// never typed from memory. Until then the card shows the reference and opens the passage.
+// Verse text comes live from Bible Gateway through the Telmyn API (scripture.js) in the version Ross picks,
+// and is cached on the phone. Nothing is typed from memory. TEXT below stays empty unless a checked text is added.
 import { weekday } from './clock.js';
 import { weekAndDay } from './program/index.js';
 

@@ -4,7 +4,8 @@
 1. Plain HTML, CSS and JavaScript modules. No build step, no framework. Any file can be read and edited directly.
 2. Logs live only on the phone. The repo holds code and program content, never personal data.
 3. One source of truth per thing:
-   - Time: `js/clock.js` (supports ?test fake clock)
+   - Time: `js/clock.js` (fake clock only in the test app)
+   - Which copy: `js/site.js` ('live'; the test app ships 'test')
    - Daily fields: `js/schema.js` (form, import and export all read it)
    - Program content: `js/program/vN.js`, chosen by date in `js/program/index.js`
    - Version: `js/version.js`
@@ -13,29 +14,35 @@
 5. Screens fit one phone screen: no page scrolling and no visible scrollbars. Spare space gets useful content, not padding.
 6. Blank means not recorded. 0 means recorded as zero. Non-numbers never become numbers.
 
-## Data (IndexedDB, database `telmyn`; test mode uses `telmyn-test`)
+## Data (IndexedDB, database `telmyn`; the test app uses its own address and storage)
 | Store | Key | One row per | Notes |
 |---|---|---|---|
 | days | date | day | scalar fields from schema.js, plus imported status lines and handoff_raw |
-| events | id | thing that happened | block_start, block_done, block_skip, block_partial, habit; timestamped |
+| events | id | thing that happened | block_start, block_done, block_skip, block_partial, habit, food; timestamped |
 | sets | id | logged set | exercise, set_no, side, reps or sec or min, mode, block, source (app or import) |
 | fluids | id | drink | kind, oz, ml |
 | xp | id | cached XP award | rebuilt from logs when the curve changes |
-| meta | key | setting | last_export and future settings |
+| meta | key | setting or cache | settings (verse_version, study_creator, last_export, video_errors) and caches (verse:, videos:, daily:), which backups leave out |
 
 Schema changes: bump DB_VERSION in db.js and add a migration. Never edit an old migration.
 
 ## Program versions
-v1 effective 2026-10-27. A change to the program is a new file (v2.js) with its own effective date,
+v1 effective 2026-10-27; v1.1 (warm-ups and cooldowns) effective the same day. A change to the program is a new file (v2.js) with its own effective date,
 registered in program/index.js. Past days keep showing the program that was in effect.
 
 ## Screens
-- Today: next block (tight blocks show a time), collapsed list of the rest, counters, Log and Data.
-- Runner: one step per screen, lane progress bar, rests auto-start and auto-advance, sets log with last value as a hint.
-- Sheets: fluid, protein, log (tabbed by group, no scrolling), verse, data.
+- Today: next block, the rest of the day, verse, Grip break (one button), quick adds (pumps, fluid, protein, Huel).
+- Runner: one step per screen, chained timers, sets log with last value as a hint; study video in video mode with a
+  slim overlay; a block counts as done once its cooldown starts.
+- Video block: Fab Five is Gator's newest video, done when it ends; steps are the fallback.
+- In-app player (media.js): every Watch button; landscape switch on every video.
+- Progress: week strip (tap a day for its log), bars, weekly averages. Gear. Me: Day log, handoff, backups.
+- Sheets: fluid, protein, Day log (any date, tabbed, no scrolling), verse, test controls (test app only).
 
 ## Server (worker/)
-telmyn-api, a Cloudflare Worker. /verse and /versions relay Bible Gateway text for personal use and cache it 7 days.
+telmyn-api, a Cloudflare Worker. Answers only Telmyn's own addresses. /verse and /versions relay Bible Gateway text
+for personal use (cached 7 days); /videos finds study videos by creator (30 days); /daily returns a channel's newest
+upload (1 hour). The YouTube Data API key is the Worker secret YOUTUBE_KEY.
 Phase 2 adds alarm pushes here. The app finds it through js/config.js (API_BASE).
 
 ## Delivery

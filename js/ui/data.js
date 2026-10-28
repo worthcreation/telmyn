@@ -62,7 +62,7 @@ export async function dataActions() {
       TEST ? h('button', { class: 'btn ghost', onclick: testSheet }, 'Test controls') : null),
     h('p', { class: 'muted small' }, persisted ? 'Storage is protected from automatic clearing.' : 'Add to Home Screen to protect storage from being cleared.'),
     h('p', { class: 'muted small' }, `Version ${APP_VERSION}${TEST ? ', test app (separate data)' : ''}`),
-    h('p', { class: 'muted small' }, 'Alarms for scheduled blocks arrive in phase 2.'));
+    null);
 }
 
 export async function dataSheet() { sheet('Data', await dataActions()); }
@@ -78,7 +78,7 @@ function pasteSheet() {
         s.close();
       } catch (err) { toast(err.message); }
     } }, 'Import'),
-    h('p', { class: 'muted small' }, 'Fills blanks only. Anything already logged in the app is kept.')), { full: true });
+    h('p', { class: 'muted small' }, 'Updates that day with every value the handoff carries; blank lines change nothing. Blocks, sets and drinks logged in the app are kept.')), { full: true });
 }
 
 // Test app controls (only in the separate test app). Fake clock via the URL: ?date=YYYY-MM-DD&time=HH:MM&speed=N

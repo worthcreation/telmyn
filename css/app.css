@@ -546,3 +546,7 @@ button.test-banner { border: 0; font: inherit; font-size: 13px; width: 100%; }
 }
 
 .runner.video-mode .runner-foot .btn.ghost { color: #F3F4F1; background: rgb(255 255 255 / .08); border-color: rgb(255 255 255 / .16); box-shadow: none; }
+
+.vb-error { position: absolute; left: 24px; right: 24px; top: 40%; z-index: 3; display: grid; gap: 6px; text-align: center; color: #F3F4F1;
+  background: rgb(16 18 21 / .85); border: 1px solid rgb(255 255 255 / .14); border-radius: var(--r-card); padding: var(--s4); }
+.vb-error span { font-size: 14px; color: rgb(243 244 241 / .75); }
