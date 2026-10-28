@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.11 (2026-10-28)
+Verse study: the word panel's content is centered vertically; the verse refits after the serif font loads, so the
+citation is never clipped.
+
 ## 0.10.10 (2026-10-28)
 Verse study fits with no scrolling: the lead video is a slim row (what it covers, who made it, its title, and More),
 no picture; the verse takes the room that is left, type stepping from 30 down to 18 px only as needed.

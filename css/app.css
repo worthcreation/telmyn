@@ -887,3 +887,5 @@ button.test-banner { border: 0; font: inherit; font-size: 13px; width: 100%; }
 @media (min-height: 681px) { .layer.study .vs-def { min-height: 196px; } }
 .layer.study .vs-verse { align-content: safe center; }
 .layer.study .vs-def { min-height: 0; }
+/* 0.10.11: the word panel's content sits in the vertical middle of its (fixed) height. */
+.layer.study .vs-def { align-content: center; }

@@ -266,6 +266,8 @@ export async function verseSheet(date = null) {
     while (over() && size > 18) { size -= 1; text.style.fontSize = `${size}px`; }
   };
   new ResizeObserver(fit).observe(scroller);
+  // Refit once the serif font has loaded: it sets taller than the fallback, which clipped the citation.
+  document.fonts?.ready.then(() => requestAnimationFrame(fit));
   new MutationObserver(() => requestAnimationFrame(fit)).observe(text, { childList: true });
   new MutationObserver(() => requestAnimationFrame(fit)).observe(watch, { childList: true });
   load();
