@@ -132,7 +132,7 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .ring-n b { font: 700 var(--fs-lead)/1 var(--font-display); }
 .day { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
 .daylist { display: grid; gap: 2px; }
-.daylist button { width: 100%; display: grid; grid-template-columns: 1.6em 1fr auto; align-items: center; gap: var(--s2); background: none; border: 0; border-bottom: 1px solid var(--line); padding: 6px 0; text-align: left; min-height: 40px; }
+.daylist button { width: 100%; display: grid; grid-template-columns: 1.6em 1fr auto; align-items: center; gap: var(--s2); background: none; border: 0; border-bottom: 1px solid var(--line); padding: 0; text-align: left; min-height: clamp(34px, 4.6vh, 44px); }
 .dl-mark { color: var(--ok); font-weight: 700; font-size: var(--fs-small); }
 .dl-name { font-weight: 600; }
 .dl-when { color: var(--ink-2); font-size: var(--fs-small); }
@@ -404,12 +404,15 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 /* Up to 800px of visible height (most phones): the next card keeps only its essentials so the verse and the day list both fit. */
 @media (max-height: 800px) {
   .next { padding: var(--s2) var(--s3) 10px; }
+  .next .btn { min-height: 42px; }
+  .ring, .ring svg { width: 46px; height: 46px; }
+  .ring-n { padding-top: 12px; }
+  .quick .chip { min-height: 40px; }
   .next-sum, .next-then, .progress-hint { display: none; }
   .tile { padding: var(--s1); }
   .gear-rule { font-size: var(--fs-caption); }
 }
 @media (max-height: 680px) {
-  .daylist button { min-height: 34px; padding-top: 2px; padding-bottom: 2px; }
   .closed-summary { padding: 2px 0; }
   .verse-card { min-height: 96px; padding: var(--s2) var(--s3); gap: var(--s1); }
   .stat-l { font-size: var(--fs-body); }

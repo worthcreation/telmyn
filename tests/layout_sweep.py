@@ -1,5 +1,5 @@
 # Layout sweep (run by Claude before each release): every page and sheet at eight phone heights, 640 to 915 px.
-# Fails on page scrolling, content under the tab bar, or sideways clipping. Needs Python Playwright and a local server on 8813.
+# Fails on page scrolling, content under the tab bar, sideways clipping, or a clipped Today verse. Needs Python Playwright and a local server on 8813.
 import asyncio, json, sys
 from playwright.async_api import async_playwright
 T='If any of you lacks wisdom, let him ask of God, who gives to all liberally and without reproach, and it will be given to him.'
@@ -22,7 +22,7 @@ async def main():
             await pg.goto('http://localhost:8813/#today'); await pg.wait_for_timeout(700); await pg.evaluate(SEED); await pg.reload(); await pg.wait_for_timeout(1200)
             res={}
             for tab in ('today','progress','gear','me'):
-                await pg.evaluate(f"location.hash='#{tab}'"); await pg.wait_for_timeout(500); res[tab]=await pg.evaluate(CHECK)
+                await pg.evaluate(f"location.hash='#{tab}'"); await pg.wait_for_timeout(500); res[tab]=await pg.evaluate(CHECK) + (['verse clamped'] if tab=='today' and await pg.locator('.vp-text.clamped').count() else [])
             await pg.evaluate("location.hash='#me'"); await pg.wait_for_timeout(300)
             await pg.click('text=Day log'); await pg.wait_for_timeout(400)
             for g in ('Day','Body','Fuel','Watch','Notes'):

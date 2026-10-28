@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.6 (2026-10-28)
+Today makes room for the whole verse: the day list's rows scale with the screen's height, and on phones up to 800 px the
+next card's buttons and ring and the quick chips are a little shorter. The verse no longer cuts off with "…" at any
+height from 700 to 915 px. The layout sweep now also checks for a clipped verse.
+
 ## 0.12.5 (2026-10-28)
 Fixes 0.12.4's button-area check, which missed the common case (app under the buttons but below the status bar) and let
 the tab bar slide under the buttons. Now: if the phone reports the button area, use it; otherwise reserve 48 px when the
