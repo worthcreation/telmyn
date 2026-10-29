@@ -5,6 +5,7 @@ import { parseHandoff, buildHandoff } from '../handoff.js';
 import { APP_VERSION } from '../version.js';
 import { remindersOn, setReminders } from '../remind.js';
 import { TEST, SPEED, isoDate, hhmm, now } from '../clock.js';
+import { syncKey, syncLast, syncAll, syncDates } from '../sync.js';
 
 // Android only shares certain file types, so the backup goes out as plain text with a .json name.
 // Returns 'shared', 'cancelled', 'downloaded' or throws.
@@ -38,8 +39,12 @@ export async function dataActions() {
   const on = await remindersOn();
   const last = await db.getMeta('last_export');
   const days = last ? Math.floor((Date.now() - new Date(last)) / 86400000) : null;
-  const backupLine = last === null ? 'No backup yet. Export one to keep a copy off the phone.'
-    : `Last backup ${days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`}.`;
+  const cloud = !TEST && !!(await syncKey());
+  const sent = cloud ? await syncLast() : null;
+  const when = t => (isoDate(new Date(t)) === isoDate() ? hhmm(new Date(t)) : isoDate(new Date(t)));
+  const cloudLine = !cloud ? '' : sent ? ` Cloud copy sent ${when(sent)}.` : ' Cloud copy waiting to send.';
+  const backupLine = (last === null ? (cloud ? 'No backup file yet.' : 'No backup yet. Export one to keep a copy off the phone.')
+    : `Last backup ${days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`}.`) + cloudLine;
   return h('div', { class: 'stack' },
     h('button', { class: 'btn ghost', onclick: async () => {
       await navigator.clipboard.writeText(buildHandoff(state));
@@ -69,7 +74,12 @@ export async function dataActions() {
           catch (err) { toast(err.message); }
         } })),
       TEST ? h('button', { class: 'btn ghost', onclick: testSheet }, 'Test controls') : null),
-    h('button', { class: `btn ghost reminders${on ? ' on' : ''}`, onclick: async () => { const v = await setReminders(!on); if (v !== !on && !on) return; location.reload(); } }, on ? 'Reminders on' : 'Reminders off'),
+    h('div', { class: TEST ? '' : 'bar' },
+      h('button', { class: `btn ghost reminders${on ? ' on' : ''}`, onclick: async () => { const v = await setReminders(!on); if (v !== !on && !on) return; location.reload(); } }, on ? 'Reminders on' : 'Reminders off'),
+      TEST ? null : h('button', { class: `btn ghost reminders${cloud ? ' on' : ''}`, onclick: async () => {
+        if (!cloud) { toast('Cloud copy starts from the setup link made on the PC.'); return; }
+        try { const n = await syncAll(); toast(`Sent ${n} day${n === 1 ? '' : 's'} to the cloud copy`); } catch (err) { toast(err.message); }
+      } }, cloud ? 'Cloud copy on' : 'Cloud copy off')),
     h('p', { class: 'muted small' }, 'Grip hourly, pumps every 30 min, weight daily. Only when overdue.'),
     h('p', { class: `muted small${last === null || days >= 7 ? ' warn' : ''}` }, backupLine),
     h('p', { class: 'fine center' }, `Version ${APP_VERSION}${TEST ? ', test app' : ''}. ${persisted ? 'Storage protected.' : 'Add to Home Screen to protect storage.'}`),
@@ -86,6 +96,7 @@ function pasteSheet() {
       try {
         const parsed = parseHandoff(ta.value);
         await importDay(parsed);
+        syncDates([parsed.day.date]).catch(() => {});
         toast(`Imported ${parsed.day.date}`);
         s.close();
       } catch (err) { toast(err.message); }

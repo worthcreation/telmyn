@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.0 (2026-10-29)
+Cloud copy, so Claude can read the log. Each day you change is sent to the Worker (Cloudflare D1) five seconds after
+you stop tapping, at once when Telmyn goes to the background, and again later if a send fails. Claude reads the last
+7 days as handoffs from one private link pasted into chat. Two keys: the write key lives only on the phone, the read
+key is in the link, and neither can do the other's job. The test app never sends. Me shows Cloud copy on or off (tap
+to resend every day) and when it last sent. One-time setup: tools/sync-setup.ps1 (database, keys as Worker secrets,
+deploy, a QR code for the phone, the read link on the clipboard). Phase 3 turns this into a Claude connector.
+
 ## 0.15.2 (2026-10-29)
 The tab bar no longer drops under Android's buttons after a keyboard, a permission dialog or a call banner. The space
 kept for the buttons is decided from the window's full height (those moments only shrink it briefly), and the phone's

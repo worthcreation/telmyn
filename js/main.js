@@ -6,6 +6,7 @@ import { toast, h } from './ui/dom.js';
 import { APP_VERSION } from './version.js';
 import { loadPicks } from './ui/media.js';
 import { startReminders } from './remind.js';
+import { startSync, takeLinkKey, setSyncKey } from './sync.js';
 
 const root = document.getElementById('app');
 
@@ -45,6 +46,8 @@ function trackVisibleHeight() {
 async function boot() {
   reserveAndroidNav();
   trackVisibleHeight();
+  // Setup link from tools/sync-setup.ps1 (#sync=KEY): take the key out of the address before anything shows.
+  const linkKey = TEST ? null : takeLinkKey();
   // The test app lives at its own web address, so its storage is separate from the real app's by browser design.
   await db.open(TEST ? 'telmyn-test-app' : 'telmyn');
   if (TEST) document.title = 'Telmyn Test';
@@ -67,6 +70,9 @@ async function boot() {
 
   registerSW();
   startReminders();
+  startSync();
+  // Keep the setup link's key on the phone and send every stored day once.
+  if (linkKey) setSyncKey(linkKey).then(n => toast(`Cloud copy on. ${n} day${n === 1 ? '' : 's'} sent.`)).catch(err => toast(err.message));
 }
 
 function registerSW() {

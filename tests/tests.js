@@ -6,10 +6,23 @@ import { cleanNumber, fluidTotals, blankDay } from '../js/schema.js';
 import { transitionSec } from '../js/flow.js';
 import { hourlyHistory, nextPalms } from '../js/hourly.js';
 import { FOODS, foodByKey, foodLine, addLine, removeLine } from '../js/foods.js';
+import { sameKey, readText } from '../worker/src/sync.js';
 
 const results = [];
 const test = (name, fn) => { try { fn(); results.push([name, true]); } catch (e) { results.push([name, false, e.message]); } };
 const eq = (a, b, msg = '') => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${msg} expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); };
+
+test('sync keys must match exactly', () => {
+  eq(sameKey('ab12', 'ab12'), true); eq(sameKey('ab12', 'ab13'), false); eq(sameKey('ab1', 'ab12'), false);
+  eq(sameKey('', ''), false); eq(sameKey(undefined, 'ab12'), false);
+});
+test('sync read text lists days newest first with the sync time', () => {
+  const t = readText([{ date: '2026-10-29', handoff: 'DATE: 2026-10-29', updated_at: 'T2' }, { date: '2026-10-28', handoff: 'DATE: 2026-10-28', updated_at: 'T1' }], 'NOW');
+  eq(t.startsWith('TELMYN SYNC (read NOW, 2 days, newest first)'), true);
+  eq(t.indexOf('2026-10-29') < t.indexOf('2026-10-28'), true);
+  eq(t.includes('SYNCED_AT: T2'), true);
+  eq(readText([], 'NOW').includes('No days synced yet.'), true);
+});
 
 const SAMPLE = `DATE: 2026-10-27
 STATUS: day in progress

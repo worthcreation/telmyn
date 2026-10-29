@@ -1,4 +1,5 @@
 import { pushRoute, pushTick } from './push.js';
+import { syncRoute } from './sync.js';
 // Telmyn API (Cloudflare Worker). Personal, non-commercial use.
 // GET /verse?ref=Galatians%206:9&v=NKJV  -> { ref, version, text, verses[], copyright, source }
 // GET /versions                         -> { versions: [{ abbr, name }] }
@@ -17,7 +18,7 @@ function cors(req) {
   return {
     'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(o) || TEST_ORIGIN.test(o || '') ? o : ALLOWED_ORIGINS[0],
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     Vary: 'Origin',
   };
 }
@@ -185,7 +186,11 @@ async function passage(url, env) {
 async function handle(req, ctx, env) {
   const url = new URL(req.url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors(req) });
+  const noStore = (r, b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...cors(r) } });
+  // The read link is opened by Claude, not by the app, so it carries its own key instead of Telmyn's origin.
+  if (url.pathname === '/sync/read') return syncRoute(req, url, env, noStore);
   if (url.pathname !== '/' && !fromTelmyn(req)) return json(req, { error: 'Not allowed.' }, 403);
+  if (url.pathname.startsWith('/sync/')) return syncRoute(req, url, env, noStore);
   // Push reminders; never cached.
   if (url.pathname.startsWith('/push/')) return pushRoute(req, url, env, (r, b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...cors(r) } }));
 
