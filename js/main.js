@@ -30,11 +30,16 @@ function reserveAndroidNav() {
     const standalone = matchMedia('(display-mode: standalone)').matches;
     // App height short of the screen by less than 45 px (only the status bar) means the buttons cover the app.
     const short = screen.height - tallest[key];
-    const behind = standalone && /Android/i.test(navigator.userAgent) && inset === 0 && key === 'port' && short < 45;
+    const auto = standalone && /Android/i.test(navigator.userAgent) && inset === 0 && key === 'port' && short < 45;
+    // Me can force it (tap the version line): auto, on, off. Kept in localStorage so it applies before anything loads.
+    let mode = 'auto'; try { mode = localStorage.getItem('telmyn-navspace') || 'auto'; } catch { /* private mode */ }
+    const behind = mode === 'on' ? true : mode === 'off' ? false : auto;
     document.documentElement.style.setProperty('--nav-fallback', behind ? '48px' : '0px');
-    document.documentElement.dataset.screen = `${innerWidth}x${tallest[key]} of ${screen.width}x${screen.height} (short ${short}), inset ${inset}, ${behind ? 'reserving 48 for buttons' : 'no reserve'}`;
+    document.documentElement.dataset.navspace = mode;
+    document.documentElement.dataset.screen = `${innerWidth}x${tallest[key]} of ${screen.width}x${screen.height} (short ${short}), inset ${inset}, dpr ${devicePixelRatio}, ${standalone ? 'standalone' : 'browser'}, mode ${mode}, ${behind ? 'reserving 48 for buttons' : 'no reserve'}`;
   };
   set(); addEventListener('resize', set); screen.orientation?.addEventListener('change', () => setTimeout(set, 300));
+  addEventListener('telmyn-navspace', set);
 }
 
 // Layers size themselves to the visible screen, so the keyboard never covers what you are writing.

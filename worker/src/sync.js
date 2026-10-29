@@ -27,7 +27,7 @@ export function sameKey(a, b) {
 export function readText(rows, readAt) {
   if (!rows.length) return `TELMYN SYNC (read ${readAt})\nNo days synced yet.\n`;
   return `TELMYN SYNC (read ${readAt}, ${rows.length} day${rows.length === 1 ? '' : 's'}, newest first)\n\n` +
-    rows.map(r => `${r.handoff}\nSYNCED_AT: ${r.updated_at}`).join('\n\n----------\n\n') + '\n';
+    rows.map(r => `${r.handoff}\nSYNCED_AT: ${r.updated_at}${r.app ? ` | app ${r.app}` : ''}${r.device ? `\nDEVICE: ${r.device}` : ''}`).join('\n\n----------\n\n') + '\n';
 }
 
 export async function syncRoute(req, url, env, json) {
@@ -52,7 +52,7 @@ export async function syncRoute(req, url, env, json) {
     const plain = (body, status = 200) => new Response(body, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
     if (!sameKey(url.searchParams.get('k') || '', env.SYNC_READ)) return plain('Wrong or missing key.\n', 401);
     const n = Math.min(Math.max(parseInt(url.searchParams.get('days') || '7', 10) || 7, 1), 60);
-    const { results } = await env.DB.prepare('SELECT date, handoff, updated_at FROM days WHERE site = ?1 ORDER BY date DESC LIMIT ?2').bind(site, n).all();
+    const { results } = await env.DB.prepare("SELECT date, handoff, updated_at, json_extract(data, '$.app') AS app, json_extract(data, '$.device') AS device FROM days WHERE site = ?1 ORDER BY date DESC LIMIT ?2").bind(site, n).all();
     return plain(readText(results || [], new Date().toISOString()));
   }
 

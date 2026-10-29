@@ -151,6 +151,18 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 /* Status on chips and pills: behind or overdue is red, met is green, on track is plain. */
 .chip.behind, .pill.behind { color: var(--warn); border-color: var(--warn); }
 .chip.met { color: var(--ok); border-color: var(--ok); }
+.fine.navspace { background: none; border: 0; padding: 0 var(--s2); color: inherit; width: 100%; }
+/* Due reminders: a slow heartbeat glow on the item, faster, wider and deeper the longer it waits (status.js levels).
+   Inset plus outer glow, so a clipping parent still shows it. Not a drop shadow: no offset, it pulses and goes away. */
+@keyframes heartbeat {
+  0%, 62%, 100% { box-shadow: inset 0 0 0 0 transparent, 0 0 0 0 transparent; }
+  12%, 36% { box-shadow: inset 0 0 calc(var(--glow) * .8) 0 var(--due-c), 0 0 var(--glow) calc(var(--glow) / 3) var(--due-c); }
+  24% { box-shadow: inset 0 0 calc(var(--glow) * .3) 0 var(--due-c), 0 0 calc(var(--glow) / 2) 0 var(--due-c); }
+}
+.due { animation: heartbeat var(--beat) ease-in-out infinite; }
+.due[data-due="1"] { --due-c: color-mix(in srgb, var(--warn) 45%, transparent); --glow: 6px; --beat: 2.6s; }
+.due[data-due="2"] { --due-c: color-mix(in srgb, var(--warn) 75%, transparent); --glow: 10px; --beat: 1.9s; }
+.due[data-due="3"] { --due-c: var(--warn); --glow: 14px; --beat: 1.3s; background: color-mix(in srgb, var(--warn) 14%, var(--surface)); }
 .weight-in { text-align: center; font: 700 var(--fs-display)/var(--lh-tight) var(--font-display); padding: var(--s2); }
 /* Quick chips share the row by their content (a longer label gets more width) and always keep 8 px inside each edge. */
 .quick { display: flex; gap: var(--s2); }

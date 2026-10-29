@@ -6,6 +6,7 @@ import { state, onChange } from './state.js';
 import { API_BASE } from './config.js';
 import { SITE } from './site.js';
 import { buildHandoff } from './handoff.js';
+import { APP_VERSION } from './version.js';
 
 const KEY = /^[0-9a-f]{32,128}$/;
 let timer = null;
@@ -26,7 +27,7 @@ async function send(key, rec, keepalive = false) {
   const r = await fetch(`${API_BASE}/sync/day?site=${SITE === 'test' ? 'test' : 'live'}`, {
     method: 'POST', keepalive,
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-    body: JSON.stringify({ date: rec.day.date, handoff: buildHandoff(rec), data: rec }),
+    body: JSON.stringify({ date: rec.day.date, handoff: buildHandoff(rec), data: { ...rec, device: document.documentElement.dataset.screen || null, app: APP_VERSION } }),
   });
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `Sync returned ${r.status}.`);
 }

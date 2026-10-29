@@ -76,7 +76,7 @@ async function notify(tag, title, body) {
   try {
     const reg = await navigator.serviceWorker?.getRegistration();
     if (document.visibilityState === 'visible') { chime(3); toast(`${title}: ${body}`); }
-    const opts = { body, tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', renotify: true, silent: false, requireInteraction: true, vibrate: [300, 150, 300, 150, 300] };
+    const opts = { body, tag, icon: 'icons/star-192.png', badge: 'icons/star-192.png', renotify: true, silent: false, requireInteraction: true, vibrate: [300, 150, 300, 150, 300] };
     if (reg) await reg.showNotification(title, opts);
     else new Notification(title, { body, tag });
   } catch { /* notifications unavailable here */ }

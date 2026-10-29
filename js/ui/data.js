@@ -82,10 +82,19 @@ export async function dataActions() {
       } }, cloud ? 'Cloud copy on' : 'Cloud copy off')),
     h('p', { class: 'muted small' }, 'Grip hourly, pumps every 30 min, weight daily. Only when overdue.'),
     h('p', { class: `muted small${last === null || days >= 7 ? ' warn' : ''}` }, backupLine),
-    h('p', { class: 'fine center' }, `Version ${APP_VERSION}${TEST ? ', test app' : ''}. ${persisted ? 'Storage protected.' : 'Add to Home Screen to protect storage.'}`),
+    h('button', { class: 'fine center navspace', onclick: e => {
+      // Space kept above Android's buttons: auto (measured), on (always), off (never). Tap to cycle.
+      const next = { auto: 'on', on: 'off', off: 'auto' }[document.documentElement.dataset.navspace || 'auto'];
+      try { localStorage.setItem('telmyn-navspace', next); } catch { /* private mode */ }
+      dispatchEvent(new Event('telmyn-navspace'));
+      e.currentTarget.textContent = versionLine(persisted);
+      toast({ auto: 'Button space: auto', on: 'Button space: always on', off: 'Button space: off' }[next]);
+    } }, versionLine(persisted)),
     TEST ? h('p', { class: 'fine center' }, `Screen ${document.documentElement.dataset.screen || ''}`) : null,
     null);
 }
+
+const versionLine = persisted => `Version ${APP_VERSION}${TEST ? ', test app' : ''}. ${persisted ? 'Storage protected.' : 'Add to Home Screen to protect storage.'}${(document.documentElement.dataset.navspace || 'auto') === 'auto' ? '' : ` Buttons ${document.documentElement.dataset.navspace}.`}`;
 
 export async function dataSheet() { sheet('Data', await dataActions()); }
 

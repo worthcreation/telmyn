@@ -5,7 +5,7 @@ import { state, addEvent, addFood, undoFood, removeEvent } from '../state.js';
 import * as db from '../db.js';
 import { FOODS } from '../foods.js';
 import { fluidTotals } from '../schema.js';
-import { paceStatus, overdueStatus, staleStatus } from '../status.js';
+import { paceStatus, overdueStatus, overdueLevel, staleStatus, weightLevel } from '../status.js';
 import { nextBlock, blockStatus } from '../program/index.js';
 import { hhmm, daysBetween } from '../clock.js';
 import { runBlock } from './runner.js';
@@ -16,6 +16,9 @@ import { getVersion, fetchVerse } from '../scripture.js';
 const prettyDate = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
 
 // Day ring: blocks closed out of the day's blocks, drawn around the count.
+// A due reminder pulses like a slow heartbeat on the item it is about, stronger the longer it waits (styles: .due).
+function dueMark(el, lvl) { el.classList.toggle('due', !!lvl); if (lvl) el.dataset.due = lvl; else delete el.dataset.due; }
+
 function ring(done, total) {
   const r = 26, c = 2 * Math.PI * r, p = total ? done / total : 0;
   const svg = `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="${r}" class="ring-bg"/>` +
@@ -34,8 +37,10 @@ export function renderToday(root, rerender) {
   // Every quick chip carries its own state: red when behind or overdue, green when met, plain when on track.
   const { TARGETS } = plan.program.data;
   const totals = fluidTotals(day, state.fluids);
+  const lastPumps = events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps').pop()?.at;
+  const pumpsLvl = overdueLevel(lastPumps, 30);
   const st = {
-    pumps: overdueStatus(events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps').pop()?.at, 30),
+    pumps: overdueStatus(lastPumps, 30),
     fluid: paceStatus('fluids', (totals.water_oz || 0) + (totals.other_drinks_oz || 0), TARGETS.fluids_oz[0]),
     protein: paceStatus('protein', day.protein_g, TARGETS.protein_g[0]),
     huel: events.some(e => e.type === 'food' && e.food === 'huel') ? 'met' : null,
@@ -73,6 +78,7 @@ export function renderToday(root, rerender) {
   lastWeight().then(({ value, date }) => {
     const age = date ? daysBetween(date, state.date) : null;
     const s2 = staleStatus(age); weightChip.classList.toggle('behind', s2 === 'behind'); weightChip.classList.toggle('met', s2 === 'met');
+    dueMark(weightChip, weightLevel(age));
     weightChip.title = value === null ? 'Not logged yet' : `${value} lb, ${age === 0 ? 'today' : `${age} day${age === 1 ? '' : 's'} ago`}`;
   });
 
@@ -103,7 +109,7 @@ export function renderToday(root, rerender) {
     nextCard,
     h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList),
     h('section', { class: 'quick', 'aria-label': 'Quick add' },
-      h('button', { class: chipClass(st.pumps), 'aria-label': `Ankle pumps, ${pumps} today`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`),
+      h('button', { class: `${chipClass(st.pumps)}${pumpsLvl ? ' due' : ''}`, 'data-due': pumpsLvl || null, 'aria-label': `Ankle pumps, ${pumps} today`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`),
       h('button', { class: chipClass(st.fluid), onclick: fluidSheet }, 'Fluid'),
       h('button', { class: chipClass(st.protein), onclick: proteinSheet }, 'Protein'),
       FOODS.map(f => h('button', { class: chipClass(f.key === 'huel' ? st.huel : null), onclick: async () => {

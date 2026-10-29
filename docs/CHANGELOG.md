@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.16.1 (2026-10-29)
+Due reminders pulse on the item they are about (Grip in the top strip, Pumps and Weight on Today) with a slow
+heartbeat glow: soft at first, then faster, wider and deeper red at a half hour and an hour past due (weight at 9 am
+and noon). Button space above Android's buttons can be forced: tap the version line on Me to cycle auto, on, off.
+Each synced day now carries the screen measurements, so Claude can see why the tab bar drops on this phone. Icons
+renamed (star-*.png) so Android notices the new icon and replaces the old launch splash.
+
 ## 0.16.0 (2026-10-29)
 Cloud copy, so Claude can read the log. Each day you change is sent to the Worker (Cloudflare D1) five seconds after
 you stop tapping, at once when Telmyn goes to the background, and again later if a send fails. Claude reads the last
