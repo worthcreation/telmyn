@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.17.3 (2026-10-29)
+Video mode keeps to a top band (title, Study) and a bottom band (step, timer, buttons); the middle is the video's.
+The timer now sits beside the step text in the bottom band, in both orientations. It used to be a separate chip
+whose position a broader video-mode rule overrode, so it fell below the screen in portrait and into the middle of
+the video in landscape; that chip is gone. Messages show in the middle while a video plays. Reading voice on Me:
+pick any English voice the phone has and a speed (0.8x to 1.25x); Listen uses it. Kept on the phone.
+
 ## 0.17.2 (2026-10-29)
 Press and hold Grip, Pumps or Weight for its list, full screen like Fluids and Protein. Grip and Pumps: today's
 entries with their times (grip with palms), each removable with Undo that puts it back at its original time.

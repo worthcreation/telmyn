@@ -1,6 +1,7 @@
 // Study while you train: a video on today's verse, its chapter to read, or the chapter read aloud, inside a block.
 // It plays while a timer runs (holds, rests, hangs) and pauses when the app is waiting on you (reps, logging).
 // Beeps duck the video volume for a moment so alerts are always heard. Your own pause or play always wins.
+import { utterance } from '../voice.js';
 import { h, fill, layer, toast } from './dom.js';
 import { state } from '../state.js';
 import { fetchDaily, studyVideos, fetchVerse, getVersion, getFavs, toggleFav, recordWatched } from '../scripture.js';
@@ -163,8 +164,7 @@ export function studyPlayer(container, { daily = null } = {}) {
       const [verse, ch] = await Promise.all([fetchVerse(state.verse.ref, v), fetchVerse(`${m[1]} ${m[2]}`, v)]);
       text = `${state.verse.ref}. ${verse.text} ... ${m[1]} chapter ${m[2]}. ${ch.text}`;
     } catch (err) { mode = null; return toast(err.message); }
-    speech = new SpeechSynthesisUtterance(text);
-    speech.rate = 0.95;
+    speech = await utterance(text);
     speech.onend = () => { if (mode === 'listen') stop(); };
     speechSynthesis.speak(speech);
     armed = true; playing = true;

@@ -36,8 +36,7 @@ export function runBlock(block, opts = {}) {
   const root = h('div', { class: 'runner', role: 'dialog', 'aria-label': block.name });
   const headEl = h('header', { class: 'runner-head' }), lanesEl = h('div', { class: 'lanes', 'aria-hidden': 'true' });
   const studyEl = h('section', { class: 'study' }), mainEl = h('main', { class: 'runner-main' }), footEl = h('footer', { class: 'runner-foot' });
-  const timerEl = h('div', { class: 'timer-chip' });
-  root.append(headEl, lanesEl, studyEl, mainEl, footEl, timerEl);
+  root.append(headEl, lanesEl, studyEl, mainEl, footEl);
   // In video mode the step card stays slim; tap it to show the cue and links.
   mainEl.addEventListener('click', e => { if (!e.target.closest('button, input, a, label')) root.classList.toggle('show-detail'); });
   // Re-lay out when the study video opens or closes (video mode moves the timer into its own corner chip).
@@ -277,8 +276,6 @@ export function runBlock(block, opts = {}) {
       videoLinks(s),
       ...body);
     fill(footEl, secondary, primary);
-    const cw = mainEl.querySelector('.clock-wrap');
-    if (root.classList.contains('video-mode') && cw) fill(timerEl, cw); else fill(timerEl);
     // Study video follows the timers: plays while one runs, pauses while the app waits on you.
     if (running) study.play(); else study.hold();
   }
