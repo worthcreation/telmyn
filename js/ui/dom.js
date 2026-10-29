@@ -149,3 +149,16 @@ export function chime(times = 1) {
   navigator.vibrate?.(200);
 }
 export const unlockAudio = () => { ctx(); audio.resume?.(); };
+
+// Press and hold (half a second) for a second action on a button; a normal tap still does the first one.
+// The click that ends a hold is swallowed, so a hold never also logs.
+export function holdable(el, onHold, ms = 500) {
+  let timer = null, held = false;
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  el.classList.add('holdable');
+  el.addEventListener('pointerdown', () => { held = false; cancel(); timer = setTimeout(() => { held = true; navigator.vibrate?.(15); onHold(); }, ms); });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, cancel);
+  el.addEventListener('contextmenu', e => e.preventDefault());
+  el.addEventListener('click', e => { if (held) { held = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+  return el;
+}

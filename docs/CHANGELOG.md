@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.17.2 (2026-10-29)
+Press and hold Grip, Pumps or Weight for its list, full screen like Fluids and Protein. Grip and Pumps: today's
+entries with their times (grip with palms), each removable with Undo that puts it back at its original time.
+Weight: the last 7 readings with dates and the 7-day average. A tap still does what it did; a hold never also logs.
+
 ## 0.17.1 (2026-10-29)
 Fluids and Protein open full screen: the total against the target, quick adds, and today's entries with their times,
 newest first. Adding keeps the screen open so the entry shows in the list. Any entry can be removed (drinks with

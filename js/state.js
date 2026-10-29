@@ -48,6 +48,13 @@ export async function logGripBreak() {
   return { e, n: hist.length + 1, palms };
 }
 
+// Put back an event removed from a list (Undo), with its original time.
+export async function restoreEvent(e) {
+  await db.put('events', e);
+  state.events.push(e); state.events.sort((a, b) => (a.at || '').localeCompare(b.at || ''));
+  emit();
+}
+
 export async function removeEvent(e) {
   await db.del('events', e.id);
   state.events = state.events.filter(x => x.id !== e.id);

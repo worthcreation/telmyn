@@ -1,6 +1,7 @@
 // Today tab: date and verse, the next block with the day ring, the rest of the day, verse text in spare space,
 // hourly palms, and quick adds. Status pills and tabs live in the shell.
-import { h, toast, fill, fitText } from './dom.js';
+import { h, toast, fill, fitText, holdable } from './dom.js';
+import { pumpsList, weightList } from './history.js';
 import { state, addEvent, addFood, undoFood, removeEvent } from '../state.js';
 import * as db from '../db.js';
 import { FOODS } from '../foods.js';
@@ -74,7 +75,7 @@ export function renderToday(root, rerender) {
   }).catch(() => { verseText.textContent = 'Tap to read today’s verse.'; verseText.classList.remove('loading'); verseText.classList.add('offline'); });
 
   // Weight: a chip in the quick row (used once a day). Red when nothing has been logged for a day or more.
-  const weightChip = h('button', { class: 'chip raised weight-chip', onclick: () => weightSheet(rerender) }, 'Weight');
+  const weightChip = holdable(h('button', { class: 'chip raised weight-chip', onclick: () => weightSheet(rerender) }, 'Weight'), weightList);
   lastWeight().then(({ value, date }) => {
     const age = date ? daysBetween(date, state.date) : null;
     const s2 = staleStatus(age); weightChip.classList.toggle('behind', s2 === 'behind'); weightChip.classList.toggle('met', s2 === 'met');
@@ -109,7 +110,7 @@ export function renderToday(root, rerender) {
     nextCard,
     h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList),
     h('section', { class: 'quick', 'aria-label': 'Quick add' },
-      h('button', { class: `${chipClass(st.pumps)}${pumpsLvl ? ' due' : ''}`, 'data-due': pumpsLvl || null, 'aria-label': `Ankle pumps, ${pumps} today`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`),
+      holdable(h('button', { class: `${chipClass(st.pumps)}${pumpsLvl ? ' due' : ''}`, 'data-due': pumpsLvl || null, 'aria-label': `Ankle pumps, ${pumps} today. Hold for the list.`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`), pumpsList),
       h('button', { class: chipClass(st.fluid), onclick: fluidSheet }, 'Fluid'),
       h('button', { class: chipClass(st.protein), onclick: proteinSheet }, 'Protein'),
       FOODS.map(f => h('button', { class: chipClass(f.key === 'huel' ? st.huel : null), onclick: async () => {

@@ -1,5 +1,6 @@
 // App frame: status pills on top (every tab), the current tab, and the tab bar at the bottom.
-import { h, fill, toast } from './dom.js';
+import { h, fill, toast, holdable } from './dom.js';
+import { gripList } from './history.js';
 import { state, logGripBreak, removeEvent } from '../state.js';
 import { fluidTotals } from '../schema.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
@@ -26,13 +27,13 @@ function gripPill(day, rerender) {
   const np = nextPalms(hist) || 'down';
   const arrow = np === 'up' ? '↑' : '↓';
   const lvl = overdueLevel(state.events.filter(e => e.type === 'block_done' && e.block === 'hourly').pop()?.at, 60);
-  return h('button', { class: `pill grip${lvl ? ' behind due' : ''}`, 'data-due': lvl || null, 'aria-label': `Grip break, ${hist.length} today. Tap to log one, palms ${np}.`, onclick: async () => {
+  return holdable(h('button', { class: `pill grip${lvl ? ' behind due' : ''}`, 'data-due': lvl || null, 'aria-label': `Grip break, ${hist.length} today. Tap to log one, palms ${np}.`, onclick: async () => {
     const { e, n, palms } = await logGripBreak();
     rerender();
     toast(`Grip break ${n}, palms ${palms}`, { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); } });
   } },
     h('span', { class: 'pill-l' }, `Grip ${arrow}`),
-    h('span', { class: 'pill-v' }, String(hist.length), h('small', {}, ' today')));
+    h('span', { class: 'pill-v' }, String(hist.length), h('small', {}, ' today'))), gripList);
 }
 
 // Labeled fill bar: the numbers sit inside the bar.

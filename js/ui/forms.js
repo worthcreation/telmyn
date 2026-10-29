@@ -40,7 +40,7 @@ export function fluidSheet() {
 }
 
 // Shared list of timed entries: time, what, amount, remove. Scrolls inside itself when long.
-function entryList(rows, empty) {
+export function entryList(rows, empty) {
   return h('div', { class: 'entries', role: 'list' }, rows.length ? rows.map(r => h('div', { class: 'ent', role: 'listitem' },
     h('span', { class: 'ent-at' }, r.at ? hhmm(new Date(r.at)) : ''),
     h('span', { class: 'ent-what' }, r.what),
