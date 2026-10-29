@@ -335,21 +335,21 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .sb-t small { font-size: var(--fs-small); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .study.open .study-frame, .study.open iframe { width: 100%; aspect-ratio: 16 / 9; max-height: 30vh; border: 0; border-radius: var(--r-btn); background: #000; display: block; }
 .study-swipe { display: none; }
-.runner.video-mode .study-swipe { display: block; position: absolute; inset: 0; z-index: 1; touch-action: pan-y; }
-.vs-video.on { border-color: var(--spirit); }
-.study-close { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: rgb(0 0 0 / .6); color: var(--glass-ink); }
+.runner.video-mode .study-swipe { display: block; position: absolute; inset: 0; z-index: 0; touch-action: pan-y; }
 .timer-chip:empty { display: none; }
 
 /* ===== Video mode: the video fills the runner; everything else sits on glass with a slim overlay ===== */
 .runner.video-mode { background: #000; grid-template-rows: auto auto 1fr auto; }
-.runner.video-mode .study { position: absolute; inset: 0; margin: 0; z-index: 0; overflow: hidden; }
+/* The study layer makes no stacking context of its own: the video sits at the back, the swipe pad over it, and the
+   Study button can rise above the block's glass cards. */
+.runner.video-mode .study { position: absolute; inset: 0; margin: 0; overflow: hidden; }
 .runner.video-mode .study-backdrop { position: absolute; inset: -40px; background: #000 center / cover no-repeat; filter: blur(28px) brightness(.55); }
-.runner.video-mode .study-frame, .runner.video-mode .study iframe { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-height: none; border-radius: 0; width: max(100%, calc(100dvh * 16 / 9)); height: max(100%, calc(100vw * 9 / 16)); aspect-ratio: auto; }
-.runner.video-mode.video-fit .study-frame, .runner.video-mode.video-fit .study iframe { width: 100%; height: calc(100vw * 9 / 16); }
-.runner.video-mode > :not(.study) { position: relative; z-index: 1; }
+.runner.video-mode .study-frame, .runner.video-mode .study iframe { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; border-radius: 0; aspect-ratio: auto; }
+.runner.video-mode > :not(.study):not(.vs-switch) { position: relative; z-index: 1; }
 .runner.video-mode .runner-head, .runner.video-mode .runner-main, .runner.video-mode .runner-foot, .runner.video-mode .clock-wrap { background: var(--glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: 1px solid var(--glass-line); border-radius: var(--r-card); color: var(--glass-ink); }
 .runner.video-mode .runner-head { padding: 2px var(--s2); }
 .runner.video-mode .runner-title { font-size: var(--fs-body); }
+.runner.video-mode .runner-head .icon-btn { color: var(--glass-ink); }
 .runner.video-mode .runner-count { display: none; }
 .runner.video-mode .lanes { margin: 6px 0; }
 .runner.video-mode .lanes span { height: 3px; }
@@ -362,16 +362,36 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .runner.video-mode .runner-foot { grid-row: 4; padding: var(--s1); gap: var(--s1); }
 .runner.video-mode .runner-foot .btn { min-height: 40px; font-size: var(--fs-small); }
 .runner.video-mode .runner-foot .btn.ghost { color: var(--glass-ink); background: rgb(255 255 255 / .08); border-color: var(--glass-line); }
-.runner.video-mode .timer-chip { position: absolute; top: calc(var(--safe-top) + 96px); left: var(--s4); z-index: 2; }
+.runner.video-mode .timer-chip { position: absolute; top: calc(var(--safe-top) + 72px); left: var(--s4); z-index: 2; }
+/* One control on the video, top right in the header's row: Study (choices). The block's ✕ stays on the left. */
+.study-btn { display: none; }
+.runner.video-mode .study-btn, .runner.read-mode .study-btn { display: block; position: fixed; z-index: 3; top: calc(var(--safe-top) + var(--s2) + 4px); right: calc(var(--s4) + 6px);
+  height: var(--h-ctrl-sm); padding: 0 var(--s4); border-radius: var(--r-pill); font-weight: 600; font-size: var(--fs-small);
+  background: var(--glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: 1px solid var(--glass-line); color: var(--glass-ink); }
+.runner.video-mode .runner-head, .runner.read-mode .runner-head { padding-right: 96px; }
+/* What is playing: large, centered, for a moment when a video starts or changes. */
+.vs-switch { position: absolute; z-index: 4; left: 50%; top: 42%; transform: translate(-50%, -50%); width: min(86vw, 520px); display: grid; gap: var(--s1); text-align: center;
+  background: var(--glass-strong); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: 1px solid var(--glass-line); border-radius: var(--r-card);
+  padding: var(--s4) var(--s5); color: var(--glass-ink); transition: opacity .5s; pointer-events: none; }
+.vs-switch.out { opacity: 0; }
+.vs-switch small { font-size: var(--fs-caption); color: var(--glass-ink-2); letter-spacing: .04em; text-transform: uppercase; }
+.vs-switch b { font: 700 var(--fs-title)/var(--lh-tight) var(--font-display); }
+.vs-switch span { font-size: var(--fs-small); color: var(--glass-ink-2); }
+/* Read mode: the chapter on a glass panel, scrolling inside itself. */
+.runner.read-mode .study { margin: 0 0 var(--s2); }
+.study-read { max-height: 38vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--spirit); border-radius: var(--r-card); padding: var(--s3) var(--s4); }
+.study-read .ctx-text { font-size: var(--fs-body); line-height: 1.6; }
+/* Video rows with a favorite heart. */
+.vs-row { display: grid; grid-template-columns: minmax(0, 1fr) var(--h-tap); gap: var(--s1); align-items: stretch; }
+.vs-row.on .vs-video { border-color: var(--spirit); }
+.vs-fav { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-btn); color: var(--ink-2); font-size: var(--fs-lead); }
+.vs-fav.on { color: var(--warn); border-color: var(--warn); }
+.j-watched { font-size: var(--fs-small); color: var(--ink-2); }
 .runner.video-mode .clock-wrap { width: auto; min-width: 96px; padding: 6px var(--s2); gap: var(--s1); justify-items: start; }
 .runner.video-mode .clock { font-size: var(--fs-hero); color: var(--glass-ink); }
 .runner.video-mode .clock-bar { height: 5px; }
 .runner.video-mode .getready-label, .runner.video-mode .countup-hint { font-size: var(--fs-caption); max-width: 16ch; }
-.runner.video-mode .study-tools { position: fixed; top: calc(var(--safe-top) + 96px); right: var(--s4); display: flex; gap: var(--s2); z-index: 2; }
-.runner.video-mode .study-close { position: static; width: 30px; height: 30px; background: var(--glass); border: 1px solid var(--glass-line); }
-.runner.video-mode .chip { background: rgb(255 255 255 / .1); border-color: var(--glass-line); color: var(--glass-ink); }
-.study-fit { background: var(--glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: 1px solid var(--glass-line); color: var(--glass-ink); border-radius: var(--r-pill); padding: var(--s1) 10px; font-size: var(--fs-caption); font-weight: 600; }
-.study-tools .vb-rotate { position: static; width: auto; height: auto; }
+.runner.video-mode .runner.video-mode .chip { background: rgb(255 255 255 / .1); border-color: var(--glass-line); color: var(--glass-ink); }
 
 /* ===== Full-screen video: the Fab Five block and every in-app player ===== */
 .vblock { position: fixed; inset: 0; z-index: var(--z-runner); background: #000; animation: rise .2s ease-out; }
@@ -382,9 +402,7 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .vb-btn { position: absolute; z-index: 2; top: calc(var(--safe-top) + 10px); height: var(--h-ctrl-sm); border: 1px solid var(--glass-line); color: var(--glass-ink); font-weight: 600; font-size: var(--fs-small); background: rgb(16 18 21 / .45); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-radius: var(--r-pill); }
 .vb-x { left: 12px; width: var(--h-ctrl-sm); padding: 0; }
 .vb-done { right: 12px; padding: 0 14px; }
-.vb-rotate { right: 12px; width: var(--h-ctrl-sm); padding: 0; font-size: var(--fs-lead); }
-.vblock:has(.vb-done) .vb-rotate { right: 104px; }
-.vb-title { position: absolute; left: 60px; right: 60px; top: calc(var(--safe-top) + 16px); text-align: center; color: var(--glass-ink-2); font-size: var(--fs-small); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; z-index: 2; }
+.vblock:has(.vb-done) .vb-title { position: absolute; left: 60px; right: 60px; top: calc(var(--safe-top) + 16px); text-align: center; color: var(--glass-ink-2); font-size: var(--fs-small); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; z-index: 2; }
 .vb-error { position: absolute; left: var(--s5); right: var(--s5); top: 30%; z-index: 3; display: grid; gap: 6px; text-align: center; color: var(--glass-ink); background: var(--glass-strong); border: 1px solid var(--glass-line); border-radius: var(--r-card); padding: var(--s4); }
 .vb-error span { font-size: var(--fs-small); color: var(--glass-ink-2); }
 .vb-error .btn { margin-top: 6px; }
@@ -500,8 +518,6 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
   .runner.video-mode .runner-main .step-text { font-size: var(--fs-lead); }
   .runner.video-mode .clock { font-size: var(--fs-display); }
   .runner.video-mode .runner-foot { grid-column: 2; grid-row: 3; align-self: end; justify-self: end; width: min(340px, 100%); margin: 0; }
-  .runner.video-mode .study-frame, .runner.video-mode .study iframe { top: 0; left: 0; transform: none; width: 100%; height: 100%; }
   .runner.video-mode .timer-chip { top: 56px; left: 12px; }
-  .runner.video-mode .study-tools { top: var(--s2); right: 12px; }
-}
+  }
 input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }

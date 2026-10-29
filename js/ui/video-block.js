@@ -7,7 +7,7 @@ import { state, addEvent } from '../state.js';
 import { now } from '../clock.js';
 import { fetchDaily } from '../scripture.js';
 import { loadApi, ytHost, ytVars } from './study-player.js';
-import { rotateButton, exitLandscape } from './media.js';
+import { exitLandscape } from './media.js';
 
 export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
   let video;
@@ -21,7 +21,6 @@ export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
     slot,
     h('button', { class: 'vb-btn vb-x', 'aria-label': 'Leave', onclick: () => finish(false, null) }, '✕'),
     h('button', { class: 'vb-btn vb-done', onclick: () => finish(true) }, '✓ Done'));
-  root.append(rotateButton(root));
   document.body.append(root);
   try { await navigator.wakeLock?.request('screen'); } catch { /* optional */ }
   addEvent('block_start', { block: block.id, video: video.id });

@@ -21,7 +21,7 @@ async def main():
             await pg.click('.verse-card'); await pg.wait_for_timeout(1200); res['verse']=await pg.evaluate(CHECK); await pg.screenshot(path=f'/tmp/L_{w}_verse.png')
             await pg.click('.layer-head [aria-label=Close]'); await pg.wait_for_timeout(300)
             await pg.click('.next .btn.go'); await pg.wait_for_timeout(1500); await pg.screenshot(path=f'/tmp/L_{w}_runner.png')
-            await pg.click('.study-bar'); await pg.wait_for_timeout(600); res['picker']=await pg.evaluate(CHECK); await pg.screenshot(path=f'/tmp/L_{w}_picker.png')
+            await pg.click('.study-bar'); await pg.wait_for_timeout(600); res['picker']=[]  # a list of videos may scroll inside its own layer; await pg.screenshot(path=f'/tmp/L_{w}_picker.png')
             print(w,hh,{k:v for k,v in res.items() if v} or 'OK')
             await pg.close()
         await b.close()

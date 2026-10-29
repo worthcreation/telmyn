@@ -1,10 +1,10 @@
-// Bible study video for today's verse, playing inside a block while you train.
+// Study while you train: a video on today's verse, its chapter to read, or the chapter read aloud, inside a block.
 // It plays while a timer runs (holds, rests, hangs) and pauses when the app is waiting on you (reps, logging).
 // Beeps duck the video volume for a moment so alerts are always heard. Your own pause or play always wins.
 import { h, fill, layer, toast } from './dom.js';
 import { state } from '../state.js';
-import { fetchDaily, studyVideos } from '../scripture.js';
-import { enterLandscape, exitLandscape, rotateButton } from './media.js';
+import { fetchDaily, studyVideos, fetchVerse, getVersion, getFavs, toggleFav, recordWatched } from '../scripture.js';
+import { exitLandscape } from './media.js';
 
 let apiReady;
 // YouTube player settings shared by every video in the app.
@@ -23,39 +23,50 @@ export function loadApi() {
 
 const decode = t => { const e = document.createElement('textarea'); e.innerHTML = t; return e.value; };
 
-// daily: a /daily source name; the block then shows that channel's video of the day instead of the verse study video.
-export function studyPlayer(container, { daily = null, landscape = false } = {}) {
-  let player = null, video = null, list = [], index = 0, armed = false, ours = false, playing = false, duckTimer = null;
+// Study while you train: watch a video on today's verse, read its chapter, or listen to it read aloud.
+// It follows the block: plays while a timer runs, holds while the app waits on you. Your own pause or play wins.
+// Overlay is minimal: one "Study" button (top right) opens the choices; the video always shows whole.
+export function studyPlayer(container, { daily = null } = {}) {
+  let mode = null, player = null, video = null, list = [], index = 0, armed = false, ours = false, playing = false, duckTimer = null;
+  let speech = null, readText = null, watchedTimer = null;
 
   const runner = () => container.closest('.runner');
-  const close = () => { exitLandscape(); player?.destroy?.(); player = null; armed = false; playing = false; runner()?.classList.remove('video-mode', 'video-fit'); drawBar(); };
+  const stop = () => {
+    exitLandscape(); clearTimeout(watchedTimer);
+    player?.destroy?.(); player = null;
+    if (speech) { speechSynthesis.cancel(); speech = null; }
+    armed = false; playing = false; mode = null;
+    runner()?.classList.remove('video-mode', 'read-mode');
+    drawBar();
+  };
 
-  // The card: what will play. Tap it to choose from every study video for today's verse (Fab Five's daily video has
-  // no list, so it plays straight away).
   function drawBar() {
-    if (!video) return fill(container);
+    if (!video && !daily) return fill(container);
     container.className = 'study collapsed';
-    fill(container, h('button', { class: `study-bar${daily ? ' daily' : ''}`, onclick: () => (daily || list.length < 2 ? open() : choose()) },
+    const sub = daily ? decode(video?.title || '') : list.length ? `Watch ${list.length} video${list.length === 1 ? '' : 's'}, read or listen` : 'Read or listen';
+    fill(container, h('button', { class: `study-bar${daily ? ' daily' : ''}`, onclick: () => (daily ? watch() : choose()) },
       h('span', { class: 'sb-i', 'aria-hidden': 'true' }, '▶'),
-      h('span', { class: 'sb-t' }, h('b', {}, daily ? `Today’s video, ${video.source}` : `Study while you train${list.length > 1 ? ` · ${list.length} videos` : ''}`), h('small', {}, decode(video.title)))));
+      h('span', { class: 'sb-t' }, h('b', {}, daily ? `Today’s video, ${video?.source || ''}` : 'Study while you train'), h('small', {}, sub))));
   }
 
-  // Selection: every video, grouped as on the verse study screen. Tapping one plays it in the workout.
-  function choose() {
-    const body = h('div', { class: 'vs-vlist' });
+  // The choices: read, listen, or any video (favorites first). ♥ marks a favorite; favorite channels rank higher.
+  async function choose() {
+    const favs = await getFavs();
+    const body = h('div', { class: 'vs-vlist' },
+      h('div', { class: 'bar' },
+        h('button', { class: 'chip', onclick: () => { l.close(); read(); } }, `Read ${state.verse.ref.replace(/:.*$/, '')}`),
+        h('button', { class: 'chip', onclick: () => { l.close(); listen(); } }, 'Listen')),
+      mode ? h('button', { class: 'chip', onclick: () => { l.close(); stop(); } }, 'Turn off') : null);
     let last = null;
     list.forEach((x, i) => {
       if (x.group !== last) { body.append(h('p', { class: 'lbl' }, x.group)); last = x.group; }
-      body.append(h('button', { class: `vs-video${i === index ? ' on' : ''}`, onclick: () => { index = i; video = list[i]; l.close(); open(); } },
-        h('span', { class: 'vb-thumb', style: x.thumb ? `background-image:url('${x.thumb}')` : '' }),
-        h('span', { class: 'vs-vt' }, h('b', {}, decode(x.title)), h('small', {}, x.channel ? decode(x.channel) : 'BibleProject'))));
+      body.append(videoRow(x, i === index && mode === 'video', () => { index = i; video = list[i]; l.close(); watch(); }, favs));
     });
-    body.append(h('p', { class: 'fine center' }, 'While a video plays, swipe across the middle of the screen to go to the next or previous one.'));
+    if (list.length > 1) body.append(h('p', { class: 'fine center' }, 'While a video plays, swipe across the middle of the screen for the next or previous one.'));
     const l = layer('Study while you train', body);
   }
 
-  // Swipe: a drag that crosses the middle of the screen moves to the next (right to left) or previous video.
-  // A plain tap on the video plays or pauses it.
+  // ---- Watch
   function swipeLayer() {
     let x0 = null;
     const pad = h('div', { class: 'study-swipe', 'aria-hidden': 'true' });
@@ -70,34 +81,46 @@ export function studyPlayer(container, { daily = null, landscape = false } = {})
     });
     return pad;
   }
+  // What is playing, large and centered for a moment whenever the video starts or changes.
+  function titleCard() {
+    runner()?.querySelector('.vs-switch')?.remove();
+    const card = h('div', { class: 'vs-switch', role: 'status' },
+      list.length > 1 ? h('small', {}, `${index + 1} of ${list.length}`) : null,
+      h('b', {}, decode(video.title)), h('span', {}, decode(video.channel || video.source || 'BibleProject')));
+    runner()?.append(card);
+    setTimeout(() => card.classList.add('out'), 2600);
+    setTimeout(() => card.remove(), 3200);
+  }
   function go(step) {
     index = (index + step + list.length) % list.length;
     video = list[index];
     player?.loadVideoById?.({ videoId: video.id });
     container.querySelector('.study-backdrop')?.setAttribute('style', video.thumb ? `background-image:url('${video.thumb}')` : '');
-    toast(`${index + 1} of ${list.length}: ${decode(video.title)}`);
+    titleCard(); noteWatched();
   }
-
-  async function open() {
-    // Must start inside the tap that opened the video: browsers allow fullscreen only from a tap.
-    if (landscape && runner()) enterLandscape(runner());
+  function noteWatched() {
+    clearTimeout(watchedTimer);
+    const v = video;
+    // Watched for 30 seconds: it goes in today's journal.
+    watchedTimer = setTimeout(() => recordWatched(v), 30000);
+  }
+  async function watch() {
+    if (mode) stop();
+    mode = 'video';
     container.className = 'study open';
     runner()?.classList.add('video-mode');
     const slot = h('div', { class: 'study-frame' });
-    const fitBtn = h('button', { class: 'study-fit', onclick: () => {
-      const r = runner(); r?.classList.toggle('video-fit');
-      fitBtn.textContent = r?.classList.contains('video-fit') ? 'Fill screen' : 'Show whole video';
-    } }, 'Show whole video');
     fill(container,
       h('div', { class: 'study-backdrop', style: video.thumb ? `background-image:url('${video.thumb}')` : '' }),
       slot, swipeLayer(),
-      h('div', { class: 'study-tools' }, list.length > 1 ? h('button', { class: 'study-fit', onclick: choose }, 'Videos') : null, fitBtn, rotateButton(runner(), 'study-fit'), h('button', { class: 'study-close', 'aria-label': 'Close video', onclick: close }, '✕')));
+      daily ? null : h('button', { class: 'study-btn', onclick: choose }, 'Study'));
+    titleCard();
     await loadApi();
     player = new window.YT.Player(slot, {
       videoId: video.id, host: ytHost,
       playerVars: ytVars(),
       events: {
-        onReady: e => { e.target.playVideo(); },
+        onReady: e => { e.target.playVideo(); noteWatched(); },
         onStateChange: e => {
           playing = e.data === 1;
           if (ours) { ours = false; return; }          // a change we made; leave the user's choice alone
@@ -106,6 +129,49 @@ export function studyPlayer(container, { daily = null, landscape = false } = {})
         },
       },
     });
+  }
+
+  // ---- Read: the chapter on glass, today's verses marked; scrolls inside its own panel.
+  async function read() {
+    if (mode) stop();
+    mode = 'read';
+    container.className = 'study open';
+    runner()?.classList.add('read-mode');
+    const m = state.verse.ref.match(/^(.+?)\s(\d+):(\d+)(?:-(\d+))?$/);
+    const from = Number(m[3]), to = Number(m[4] || m[3]);
+    readText = h('div', { class: 'study-read' }, h('p', { class: 'muted' }, 'Loading…'));
+    fill(container, readText, h('button', { class: 'study-btn', onclick: choose }, 'Study'));
+    try {
+      const d = await fetchVerse(`${m[1]} ${m[2]}`, await getVersion());
+      fill(readText, h('p', { class: 'lbl' }, `${m[1]} ${m[2]} ${d.version}`), h('p', { class: 'ctx-text' }, d.verses.map(x => {
+        const n = Number((x.id.match(/-(\d+)$/) || [])[1]);
+        return h('span', { class: n >= from && n <= to ? 'ctx-today' : '' }, h('sup', {}, n), ` ${x.text} `);
+      })));
+      readText.querySelector('.ctx-today')?.scrollIntoView({ block: 'center' });
+    } catch (err) { fill(readText, h('p', { class: 'muted' }, err.message)); }
+  }
+
+  // ---- Listen: the phone reads today's verse, then its chapter, aloud. Follows the block like a video.
+  async function listen() {
+    if (mode) stop();
+    if (!('speechSynthesis' in window)) return toast('This phone cannot read aloud.');
+    mode = 'listen';
+    const m = state.verse.ref.match(/^(.+?)\s(\d+):/);
+    let text;
+    try {
+      const v = await getVersion();
+      const [verse, ch] = await Promise.all([fetchVerse(state.verse.ref, v), fetchVerse(`${m[1]} ${m[2]}`, v)]);
+      text = `${state.verse.ref}. ${verse.text} ... ${m[1]} chapter ${m[2]}. ${ch.text}`;
+    } catch (err) { mode = null; return toast(err.message); }
+    speech = new SpeechSynthesisUtterance(text);
+    speech.rate = 0.95;
+    speech.onend = () => { if (mode === 'listen') stop(); };
+    speechSynthesis.speak(speech);
+    armed = true; playing = true;
+    container.className = 'study collapsed';
+    fill(container, h('button', { class: 'study-bar', onclick: choose },
+      h('span', { class: 'sb-i', 'aria-hidden': 'true' }, '♪'),
+      h('span', { class: 'sb-t' }, h('b', {}, `Listening: ${m[1]} ${m[2]}`), h('small', {}, 'Tap for other choices'))));
   }
 
   (async () => {
@@ -118,14 +184,35 @@ export function studyPlayer(container, { daily = null, landscape = false } = {})
   })();
 
   return {
-    play() { if (player && armed && !playing) { ours = true; player.playVideo(); } },
-    hold() { if (player && armed && playing) { ours = true; player.pauseVideo(); } },
+    play() {
+      if (mode === 'video' && player && armed && !playing) { ours = true; player.playVideo(); }
+      if (mode === 'listen' && speech && speechSynthesis.paused) { speechSynthesis.resume(); playing = true; }
+    },
+    hold() {
+      if (mode === 'video' && player && armed && playing) { ours = true; player.pauseVideo(); }
+      if (mode === 'listen' && speech && speechSynthesis.speaking) { speechSynthesis.pause(); playing = false; }
+    },
     duck(ms = 900) {
       if (!player || !playing || !player.setVolume) return;
       player.setVolume(20);
       clearTimeout(duckTimer);
       duckTimer = setTimeout(() => player?.setVolume?.(100), ms);
     },
-    destroy() { clearTimeout(duckTimer); player?.destroy?.(); player = null; },
+    destroy() { clearTimeout(duckTimer); clearTimeout(watchedTimer); player?.destroy?.(); player = null; if (speech) speechSynthesis.cancel(); },
   };
+}
+
+// A video row with a favorite heart; shared by the workout picker and the verse study list.
+export function videoRow(x, current, onPlay, favs) {
+  const fav = h('button', { class: `vs-fav${favs[x.id] ? ' on' : ''}`, 'aria-label': favs[x.id] ? 'Remove favorite' : 'Favorite', onclick: async e => {
+    e.stopPropagation();
+    const on = await toggleFav(x);
+    fav.classList.toggle('on', on); fav.setAttribute('aria-label', on ? 'Remove favorite' : 'Favorite');
+    toast(on ? `♥ Saved. ${decode(x.channel || 'BibleProject')} ranks first now.` : 'Favorite removed');
+  } }, '♥');
+  return h('div', { class: `vs-row${current ? ' on' : ''}` },
+    h('button', { class: 'vs-video', onclick: onPlay },
+      h('span', { class: 'vb-thumb', style: x.thumb ? `background-image:url('${x.thumb}')` : '' }),
+      h('span', { class: 'vs-vt' }, h('b', {}, decode(x.title)), h('small', {}, x.channel ? decode(x.channel) : 'BibleProject'))),
+    fav);
 }

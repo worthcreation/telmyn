@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.14.0 (2026-10-28)
+Study while you train has three ways in: watch a video on the day's verse, read its chapter on a glass panel (today's
+verses marked), or listen to the verse and chapter read aloud by the phone; each follows the block (plays during timers,
+holds while the app waits on you). The video overlay is minimal: the block's ✕ and name on the left, one Study button on
+the right for every choice, the video always shown whole; the Show whole video and rotate buttons are gone because the
+app now turns with the phone. A large centered card shows what is playing whenever a video starts or changes.
+Favorites: a heart on every video in the workout picker and the verse study list; favorites rank first and their
+channels rank higher everywhere. Videos watched for 30 seconds go in that day's journal entry. Reminders vibrate and
+sound, stay up until dismissed, and chime with a message when the app is open.
+
 ## 0.13.0 (2026-10-28)
 Landscape: every screen uses the width. Today puts the verse on the left and the next block, the day and the quick chips
 on the right; Progress puts the week and averages beside the stats; Gear is a 2-by-2 grid; Me's buttons sit in two

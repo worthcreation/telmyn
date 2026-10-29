@@ -6,7 +6,7 @@
 import * as db from './db.js';
 import { state } from './state.js';
 import { now, hhmm } from './clock.js';
-import { toast } from './ui/dom.js';
+import { toast, chime } from './ui/dom.js';
 import { overdueStatus } from './status.js';
 
 const sent = {};   // tag -> last time we nudged (ms)
@@ -30,7 +30,9 @@ async function notify(tag, title, body) {
   sent[tag] = now().getTime();
   try {
     const reg = await navigator.serviceWorker?.getRegistration();
-    if (reg) await reg.showNotification(title, { body, tag, icon: 'icons/icon-192.png', renotify: true });
+    if (document.visibilityState === 'visible') { chime(3); toast(`${title}: ${body}`); }
+    const opts = { body, tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', renotify: true, silent: false, requireInteraction: true, vibrate: [300, 150, 300, 150, 300] };
+    if (reg) await reg.showNotification(title, opts);
     else new Notification(title, { body, tag });
   } catch { /* notifications unavailable here */ }
 }

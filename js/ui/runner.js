@@ -44,7 +44,7 @@ export function runBlock(block, opts = {}) {
   new MutationObserver(() => render()).observe(root, { attributes: true, attributeFilter: ['class'] });
   document.body.append(root);
   // Long blocks (row, legs up) turn the study video sideways so it can be watched properly.
-  const study = studyPlayer(studyEl, { landscape: (block.minutes || 0) >= 15 });
+  const study = studyPlayer(studyEl);
   const cue = name => { study.duck(); sounds[name](); };
   addEvent('block_start', { block: block.id });
 

@@ -30,13 +30,6 @@ export async function exitLandscape() {
   try { screen.orientation?.unlock?.(); } catch { /* not supported */ }
   try { if (document.fullscreenElement) await document.exitFullscreen(); } catch { /* already out */ }
 }
-// Small round switch for the top corner of any video.
-export function rotateButton(el, cls = 'vb-btn') {
-  const b = h('button', { class: `${cls} vb-rotate`, 'aria-label': 'Landscape', onclick: async () => {
-    if (isLandscape()) await exitLandscape(); else await enterLandscape(el);
-  } }, '⟲');
-  return b;
-}
 
 // Ross's picks replace library videos that YouTube won't play inside the app. Stored as a setting
 // (meta video_picks, kept in backups): { exerciseKey: { id, title, channel } }. Loaded once at start.
@@ -75,7 +68,7 @@ export async function playVideo(url, title = 'Video', { onOpen, onClose, pick = 
     setTimeout(() => root.remove(), 200);
     onClose?.();
   };
-  root.append(h('button', { class: 'vb-btn vb-x', 'aria-label': 'Close video', onclick: close }, '✕'), rotateButton(root),
+  root.append(h('button', { class: 'vb-btn vb-x', 'aria-label': 'Close video', onclick: close }, '✕'),
     h('p', { class: 'vb-title' }, title));
   document.body.append(root);
   history.pushState({ ...(history.state || {}), telmynVideo: true }, '');

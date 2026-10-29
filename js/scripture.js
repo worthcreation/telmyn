@@ -103,7 +103,11 @@ export async function studyVideos(ref) {
     fetchVideos(ref).catch(() => []),
     topic ? fetchVideos(ref, 'bibleproject', topic).catch(() => []) : [],
   ]);
-  const tag = (list, group) => list.map(x => ({ ...x, group }));
+  const favs = await getFavs();
+  // Favorites first, then videos from channels you have favorited, within each group.
+  const favChannels = new Set(Object.values(favs).map(f => f.channel));
+  const rank = x => (favs[x.id] ? 0 : favChannels.has(x.channel) ? 1 : 2);
+  const tag = (list, group) => list.map(x => ({ ...x, group })).sort((a, b) => rank(a) - rank(b));
   return [
     ...tag(onPassage.filter(x => x.on === 'verse'), `On ${ref}`),
     ...tag(onPassage.filter(x => x.on === 'chapter'), `On ${book} ${ch}`),
@@ -111,3 +115,23 @@ export async function studyVideos(ref) {
     ...tag(word, topic ? `On ${topic}` : 'More'),
   ].filter((x, i, a) => a.findIndex(y => y.id === x.id) === i);
 }
+
+// Favorite videos: { id: { title, channel, thumb, at } }, kept in backups. Their channels rank higher in every list.
+export const getFavs = () => getMeta('video_favs', {});
+export async function toggleFav(v) {
+  const favs = await getFavs();
+  if (favs[v.id]) delete favs[v.id]; else favs[v.id] = { title: v.title, channel: v.channel || 'BibleProject', thumb: v.thumb || '', at: new Date().toISOString() };
+  await setMeta('video_favs', favs);
+  return !!favs[v.id];
+}
+
+// Videos watched for at least 30 seconds, by day, so the journal can show them: { date: [{ id, title, channel }] }.
+export async function recordWatched(v) {
+  const { state } = await import('./state.js');
+  const all = await getMeta('watched', {});
+  const day = all[state.date] || [];
+  if (!day.some(x => x.id === v.id)) day.push({ id: v.id, title: v.title, channel: v.channel || v.source || 'BibleProject' });
+  all[state.date] = day;
+  await setMeta('watched', all);
+}
+export const watchedOn = async date => (await getMeta('watched', {}))[date] || [];

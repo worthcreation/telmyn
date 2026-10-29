@@ -10,7 +10,8 @@ import { verseFor } from '../verses.js';
 import { state, setField } from '../state.js';
 import { journalSheet } from './journal.js';
 import { playVideo } from './media.js';
-import { getVersion, setVersion, fetchVerse, listVersions, originalWords, studyVideos } from '../scripture.js';
+import { getVersion, setVersion, fetchVerse, listVersions, originalWords, studyVideos, getFavs } from '../scripture.js';
+import { videoRow } from './study-player.js';
 
 function parseRef(ref) {
   const m = ref.match(/^(.+?)\s(\d+):(\d+)(?:-(\d+))?$/);
@@ -198,13 +199,13 @@ export async function verseSheet(date = null) {
     h('span', { class: 'vb-thumb', style: x.thumb ? `background-image:url('${x.thumb}')` : '' }),
     h('span', { class: 'vs-vt' }, h('b', {}, decode(x.title)), h('small', {}, x.channel ? decode(x.channel) : 'BibleProject')));
   const watch = h('div', { class: 'vs-watch' }, h('p', { class: 'muted small' }, 'Finding videos on this passage…'));
-  studyVideos(v.ref).then(groups => {
+  Promise.all([studyVideos(v.ref), getFavs()]).then(([groups, favs]) => {
     if (!groups.length) return fill(watch, h('p', { class: 'muted small' }, 'No videos on this passage yet.'));
     const [first, ...rest] = groups;
     const more = () => {
       const list = h('div', { class: 'vs-vlist' });
       let last = null;
-      for (const x of groups) { if (x.group !== last) { list.append(h('p', { class: 'lbl' }, x.group)); last = x.group; } list.append(card(x)); }
+      for (const x of groups) { if (x.group !== last) { list.append(h('p', { class: 'lbl' }, x.group)); last = x.group; } list.append(videoRow(x, false, () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title)), favs)); }
       screen('Videos', list);
     };
     // Lead video: no picture, just what it covers, its title and who made it, with More on the same card.
