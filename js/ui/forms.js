@@ -1,30 +1,51 @@
 import { h, sheet, toast, fill, noteField } from './dom.js';
-import { state, setField, addFluid, undoFluid, addProtein, addEvent, load } from '../state.js';
+import { state, setField, addFluid, removeFluid, restoreFluid, addProtein, removeProtein, undoFood, addEvent, load } from '../state.js';
+import { foodByKey } from '../foods.js';
 import * as db from '../db.js';
 import { planFor, blockStatus } from '../program/index.js';
 import { hourlyHistory } from '../hourly.js';
 import { now, hhmm, addDays, daysBetween } from '../clock.js';
 import { DAY_FIELDS, FLUID_KINDS, ozFromMl, cleanNumber, fluidTotals, blankDay } from '../schema.js';
 
+// Fluids: full screen. Total against the target, quick adds, and today's drinks with their times (newest first).
+// Adding keeps the screen open so the list shows it; any entry can be removed, with Undo.
 export function fluidSheet() {
   let kind = 'water';
-  const body = h('div', { class: 'stack' });
-  const draw = () => fill(body, 
-    h('div', { class: 'seg wrap' }, FLUID_KINDS.map(k => h('button', { class: kind === k.key ? 'on' : '', onclick: () => { kind = k.key; draw(); } }, k.label))),
-    h('div', { class: 'grid4' }, [8, 16.9, 24, 25].map(oz => h('button', { class: 'chip', onclick: () => add(oz) }, `${oz} oz`))),
-    h('div', { class: 'row' },
-      h('input', { id: 'f-amt', type: 'number', inputmode: 'decimal', placeholder: 'Amount', 'aria-label': 'Amount' }),
-      h('button', { class: 'chip', onclick: () => custom('oz') }, 'oz'),
-      h('button', { class: 'chip', onclick: () => custom('ml') }, 'ml')),
-    state.fluids.length ? h('button', { class: 'btn ghost', onclick: async () => { await undoFluid(); draw(); } }, 'Undo last entry') : null);
-  const add = async (oz, ml = null) => { await addFluid(kind, oz, ml); toast(`Logged ${oz} oz ${FLUID_KINDS.find(k => k.key === kind).label.toLowerCase()}`); s.close(); };
+  const body = h('div', { class: 'entries-wrap' });
+  const draw = () => {
+    const total = Math.round(state.fluids.reduce((t, f) => t + (f.oz || 0), 0) * 10) / 10;
+    const target = state.plan.program.data.TARGETS.fluids_oz[0];
+    fill(body,
+      h('p', { class: 'ent-total' }, h('b', {}, `${total}`), ` / ${target} oz`),
+      h('div', { class: 'seg wrap' }, FLUID_KINDS.map(k => h('button', { class: kind === k.key ? 'on' : '', onclick: () => { kind = k.key; draw(); } }, k.label))),
+      h('div', { class: 'grid4' }, [8, 16.9, 24, 25].map(oz => h('button', { class: 'chip', onclick: () => add(oz) }, `${oz} oz`))),
+      h('div', { class: 'row' },
+        h('input', { id: 'f-amt', type: 'number', inputmode: 'decimal', placeholder: 'Amount', 'aria-label': 'Amount' }),
+        h('button', { class: 'chip', onclick: () => custom('oz') }, 'oz'),
+        h('button', { class: 'chip', onclick: () => custom('ml') }, 'ml')),
+      entryList([...state.fluids].reverse().map(f => ({
+        at: f.at, what: FLUID_KINDS.find(k => k.key === f.kind)?.label || f.kind,
+        amt: `${f.oz} oz${f.ml ? ` (${f.ml} ml)` : ''}`,
+        remove: async () => { const gone = await removeFluid(f); draw(); toast(`Removed ${gone.oz} oz`, { label: 'Undo', fn: async () => { await restoreFluid(gone); draw(); } }); },
+      })), 'No drinks logged today.'));
+  };
+  const add = async (oz, ml = null) => { await addFluid(kind, oz, ml); toast(`Logged ${oz} oz ${FLUID_KINDS.find(k => k.key === kind).label.toLowerCase()}`); draw(); };
   const custom = unit => {
     const n = cleanNumber(document.getElementById('f-amt').value);
     if (n === null) return toast('Enter an amount first');
     unit === 'ml' ? add(ozFromMl(n), n) : add(n);
   };
   draw();
-  const s = sheet('Add fluid', body);
+  sheet('Fluids', body, { full: true });
+}
+
+// Shared list of timed entries: time, what, amount, remove. Scrolls inside itself when long.
+function entryList(rows, empty) {
+  return h('div', { class: 'entries', role: 'list' }, rows.length ? rows.map(r => h('div', { class: 'ent', role: 'listitem' },
+    h('span', { class: 'ent-at' }, r.at ? hhmm(new Date(r.at)) : ''),
+    h('span', { class: 'ent-what' }, r.what),
+    h('span', { class: 'ent-amt' }, r.amt),
+    r.remove ? h('button', { class: 'icon-btn ent-x', 'aria-label': `Remove ${r.what} ${r.amt}`, onclick: r.remove }, '✕') : h('span'))) : h('p', { class: 'muted small' }, empty));
 }
 
 // Most recent weight on record (today's if logged, else the latest earlier day).
@@ -54,15 +75,34 @@ export function weightSheet(onSave) {
   });
 }
 
+// Protein: full screen, same shape as Fluids. Entries are hand adds and foods (Huel), with their times.
 export function proteinSheet() {
-  const body = h('div', { class: 'stack' },
-    h('div', { class: 'grid4' }, [20, 30, 40, 50].map(g => h('button', { class: 'chip', onclick: () => add(g) }, `${g} g`))),
-    h('div', { class: 'row' },
-      h('input', { id: 'p-amt', type: 'number', inputmode: 'numeric', placeholder: 'Grams', 'aria-label': 'Grams' }),
-      h('button', { class: 'chip', onclick: () => { const n = cleanNumber(document.getElementById('p-amt').value); n === null ? toast('Enter grams first') : add(n); } }, 'Add')),
-    h('p', { class: 'muted small' }, 'Adds to today’s total. Edit the total in Log.'));
-  const add = async g => { await addProtein(g); toast(`Protein now ${state.day.protein_g} g`); s.close(); };
-  const s = sheet('Add protein', body);
+  const body = h('div', { class: 'entries-wrap' });
+  const draw = () => {
+    const total = state.day.protein_g || 0;
+    const target = state.plan.program.data.TARGETS.protein_g[0];
+    const timed = state.events.filter(e => (e.type === 'protein' || e.type === 'food') && e.protein_g).reverse();
+    const diff = Math.round((total - timed.reduce((t, e) => t + e.protein_g, 0)) * 10) / 10;
+    const rows = timed.map(e => ({
+      at: e.at, what: e.type === 'food' ? (foodByKey(e.food)?.label || 'Food') : 'Added', amt: `${e.protein_g} g`,
+      remove: async () => {
+        if (e.type === 'food') { await undoFood(e); toast(`Removed ${foodByKey(e.food)?.label || 'food'} (protein, its water and note)`); }
+        else { await removeProtein(e); toast(`Removed ${e.protein_g} g`, { label: 'Undo', fn: async () => { await addProtein(e.protein_g); draw(); } }); }
+        draw();
+      },
+    }));
+    if (diff) rows.push({ at: null, what: diff > 0 ? 'Set in Day log or earlier' : 'Lowered in Day log', amt: `${diff > 0 ? '' : '−'}${Math.abs(diff)} g` });
+    fill(body,
+      h('p', { class: 'ent-total' }, h('b', {}, `${total}`), ` / ${target} g`),
+      h('div', { class: 'grid4' }, [20, 30, 40, 50].map(g => h('button', { class: 'chip', onclick: () => add(g) }, `${g} g`))),
+      h('div', { class: 'row' },
+        h('input', { id: 'p-amt', type: 'number', inputmode: 'numeric', placeholder: 'Grams', 'aria-label': 'Grams' }),
+        h('button', { class: 'chip', onclick: () => { const n = cleanNumber(document.getElementById('p-amt').value); n === null ? toast('Enter grams first') : add(n); } }, 'Add')),
+      entryList(rows, 'No protein logged today.'));
+  };
+  const add = async g => { await addProtein(g); toast(`Added ${g} g`); draw(); };
+  draw();
+  sheet('Protein', body, { full: true });
 }
 
 const prettyDay = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };

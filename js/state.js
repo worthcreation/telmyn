@@ -69,13 +69,31 @@ export async function addFluid(kind, oz, ml = null) {
   emit();
 }
 
-export async function undoFluid() {
-  const f = state.fluids.pop();
-  if (f) { await db.del('fluids', f.id); emit(); }
+// Remove one drink (from the Fluids list). Returns it so the caller can offer Undo with restoreFluid.
+export async function removeFluid(f) {
+  await db.del('fluids', f.id);
+  state.fluids = state.fluids.filter(x => x.id !== f.id);
+  emit();
+  return f;
+}
+export async function restoreFluid(f) {
+  await db.put('fluids', f);
+  state.fluids.push(f); state.fluids.sort((a, b) => (a.at || '').localeCompare(b.at || ''));
+  emit();
 }
 
+// Protein added by hand is a timed entry (event 'protein') and moves the day's total with it, so the list and the
+// total agree. A total set by hand in the Day log stays as set; the Protein list shows any difference as its own line.
 export async function addProtein(g) {
-  await setField('protein_g', (state.day.protein_g || 0) + g);
+  state.day.protein_g = (state.day.protein_g || 0) + g;
+  await db.put('days', state.day);
+  return addEvent('protein', { protein_g: g });
+}
+export async function removeProtein(e) {
+  const p = (state.day.protein_g || 0) - (e.protein_g || 0);
+  state.day.protein_g = p > 0 ? p : null;
+  await db.put('days', state.day);
+  await removeEvent(e);
 }
 
 // One tap logs a whole food: protein, the fluid it is mixed with, and a timed eating note.

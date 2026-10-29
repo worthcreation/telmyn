@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.17.1 (2026-10-29)
+Fluids and Protein open full screen: the total against the target, quick adds, and today's entries with their times,
+newest first. Adding keeps the screen open so the entry shows in the list. Any entry can be removed (drinks with
+Undo; a food like Huel removes its protein, water and note together). Protein added by hand is now a timed entry
+that moves the total with it; a total set by hand in the Day log stays, and the list shows the difference as its
+own line. Unused undoFluid removed.
+
 ## 0.17.0 (2026-10-29)
 Verse repeats build on the first time: when a verse comes back in its 5-week rotation, its Study page shows what you
 wrote the last time it came up. Me cut from nine controls to six: Back up (one file; Copy full record folded in as
