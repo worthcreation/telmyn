@@ -1,5 +1,5 @@
-// Push reminders: the Worker checks every minute and sends an urgent, payload-free push to the phone when something
-// is overdue. The phone's service worker then asks /push/pending what to show. One subscription per copy of the app
+// Push reminders: the Worker checks every minute and, when something is overdue, sends an urgent push that carries
+// the reminders themselves, encrypted for the phone (Web Push, RFC 8291). One subscription per copy of the app
 // (live, test), kept in KV under push:<site>. Only what the rules need is stored: the phone's push address, its UTC
 // offset, and the last times of a grip break, ankle pumps and a weight.
 // Rules (owner's choice, Oct 2026): grip break after 60 min, ankle pumps after 30 min, weekdays 08:00-17:00 local;
@@ -18,8 +18,34 @@ async function vapidHeader(endpoint, env) {
   return `vapid t=${head}.${body}.${b64u(sig)}, k=${env.VAPID_PUBLIC}`;
 }
 
-async function send(sub, env) {
-  const r = await fetch(sub.endpoint, { method: 'POST', headers: { Authorization: await vapidHeader(sub.endpoint, env), TTL: '120', Urgency: 'high', 'Content-Length': '0' } });
+const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+const cat = (...parts) => { const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0)); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } return out; };
+async function hkdf(salt, ikm, info, bytes) {
+  const k = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info }, k, bytes * 8));
+}
+
+// Encrypt a payload for one subscription (aes128gcm, RFC 8291). Only that phone can read it.
+export async function encryptPayload(sub, text) {
+  const uaPublic = unb64u(sub.keys.p256dh), auth = unb64u(sub.keys.auth);
+  const local = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+  const asPublic = new Uint8Array(await crypto.subtle.exportKey('raw', local.publicKey));
+  const uaKey = await crypto.subtle.importKey('raw', uaPublic, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: uaKey }, local.privateKey, 256));
+  const ikm = await hkdf(auth, shared, cat(enc('WebPush: info\0'), uaPublic, asPublic), 32);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const cek = await hkdf(salt, ikm, enc('Content-Encoding: aes128gcm\0'), 16);
+  const nonce = await hkdf(salt, ikm, enc('Content-Encoding: nonce\0'), 12);
+  const key = await crypto.subtle.importKey('raw', cek, 'AES-GCM', false, ['encrypt']);
+  const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, key, cat(enc(text), new Uint8Array([2]))));
+  const head = new Uint8Array(21); head.set(salt); new DataView(head.buffer).setUint32(16, 4096); head[20] = asPublic.length;
+  return cat(head, asPublic, sealed);
+}
+
+async function send(sub, env, list) {
+  const body = await encryptPayload(sub, JSON.stringify(list));
+  const r = await fetch(sub.endpoint, { method: 'POST', body, headers: { Authorization: await vapidHeader(sub.endpoint, env), TTL: '120', Urgency: 'high',
+    'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream' } });
   return r.status;
 }
 
@@ -52,12 +78,6 @@ export async function pushRoute(req, url, env, json) {
   if (!env.PUSH) return json(req, { error: 'Push is not set up yet.' }, 503);
   if (url.pathname === '/push/key') return json(req, { key: env.VAPID_PUBLIC || null });
   const rec = (await env.PUSH.get(key, 'json')) || {};
-  if (url.pathname === '/push/pending') {
-    const p = rec.pending || [];
-    rec.pending = [];
-    await env.PUSH.put(key, JSON.stringify(rec));
-    return json(req, { pending: p });
-  }
   if (req.method !== 'POST') return json(req, { error: 'POST only.' }, 405);
   const body = await req.json().catch(() => ({}));
   if (url.pathname === '/push/subscribe') {
@@ -82,9 +102,9 @@ export async function pushTick(env) {
     if (!list.length) continue;
     rec.sent ||= {};
     for (const d of list) rec.sent[d.kind] = d.kind === 'weight' ? local(now, rec.offset || 0).date : now;
-    rec.pending = [...(rec.pending || []).filter(p => !list.some(d => d.kind === p.kind)), ...list];
+    delete rec.pending;
     await env.PUSH.put(key, JSON.stringify(rec));
-    const status = await send(rec.sub, env);
+    const status = await send(rec.sub, env, list);
     if (status === 404 || status === 410) await env.PUSH.delete(key);   // the phone dropped the subscription
   }
 }

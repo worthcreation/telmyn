@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.17.5 (2026-10-29)
+Reminders always say what is due. A push used to arrive empty and the phone then asked the Worker what to show; the
+Worker had just written that to KV, which can take up to a minute to reach other locations, so the phone sometimes
+found nothing and showed "A reminder is due." The reminders now travel inside the push, encrypted for this phone
+(Web Push aes128gcm, RFC 8291), and /push/pending is gone. A test decrypts a payload the way a phone does. The test
+runner now waits for async tests.
+
 ## 0.17.4 (2026-10-29)
 Reading voice becomes Reading speed. Tested on the phone: browsers on Android list one entry per language and speak
 with the voice set in Android's text-to-speech engine, so the in-app voice list could not change the voice. It is

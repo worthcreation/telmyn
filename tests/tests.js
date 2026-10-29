@@ -7,9 +7,14 @@ import { transitionSec } from '../js/flow.js';
 import { hourlyHistory, nextPalms } from '../js/hourly.js';
 import { FOODS, foodByKey, foodLine, addLine, removeLine } from '../js/foods.js';
 import { sameKey, readText } from '../worker/src/sync.js';
+import { encryptPayload } from '../worker/src/push.js';
 
 const results = [];
-const test = (name, fn) => { try { fn(); results.push([name, true]); } catch (e) { results.push([name, false, e.message]); } };
+const waits = [];   // async tests finish before the results are counted
+const test = (name, fn) => {
+  try { const r = fn(); if (r?.then) { const slot = [name, false, 'did not finish']; results.push(slot); waits.push(r.then(() => { slot[1] = true; slot[2] = undefined; }, e => { slot[2] = e.message; })); } else results.push([name, true]); }
+  catch (e) { results.push([name, false, e.message]); }
+};
 const eq = (a, b, msg = '') => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${msg} expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); };
 
 test('sync keys must match exactly', () => {
@@ -22,6 +27,25 @@ test('sync read text lists days newest first with the sync time', () => {
   eq(t.indexOf('2026-10-29') < t.indexOf('2026-10-28'), true);
   eq(t.includes('SYNCED_AT: T2'), true);
   eq(readText([], 'NOW').includes('No days synced yet.'), true);
+});
+
+// Push payloads are encrypted for the phone (RFC 8291). Decrypt here as a phone would and check the text survives.
+test('push payload decrypts to the reminders', async () => {
+  const S = globalThis.crypto.subtle, b64u = b => Buffer.from(b).toString('base64url');
+  const ua = await S.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+  const uaPub = new Uint8Array(await S.exportKey('raw', ua.publicKey)), auth = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  const text = JSON.stringify([{ kind: 'grip', title: 'Grip break', body: 'It has been an hour since the last one.' }]);
+  const msg = await encryptPayload({ keys: { p256dh: b64u(uaPub), auth: b64u(auth) } }, text);
+  const salt = msg.slice(0, 16), idlen = msg[20], asPub = msg.slice(21, 21 + idlen), sealed = msg.slice(21 + idlen);
+  const hk = async (salt, ikm, info, n) => new Uint8Array(await S.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info }, await S.importKey('raw', ikm, 'HKDF', false, ['deriveBits']), n * 8));
+  const asKey = await S.importKey('raw', asPub, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  const shared = new Uint8Array(await S.deriveBits({ name: 'ECDH', public: asKey }, ua.privateKey, 256));
+  const te = new TextEncoder(), cat = (...p) => Uint8Array.from(p.flatMap(x => [...x]));
+  const ikm = await hk(auth, shared, cat(te.encode('WebPush: info\0'), uaPub, asPub), 32);
+  const cek = await hk(salt, ikm, te.encode('Content-Encoding: aes128gcm\0'), 16), nonce = await hk(salt, ikm, te.encode('Content-Encoding: nonce\0'), 12);
+  const plain = new Uint8Array(await S.decrypt({ name: 'AES-GCM', iv: nonce }, await S.importKey('raw', cek, 'AES-GCM', false, ['decrypt']), sealed));
+  eq(plain[plain.length - 1], 2);
+  eq(new TextDecoder().decode(plain.slice(0, -1)), text);
 });
 
 const SAMPLE = `DATE: 2026-10-27
@@ -149,6 +173,7 @@ test('hourly history: imported palms plus app blocks, next alternates', () => {
   eq(hist.map(x => x.palms), [null, 'down', 'up', 'down']);
   eq(nextPalms(hist), 'up');
 });
+await Promise.all(waits);
 const failed = results.filter(r => !r[1]);
 if (typeof document !== 'undefined') {
   document.body.innerHTML = `<h1>${failed.length ? failed.length + ' failed' : 'All ' + results.length + ' passed'}</h1>` +

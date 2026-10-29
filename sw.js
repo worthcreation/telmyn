@@ -1,5 +1,5 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.17.4';
+const VERSION = '0.17.5';
 const CACHE = `telmyn-${VERSION}`;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/app.css',
@@ -32,15 +32,13 @@ self.addEventListener('fetch', e => {
   }
 });
 
-// Push reminders: the Worker sends an empty, urgent push; the details come from /push/pending. Vibrates and rings
+// Push reminders: the reminders arrive inside the push itself, encrypted for this phone (worker/src/push.js). Rings
 // through Android's normal notification settings for Telmyn, and stays until dismissed.
-const API = 'https://telmyn-api.worthcreation.workers.dev';
-const SITE = /telmyn-test/.test(location.hostname) ? 'test' : 'live';
 self.addEventListener('push', e => {
   e.waitUntil((async () => {
     let list = [];
-    try { list = (await (await fetch(`${API}/push/pending?site=${SITE}`)).json()).pending || []; } catch { /* offline */ }
-    if (!list.length) list = [{ kind: 'telmyn', title: 'Telmyn', body: 'A reminder is due.' }];
+    try { list = e.data ? e.data.json() : []; } catch { /* unreadable payload */ }
+    if (!Array.isArray(list) || !list.length) list = [{ kind: 'telmyn', title: 'Telmyn', body: 'A reminder is due.' }];
     for (const n of list) await show(n.kind, n.title, n.body);
   })());
 });
