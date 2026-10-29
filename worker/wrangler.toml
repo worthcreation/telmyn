@@ -10,3 +10,7 @@ compatibility_date = "2026-06-01"
 crons = ["* * * * *"]
 
 # Push subscriptions and reminder state live in a KV namespace that tools/push-setup.ps1 creates once and adds below.
+
+[[kv_namespaces]]
+binding = "PUSH"
+id = "8953f4c50fe34cdca8f94d7486a0a421"
