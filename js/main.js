@@ -15,17 +15,25 @@ const root = document.getElementById('app');
 // the window changes (rotation, Chrome updates, call banners), never assumed. If the page already ends above the
 // buttons, nothing extra is reserved, so the layout cannot drift up.
 function reserveAndroidNav() {
+  // Measure what the phone reports for the button area: a hidden probe padded by env(safe-area-inset-bottom).
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom,0px)';
+  document.body.append(probe);
+  // The full height for each orientation: a keyboard, a permission dialog or a call banner only ever shrinks the
+  // window for a moment, so the decision uses the largest height seen, and those moments cannot flip the layout.
+  const tallest = {};
   const set = () => {
+    const key = innerWidth > innerHeight ? 'land' : 'port';
+    tallest[key] = Math.max(tallest[key] || 0, innerHeight);
+    const inset = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
     const standalone = matchMedia('(display-mode: standalone)').matches;
-    // The app's height falls short of the screen by the bars it is NOT drawn under: about 40 px for the status bar,
-    // about 48 px for the buttons. Short by less than 45 means the buttons are covering the app, so reserve them.
-    const short = screen.height - innerHeight;
-    const insetSet = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--inset-probe')) > 0;
-    const behind = standalone && /Android/i.test(navigator.userAgent) && !insetSet && short < 45;
+    // App height short of the screen by less than 45 px (only the status bar) means the buttons cover the app.
+    const short = screen.height - tallest[key];
+    const behind = standalone && /Android/i.test(navigator.userAgent) && inset === 0 && key === 'port' && short < 45;
     document.documentElement.style.setProperty('--nav-fallback', behind ? '48px' : '0px');
-    document.documentElement.dataset.screen = `${innerWidth}x${innerHeight} of ${screen.width}x${screen.height} (short ${short}), inset ${insetSet ? 'reported' : 'none'}, ${behind ? 'reserving 48 for buttons' : 'no reserve'}`;
+    document.documentElement.dataset.screen = `${innerWidth}x${tallest[key]} of ${screen.width}x${screen.height} (short ${short}), inset ${inset}, ${behind ? 'reserving 48 for buttons' : 'no reserve'}`;
   };
-  set(); addEventListener('resize', set);
+  set(); addEventListener('resize', set); screen.orientation?.addEventListener('change', () => setTimeout(set, 300));
 }
 
 // Layers size themselves to the visible screen, so the keyboard never covers what you are writing.

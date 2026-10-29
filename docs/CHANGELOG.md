@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.2 (2026-10-29)
+The tab bar no longer drops under Android's buttons after a keyboard, a permission dialog or a call banner. The space
+kept for the buttons is decided from the window's full height (those moments only shrink it briefly), and the phone's
+own button-area report is now read correctly (the old probe could never see it).
+
 ## 0.15.1 (2026-10-29)
 Verse study has two pages, Verse and Study, so long passages fit without scrolling: Verse is the text with every word
 tappable and the word panel; Study holds where it was applied, the whole chapter, and the videos (first three with
