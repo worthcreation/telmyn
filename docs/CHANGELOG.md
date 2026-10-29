@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.16.4 (2026-10-29)
+Launch splash and system bar colors. Brave (Chromium) keeps a home-screen web app's splash image and colors in a
+store keyed by its start address, and re-adding the app reused that store: the launcher icon was refreshed, the
+stored splash (the original track icon) and the install-day colors were not. start_url is now ./#today (Today is
+the opening tab anyway), which gives the app a fresh entry on the next add. Nothing else changes; the sign-in link,
+service worker and data all live on the same origin.
+
 ## 0.16.3 (2026-10-29)
 Notification audit. Android draws the small status-bar badge as a white silhouette of the image it is given, and
 Telmyn was giving it the full app icon (a dark square with a star in it), which showed as a white square. New
