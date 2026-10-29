@@ -5,7 +5,7 @@ import { parseHandoff } from '../handoff.js';
 import { APP_VERSION } from '../version.js';
 import { remindersOn, setReminders } from '../remind.js';
 import { TEST, SPEED, isoDate, hhmm, now } from '../clock.js';
-import { voices, voiceSettings, setVoice, setRate, utterance, RATES } from '../voice.js';
+import { voiceSettings, setRate, utterance, RATES } from '../voice.js';
 import { syncKey, syncLast, syncAll, syncDates } from '../sync.js';
 
 // Android only shares certain file types, so the backup goes out as plain text with a .json name.
@@ -64,22 +64,20 @@ function restoreSheet() {
     h('p', { class: 'muted small' }, 'Nothing is deleted. A backup puts back every record it holds; a handoff updates that one day.')), { full: true });
 }
 
-// Reading voice for Listen: pick from the phone's English voices and a speed; Try it speaks a line.
+// Reading speed for Listen. The voice itself is set in Android (Text-to-speech, preferred engine and its voice):
+// browsers on Android list one entry per language and speak with the engine's voice, so an in-app voice list
+// cannot change it. Try it speaks a line at the chosen speed.
 async function voiceSheet() {
   if (!('speechSynthesis' in window)) return toast('This phone cannot read aloud.');
-  const list = await voices();
-  let { uri, rate } = await voiceSettings();
-  const body = h('div', { class: 'entries-wrap' });
+  let { rate } = await voiceSettings();
+  const body = h('div', { class: 'stack' });
   const sample = 'Run in such a way that you may obtain it. First Corinthians nine, twenty-four.';
   const tryIt = async () => { speechSynthesis.cancel(); speechSynthesis.speak(await utterance(sample)); };
   const draw = () => fill(body,
     h('div', { class: 'seg' }, RATES.map(r => h('button', { class: r === rate ? 'on' : '', onclick: async () => { rate = r; await setRate(r); draw(); tryIt(); } }, `${r}x`))),
-    h('div', { class: 'entries', role: 'list' },
-      [{ voiceURI: null, name: 'Phone default', lang: '' }, ...list].map(v => h('button', { class: `ent voice${v.voiceURI === uri ? ' on' : ''}`, role: 'listitem', onclick: async () => { uri = v.voiceURI; await setVoice(uri); draw(); tryIt(); } },
-        h('span', { class: 'ent-at' }, v.voiceURI === uri ? '✓' : ''), h('span', { class: 'ent-what' }, v.name), h('span', { class: 'ent-amt' }, v.lang), h('span')))),
-    h('p', { class: 'muted small' }, 'Voices come from the phone. More can be added in Android settings, Text-to-speech.'));
+    h('p', { class: 'muted small' }, 'The voice is the phone’s: Settings, General management, Text-to-speech. Pick the preferred engine, then its voice. After a change, force stop Brave once.'));
   draw();
-  sheet('Reading voice', body, { full: true, onClose: () => speechSynthesis.cancel() });
+  sheet('Reading speed', body, { onClose: () => speechSynthesis.cancel() });
 }
 
 export async function dataActions() {
@@ -96,7 +94,7 @@ export async function dataActions() {
     h('div', { class: 'bar' },
       h('button', { class: 'btn ghost', onclick: backUp }, 'Back up'),
       h('button', { class: 'btn ghost', onclick: restoreSheet }, 'Restore')),
-    h('button', { class: 'btn ghost', onclick: voiceSheet }, 'Reading voice'),
+    h('button', { class: 'btn ghost', onclick: voiceSheet }, 'Reading speed'),
     h('div', { class: 'bar' },
       h('button', { class: `btn ghost reminders${on ? ' on' : ''}`, onclick: async () => { const v = await setReminders(!on); if (v !== !on && !on) return; location.reload(); } }, on ? 'Reminders on' : 'Reminders off'),
       TEST ? h('button', { class: 'btn ghost', onclick: testSheet }, 'Test controls')

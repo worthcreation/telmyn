@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.4 (2026-10-29)
+Reading voice becomes Reading speed. Tested on the phone: browsers on Android list one entry per language and speak
+with the voice set in Android's text-to-speech engine, so the in-app voice list could not change the voice. It is
+removed; the speed buttons stay, and the note says where the voice is set (preferred engine and its voice, then
+force stop Brave once).
+
 ## 0.17.3 (2026-10-29)
 Video mode keeps to a top band (title, Study) and a bottom band (step, timer, buttons); the middle is the video's.
 The timer now sits beside the step text in the bottom band, in both orientations. It used to be a separate chip
