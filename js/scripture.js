@@ -40,16 +40,20 @@ export async function listVersions() {
 
 export const passageUrl = (ref, version) => `https://www.biblegateway.com/passage/?search=${encodeURIComponent(ref)}&version=${encodeURIComponent(version)}`;
 
+// Video lists carry their lengths (sec) since 0.17.7; VID versions the caches so older lists without them are refetched.
+const VID = 'v2';
+export const fmtDuration = sec => !sec ? '' : sec >= 3600 ? `${Math.floor(sec / 3600)}:${String(Math.floor(sec % 3600 / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}` : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+
 // Bible study videos: BibleProject only (Ross's call: the others were often off-topic). Their overview of the book,
 // plus their videos on the verse's main word when there are any. Cached on the phone for 30 days.
 export const CREATORS = [{ key: 'bibleproject', name: 'BibleProject' }];
 export const getCreator = async () => 'bibleproject';
 
 export async function fetchVideos(ref, creator = 'bibleproject', topic = null) {
-  const key = `videos:${creator}:${ref}${topic ? `:${topic}` : ''}`;
+  const key = `videos:${VID}:${creator}:${ref}${topic ? `:${topic}` : ''}`;
   const cached = await getMeta(key);
   if (cached && Date.now() - cached.at < 30 * 86400000) return cached.list;
-  const q = `ref=${encodeURIComponent(ref)}&creator=${encodeURIComponent(creator)}${topic ? `&topic=${encodeURIComponent(topic)}` : ''}`;
+  const q = `ref=${encodeURIComponent(ref)}&creator=${encodeURIComponent(creator)}${topic ? `&topic=${encodeURIComponent(topic)}` : ''}&v=${VID}`;
   const r = await fetch(`${API_BASE}/videos?${q}`)
     .catch(() => { throw new Error('Could not reach the verse service. Check the connection and try again.'); });
   const data = await r.json().catch(() => ({}));
@@ -59,10 +63,10 @@ export async function fetchVideos(ref, creator = 'bibleproject', topic = null) {
 }
 
 export async function fetchDaily(source, date) {
-  const key = `daily:${source}:${date}`;
+  const key = `daily:${VID}:${source}:${date}`;
   const cached = await getMeta(key);
   if (cached) return cached;
-  const r = await fetch(`${API_BASE}/daily?source=${encodeURIComponent(source)}`)
+  const r = await fetch(`${API_BASE}/daily?source=${encodeURIComponent(source)}&v=${VID}`)
     .catch(() => { throw new Error('Could not reach the video service.'); });
   const data = await r.json().catch(() => ({}));
   if (!r.ok || !data.video) throw new Error(data.error || 'Could not load today’s video.');
@@ -73,10 +77,10 @@ export async function fetchDaily(source, date) {
 
 // Videos on the passage itself from any teacher (titles must name the passage; no Shorts). Cached 30 days.
 export async function fetchPassageVideos(ref) {
-  const key = `videos:passage:${ref}`;
+  const key = `videos:${VID}:passage:${ref}`;
   const cached = await getMeta(key);
   if (cached && Date.now() - cached.at < 30 * 86400000) return cached.list;
-  const r = await fetch(`${API_BASE}/passage?ref=${encodeURIComponent(ref)}`)
+  const r = await fetch(`${API_BASE}/passage?ref=${encodeURIComponent(ref)}&v=${VID}`)
     .catch(() => { throw new Error('Could not reach the verse service.'); });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || 'Could not load videos.');

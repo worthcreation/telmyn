@@ -419,6 +419,7 @@ body:has(.runner.video-mode) .toast { bottom: 50%; }
 .vs-switch small { font-size: var(--fs-caption); color: var(--glass-ink-2); letter-spacing: .04em; text-transform: uppercase; }
 .vs-switch b { font: 700 var(--fs-title)/var(--lh-tight) var(--font-display); }
 .vs-switch span { font-size: var(--fs-small); color: var(--glass-ink-2); }
+.vs-switch .vs-dur { font-size: var(--fs-small); text-transform: none; letter-spacing: normal; font-variant-numeric: tabular-nums; }
 /* Read mode: the chapter on a glass panel, scrolling inside itself. */
 .runner.read-mode .study { margin: 0 0 var(--s2); }
 .study-read { max-height: 38vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--spirit); border-radius: var(--r-card); padding: var(--s3) var(--s4); }

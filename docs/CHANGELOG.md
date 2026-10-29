@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.7 (2026-10-29)
+Video lengths. Every video list from the Worker now carries each video's length, from one shared details lookup
+(1 API unit per list); the passage search's own lookup folds into it. The video card shows the length on its last
+line, and the study video lists show it after the channel. Video caches are versioned so lists saved before this
+are fetched again with lengths.
+
 ## 0.17.6 (2026-10-29)
 Video mode, tightened. The timer moves to the top: under the step tracker in portrait, centered between the title
 and Study in landscape, as a compact pill with its bar. The bottom band is only the step name and Pause / Done,

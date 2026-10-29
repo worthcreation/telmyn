@@ -68,6 +68,17 @@ const CREATORS = {
 };
 const MONTH = 60 * 60 * 24 * 30;
 
+const seconds = iso => { const m = (iso || '').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); return m ? (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0) : 0; };
+// Every video list gets its lengths here (sec), in one details lookup (1 API unit for up to 50 videos).
+async function withDurations(list, env) {
+  if (!list.length) return list;
+  const det = new URL('https://www.googleapis.com/youtube/v3/videos');
+  det.search = new URLSearchParams({ part: 'contentDetails', id: list.map(x => x.id).join(','), key: env.YOUTUBE_KEY });
+  const dd = await (await fetch(det)).json().catch(() => ({}));
+  const sec = Object.fromEntries((dd.items || []).map(x => [x.id, seconds(x.contentDetails?.duration)]));
+  return list.map(x => ({ ...x, sec: sec[x.id] ?? null }));
+}
+
 async function videos(url, env) {
   const ref = url.searchParams.get('ref') || '';
   const who = CREATORS[url.searchParams.get('creator') || ''];
@@ -88,7 +99,7 @@ async function videos(url, env) {
     id: x.id.videoId, title: x.snippet.title, channel: x.snippet.channelTitle, published: x.snippet.publishedAt,
     thumb: x.snippet.thumbnails?.medium?.url || x.snippet.thumbnails?.default?.url,
   }));
-  return { status: 200, body: { ref, creator: who.name, videos: list } };
+  return { status: 200, body: { ref, creator: who.name, videos: await withDurations(list, env) } };
 }
 
 // Daily follow-along video: the newest upload from a fixed channel, read from its uploads playlist
@@ -112,7 +123,7 @@ async function daily(url, env) {
       thumb: x.snippet.thumbnails?.medium?.url || x.snippet.thumbnails?.default?.url }))
     .sort((a, b) => (b.published || '').localeCompare(a.published || ''));
   if (!list.length) return { status: 502, body: { error: 'No videos found on that channel.' } };
-  return { status: 200, body: { source: who.name, video: list[0] } };
+  return { status: 200, body: { source: who.name, video: (await withDurations([list[0]], env))[0] } };
 }
 
 // Only Telmyn may use the service: browsers send Origin or Referer, and anything else is refused,
@@ -137,7 +148,7 @@ async function search(url, env) {
   if (!r.ok) return { status: 502, body: { error: d.error?.message || `YouTube returned ${r.status}.` } };
   const list = (d.items || []).filter(x => x.id?.videoId).map(x => ({ id: x.id.videoId, title: x.snippet.title, channel: x.snippet.channelTitle,
     thumb: x.snippet.thumbnails?.medium?.url || x.snippet.thumbnails?.default?.url }));
-  return { status: 200, body: { q, videos: list } };
+  return { status: 200, body: { q, videos: await withDurations(list, env) } };
 }
 
 // Videos on the day's passage from any teacher: the title must name the passage (book and chapter, ideally the
@@ -145,7 +156,7 @@ async function search(url, env) {
 // Well-known Bible teachers rank first; anyone else is included only when the title names the passage.
 // One search (100 units) plus one details lookup (1 unit), cached 30 days.
 const TRUSTED = /^(BibleProject|Desiring God|Ligonier Ministries|Mike Winger|GotQuestions\.org|Truth For Life|The Bible Recap|Grace to You|Gospel in Life|Alistair Begg)$/i;
-const seconds = iso => { const m = (iso || '').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); return m ? (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0) : 0; };
+
 async function passage(url, env) {
   const ref = url.searchParams.get('ref') || '';
   const m = ref.match(/^([1-3]?\s?[A-Za-z ]+?)\s(\d+):(\d+)(?:-(\d+))?$/);
@@ -172,14 +183,8 @@ async function passage(url, env) {
     return { id: x.id.videoId, title, channel: x.snippet.channelTitle, thumb: x.snippet.thumbnails?.medium?.url || x.snippet.thumbnails?.default?.url,
       on: a === null ? 'chapter' : 'verse', score: covers + (TRUSTED.test(x.snippet.channelTitle || '') ? 2 : 0) };
   }).filter(Boolean);
-  if (scored.length) {
-    const det = new URL('https://www.googleapis.com/youtube/v3/videos');
-    det.search = new URLSearchParams({ part: 'contentDetails', id: scored.map(x => x.id).join(','), key: env.YOUTUBE_KEY });
-    const dd = await (await fetch(det)).json().catch(() => ({}));
-    const long = new Set((dd.items || []).filter(x => seconds(x.contentDetails?.duration) > 90).map(x => x.id));
-    for (const x of scored) x.keep = long.has(x.id);
-  }
-  const list = scored.filter(x => x.keep).sort((a, b) => b.score - a.score).slice(0, 8).map(({ keep, score, ...x }) => x);
+  const timed = await withDurations(scored, env);
+  const list = timed.filter(x => x.sec > 90).sort((a, b) => b.score - a.score).slice(0, 8).map(({ score, ...x }) => x);
   return { status: 200, body: { ref, videos: list } };
 }
 

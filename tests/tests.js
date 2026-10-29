@@ -8,6 +8,7 @@ import { hourlyHistory, nextPalms } from '../js/hourly.js';
 import { FOODS, foodByKey, foodLine, addLine, removeLine } from '../js/foods.js';
 import { sameKey, readText } from '../worker/src/sync.js';
 import { encryptPayload } from '../worker/src/push.js';
+import { fmtDuration } from '../js/scripture.js';
 
 const results = [];
 const waits = [];   // async tests finish before the results are counted
@@ -47,6 +48,8 @@ test('push payload decrypts to the reminders', async () => {
   eq(plain[plain.length - 1], 2);
   eq(new TextDecoder().decode(plain.slice(0, -1)), text);
 });
+
+test('video lengths read as m:ss or h:mm:ss', () => { eq(fmtDuration(526), '8:46'); eq(fmtDuration(59), '0:59'); eq(fmtDuration(3725), '1:02:05'); eq(fmtDuration(null), ''); });
 
 const SAMPLE = `DATE: 2026-10-27
 STATUS: day in progress

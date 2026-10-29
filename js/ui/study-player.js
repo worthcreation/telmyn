@@ -4,7 +4,7 @@
 import { utterance } from '../voice.js';
 import { h, fill, layer, toast } from './dom.js';
 import { state } from '../state.js';
-import { fetchDaily, studyVideos, fetchVerse, getVersion, getFavs, toggleFav, recordWatched } from '../scripture.js';
+import { fetchDaily, studyVideos, fetchVerse, getVersion, getFavs, toggleFav, recordWatched, fmtDuration } from '../scripture.js';
 import { exitLandscape } from './media.js';
 
 let apiReady;
@@ -87,7 +87,8 @@ export function studyPlayer(container, { daily = null } = {}) {
     runner()?.querySelector('.vs-switch')?.remove();
     const card = h('div', { class: 'vs-switch', role: 'status' },
       list.length > 1 ? h('small', {}, `${index + 1} of ${list.length}`) : null,
-      h('b', {}, decode(video.title)), h('span', {}, decode(video.channel || video.source || 'BibleProject')));
+      h('b', {}, decode(video.title)), h('span', {}, decode(video.channel || video.source || 'BibleProject')),
+      video.sec ? h('small', { class: 'vs-dur' }, fmtDuration(video.sec)) : null);
     runner()?.append(card);
     setTimeout(() => card.classList.add('out'), 2600);
     setTimeout(() => card.remove(), 3200);
@@ -213,6 +214,6 @@ export function videoRow(x, current, onPlay, favs) {
   return h('div', { class: `vs-row${current ? ' on' : ''}` },
     h('button', { class: 'vs-video', onclick: onPlay },
       h('span', { class: 'vb-thumb', style: x.thumb ? `background-image:url('${x.thumb}')` : '' }),
-      h('span', { class: 'vs-vt' }, h('b', {}, decode(x.title)), h('small', {}, x.channel ? decode(x.channel) : 'BibleProject'))),
+      h('span', { class: 'vs-vt' }, h('b', {}, decode(x.title)), h('small', {}, `${x.channel ? decode(x.channel) : 'BibleProject'}${x.sec ? ` · ${fmtDuration(x.sec)}` : ''}`))),
     fav);
 }
