@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.16.3 (2026-10-29)
+Notification audit. Android draws the small status-bar badge as a white silhouette of the image it is given, and
+Telmyn was giving it the full app icon (a dark square with a star in it), which showed as a white square. New
+icons/badge-96.png is only the star shape, cut from the real icon. Notifications are now shaped in one place: the
+service worker. The page's own in-app checks ask the service worker to show theirs, so push alerts and in-app
+alerts can never drift apart. The old launch splash and the white system bar when opening from an alert are the
+installed Android package (WebAPK) still carrying the manifest from install day; the repo is already right, and
+Chrome rebuilds the package on its own schedule or on request from chrome://webapks.
+
 ## 0.16.2 (2026-10-29)
 Tab bar fixed at the source. The app was sized with 100dvh, and Chrome on Android can resolve that taller than the
 real window after a reload (every update) or a keyboard, so the bottom of the app, the tab bar, sat under the system

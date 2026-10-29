@@ -1,12 +1,12 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.16.2';
+const VERSION = '0.16.3';
 const CACHE = `telmyn-${VERSION}`;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/app.css',
   'js/main.js', 'js/version.js', 'js/clock.js', 'js/db.js', 'js/schema.js', 'js/state.js', 'js/handoff.js', 'js/verses.js', 'js/xp.js', 'js/flow.js', 'js/hourly.js', 'js/foods.js', 'js/site.js', 'js/remind.js', 'js/sync.js', 'js/status.js', 'js/config.js', 'js/scripture.js',
   'js/program/index.js', 'js/program/v1.js', 'js/program/v1_1.js', 'js/program/steps.js',
   'js/ui/dom.js', 'js/ui/shell.js', 'js/ui/progress.js', 'js/ui/gear.js', 'js/ui/me.js', 'js/ui/journal.js', 'js/ui/study-player.js', 'js/ui/fx.js', 'js/ui/today.js', 'js/ui/runner.js', 'js/ui/forms.js', 'js/ui/verse.js', 'js/ui/data.js', 'js/ui/video-block.js', 'js/ui/media.js',
-  'data/original.json', 'icons/star-192.png', 'icons/star-512.png', 'icons/apple-touch-icon.png',
+  'data/original.json', 'icons/star-192.png', 'icons/star-512.png', 'icons/badge-96.png', 'icons/apple-touch-icon.png',
 ];
 
 // Install and take over right away, so a new release never waits behind an old cached copy.
@@ -41,12 +41,14 @@ self.addEventListener('push', e => {
     let list = [];
     try { list = (await (await fetch(`${API}/push/pending?site=${SITE}`)).json()).pending || []; } catch { /* offline */ }
     if (!list.length) list = [{ kind: 'telmyn', title: 'Telmyn', body: 'A reminder is due.' }];
-    for (const n of list) {
-      await self.registration.showNotification(n.title, { body: n.body, tag: n.kind, icon: 'icons/star-192.png', badge: 'icons/star-192.png',
-        renotify: true, requireInteraction: true, silent: false, vibrate: [300, 150, 300, 150, 300], data: { kind: n.kind } });
-    }
+    for (const n of list) await show(n.kind, n.title, n.body);
   })());
 });
+// The one place a Telmyn notification is shaped. The page asks for its own (in-app checks) through postMessage, so
+// every alert looks the same: star icon, a star badge that Android can draw as a silhouette, sound and vibration.
+const show = (kind, title, body) => self.registration.showNotification(title, { body, tag: kind, icon: 'icons/star-192.png', badge: 'icons/badge-96.png',
+  renotify: true, requireInteraction: true, silent: false, vibrate: [300, 150, 300, 150, 300], data: { kind } });
+self.addEventListener('message', e => { if (e.data?.type === 'notify') e.waitUntil(show(e.data.kind, e.data.title, e.data.body)); });
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil((async () => {
