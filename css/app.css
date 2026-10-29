@@ -373,7 +373,8 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .runner.video-mode .study-swipe { display: block; position: absolute; inset: 0; z-index: 0; touch-action: pan-y; }
 
 /* ===== Video mode: the video fills the runner; everything else sits on glass with a slim overlay ===== */
-.runner.video-mode { background: #000; grid-template-rows: auto auto 1fr auto; }
+.runner.video-mode { background: #000; grid-template-rows: auto auto auto 1fr auto auto; }
+.runner:not(.video-mode) .runner-clock, .runner-clock:empty { display: none; }
 /* The study layer makes no stacking context of its own: the video sits at the back, the swipe pad over it, and the
    Study button can rise above the block's glass cards. */
 .runner.video-mode .study { position: absolute; inset: 0; margin: 0; overflow: hidden; }
@@ -381,26 +382,27 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .runner.video-mode .study-frame, .runner.video-mode .study iframe { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; border-radius: 0; aspect-ratio: auto; }
 .runner.video-mode > :not(.study):not(.vs-switch) { position: relative; z-index: 1; }
 .runner.video-mode .runner-head, .runner.video-mode .runner-main, .runner.video-mode .runner-foot { background: var(--glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: 1px solid var(--glass-line); border-radius: var(--r-card); color: var(--glass-ink); }
-.runner.video-mode .runner-head { padding: 2px var(--s2); }
+.runner.video-mode .runner-head { grid-row: 1; padding: 2px var(--s2); }
 .runner.video-mode .runner-title { font-size: var(--fs-body); }
 .runner.video-mode .runner-head .icon-btn { color: var(--glass-ink); }
 .runner.video-mode .runner-count { display: none; }
-.runner.video-mode .lanes { margin: 6px 0; }
+.runner.video-mode .lanes { grid-row: 2; margin: 6px 0; }
 .runner.video-mode .lanes span { height: 3px; }
-/* Video mode keeps everything in a top band (title, Study) and a bottom band (step, timer, buttons); the middle is the
-   video's, and messages show there. The timer sits beside the step text in the bottom band. */
-.runner.video-mode .runner-main { grid-row: 3; align-self: end; display: grid; grid-template-columns: 1fr auto; align-items: center; justify-items: start; text-align: left;
-  column-gap: var(--s3); padding: var(--s2) var(--s3); gap: var(--s1); margin-bottom: var(--s2); overflow: visible; }
-.runner.video-mode .runner-main > * { grid-column: 1; }
-.runner.video-mode .runner-main > .clock-wrap { grid-column: 2; grid-row: 1 / span 2; background: none; border: 0; padding: 0; }
-.runner.video-mode .runner-main > .seg, .runner.video-mode .runner-main > .log { grid-column: 1 / -1; justify-self: stretch; }
+/* Video mode keeps to a top band (title, Study, step tracker, timer) and a bottom band no taller than it needs: the
+   step name, then Pause / Done. The middle is the video's; messages show there. */
+.runner.video-mode .runner-clock { grid-row: 3; justify-self: center; }
+.runner.video-mode .runner-main { grid-row: 5; align-self: end; align-items: stretch; justify-content: flex-start; text-align: left; padding: var(--s2) var(--s3); gap: var(--s1); margin-bottom: var(--s1); overflow: visible; }
+.runner-clock .clock-wrap { display: flex; align-items: center; gap: var(--s2); width: auto; padding: 2px var(--s3); background: var(--glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line); border-radius: var(--r-pill); color: var(--glass-ink); }
+.runner-clock .clock { font-size: var(--fs-display); line-height: 1.1; color: var(--glass-ink); }
+.runner-clock .clock-bar { width: 72px; height: 5px; }
 body:has(.runner.video-mode) .toast { bottom: 50%; }
 .runner.video-mode:not(.show-detail) .step-kind, .runner.video-mode:not(.show-detail) .step-note, .runner.video-mode:not(.show-detail) .step-cue, .runner.video-mode:not(.show-detail) .links { display: none; }
 .runner.video-mode .step-kind, .runner.video-mode .step-note { color: var(--glass-ink-2); }
-.runner.video-mode .step-text { font-size: var(--fs-title); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.runner.video-mode .step-text { font-size: var(--fs-lead); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .runner.video-mode.show-detail .step-text { -webkit-line-clamp: unset; }
 .runner.video-mode .step-cue { background: rgb(255 255 255 / .08); font-size: var(--fs-body); }
-.runner.video-mode .runner-foot { grid-row: 4; padding: var(--s1); gap: var(--s1); }
+.runner.video-mode .runner-foot { grid-row: 6; padding: var(--s1); gap: var(--s1); }
 .runner.video-mode .runner-foot .btn { min-height: 40px; font-size: var(--fs-small); }
 .runner.video-mode .runner-foot .btn.ghost { color: var(--glass-ink); background: rgb(255 255 255 / .08); border-color: var(--glass-line); }
 /* One control on the video, top right in the header's row: Study (choices). The block's ✕ stays on the left. */
@@ -427,9 +429,6 @@ body:has(.runner.video-mode) .toast { bottom: 50%; }
 .vs-fav { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-btn); color: var(--ink-2); font-size: var(--fs-lead); }
 .vs-fav.on { color: var(--warn); border-color: var(--warn); }
 .j-watched { font-size: var(--fs-small); color: var(--ink-2); }
-.runner.video-mode .clock-wrap { width: auto; min-width: 96px; padding: 6px var(--s2); gap: var(--s1); justify-items: start; }
-.runner.video-mode .clock { font-size: var(--fs-hero); color: var(--glass-ink); }
-.runner.video-mode .clock-bar { height: 5px; }
 .runner.video-mode .getready-label, .runner.video-mode .countup-hint { font-size: var(--fs-caption); max-width: 16ch; }
 .runner.video-mode .runner.video-mode .chip { background: rgb(255 255 255 / .1); border-color: var(--glass-line); color: var(--glass-ink); }
 
@@ -552,13 +551,13 @@ body:has(.runner.video-mode) .toast { bottom: 50%; }
 }
 @media (orientation: landscape) {
   .vblock iframe { padding: 0; }
-  .runner.video-mode { grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto; padding: var(--s2) var(--s3); }
+  .runner.video-mode { grid-template-columns: 1fr auto 1fr; grid-template-rows: auto 1fr auto; padding: var(--s2) var(--s3); column-gap: var(--s3); }
   .runner.video-mode .lanes { display: none; }
   .runner.video-mode .study { grid-column: 1 / -1; grid-row: 1 / -1; }
   .runner.video-mode .runner-head { grid-column: 1; grid-row: 1; justify-self: start; align-self: start; }
-  .runner.video-mode .runner-main { grid-column: 1; grid-row: 3; align-self: end; max-width: 420px; margin: 0; }
-  .runner.video-mode .runner-main .step-text { font-size: var(--fs-lead); }
-  .runner.video-mode .clock { font-size: var(--fs-display); }
-  .runner.video-mode .runner-foot { grid-column: 2; grid-row: 3; align-self: end; justify-self: end; width: min(340px, 100%); margin: 0; }
+  .runner.video-mode .runner-clock { grid-column: 2; grid-row: 1; align-self: center; }
+  .runner.video-mode .runner-main { grid-column: 1; grid-row: 3; align-self: stretch; justify-content: center; max-width: 420px; margin: 0; padding: var(--s1) var(--s3); }
+  .runner.video-mode .runner-main .step-text { font-size: var(--fs-body); }
+  .runner.video-mode .runner-foot { grid-column: 2 / -1; grid-row: 3; align-self: stretch; justify-self: end; width: min(340px, 100%); margin: 0; }
   }
 input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }

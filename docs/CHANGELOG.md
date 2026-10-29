@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.6 (2026-10-29)
+Video mode, tightened. The timer moves to the top: under the step tracker in portrait, centered between the title
+and Study in landscape, as a compact pill with its bar. The bottom band is only the step name and Pause / Done,
+the step card as wide as the buttons in portrait and the same height as them in landscape. The timer has one slot
+per mode (top in video mode, in the step otherwise), and switching modes redraws it.
+
 ## 0.17.5 (2026-10-29)
 Reminders always say what is due. A push used to arrive empty and the phone then asked the Worker what to show; the
 Worker had just written that to KV, which can take up to a minute to reach other locations, so the phone sometimes
