@@ -1,5 +1,6 @@
 # Layout sweep (run by Claude before each release): every page and sheet at eight phone heights, 640 to 915 px.
-# Fails on page scrolling, content under the tab bar, sideways clipping, or a clipped Today verse. Needs Python Playwright and a local server on 8813.
+# Fails on page scrolling, content under the tab bar, sideways clipping, or a clipped Today verse. Lists and reading
+# panels that scroll inside themselves are exempt. Needs Python Playwright and a local server on 8813.
 import asyncio, json, sys
 from playwright.async_api import async_playwright
 T='If any of you lacks wisdom, let him ask of God, who gives to all liberally and without reproach, and it will be given to him.'
@@ -8,7 +9,7 @@ CHECK = """(()=>{const out=[];const vis=e=>{const r=e.getBoundingClientRect();re
  const scope=document.querySelector('.layer:not(.closing) .layer-body')||document.querySelector('.view');
  if(scope.scrollHeight>scope.clientHeight+1) out.push('scrolls '+(scope.scrollHeight-scope.clientHeight)+'px');
  const tabs=document.querySelector('.tabs-bar');const tb=tabs&&!document.querySelector('.layer:not(.closing)')?tabs.getBoundingClientRect().top:innerHeight;
- for(const e of scope.querySelectorAll('*')){if(!vis(e))continue;const r=e.getBoundingClientRect();if(r.bottom>tb+1&&e.children.length===0&&e.textContent.trim()){out.push('under bar: '+e.textContent.trim().slice(0,20));break;}}
+ for(const e of scope.querySelectorAll('*')){if(!vis(e)||e.closest('.vs-studypage, .vs-verse, .vs-vlist'))continue;const r=e.getBoundingClientRect();if(r.bottom>tb+1&&e.children.length===0&&e.textContent.trim()){out.push('under bar: '+e.textContent.trim().slice(0,20));break;}}
  for(const e of scope.querySelectorAll('*')){if(e.scrollWidth>e.clientWidth+2&&getComputedStyle(e).overflowX!=='visible'&&!['vs-lead-t','nf-text','go-name'].some(c=>e.classList.contains(c))&&e.tagName!=='SMALL'&&e.clientWidth>0){out.push('clips sideways: '+(e.className||e.tagName));break;}}
  return out})()"""
 async def main():

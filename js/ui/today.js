@@ -55,7 +55,11 @@ export function renderToday(root, rerender) {
   const verseRef = h('span', { class: 'vp-ref' }, verse.ref);
   const versePanel = h('button', { class: 'verse-card', onclick: verseSheet, 'aria-label': `Today's verse, ${verse.ref}` },
     h('span', { class: 'vp-theme' }, verse.theme), verseText, verseRef);
-  const fit = () => requestAnimationFrame(() => fitText(versePanel, verseText, { clamp: true }));
+  // A passage too long for the card ends with … and the reference says how to read the rest.
+  const fit = () => requestAnimationFrame(() => {
+    fitText(versePanel, verseText, { clamp: true });
+    verseRef.dataset.more = verseText.classList.contains('clamped') ? 'yes' : '';
+  });
   new ResizeObserver(fit).observe(versePanel);
   document.fonts?.ready.then(() => requestAnimationFrame(fit));
   getVersion().then(v => fetchVerse(verse.ref, v)).then(d => {

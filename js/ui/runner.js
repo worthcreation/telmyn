@@ -20,7 +20,7 @@ const unlockScreen = () => { wakeLock?.release?.(); wakeLock = null; };
 
 export function runBlock(block, opts = {}) {
   // A block with a daily video is the video itself; the steps are only the fallback.
-  if (DAILY_VIDEO[block.id] && !opts.steps) return runVideoBlock(block, DAILY_VIDEO[block.id], { onExit: opts.onExit, fallback: () => runBlock(block, { ...opts, steps: true }) });
+  if (DAILY_VIDEO[block.id] && !opts.steps) return runVideoBlock(block, DAILY_VIDEO[block.id], { onExit: opts.onExit, fallback: () => runBlock(block, { ...opts, steps: true }), cooldown: () => runBlock(block, { ...opts, steps: true, cooldownOnly: true }) });
   const { onExit } = opts;
   const { EXERCISES } = state.plan.program.data;
   unlockAudio();
@@ -46,12 +46,13 @@ export function runBlock(block, opts = {}) {
   // Long blocks (row, legs up) turn the study video sideways so it can be watched properly.
   const study = studyPlayer(studyEl);
   const cue = name => { study.duck(); sounds[name](); };
-  addEvent('block_start', { block: block.id });
+  // cooldownOnly: the work was done elsewhere (Fab Five's video); run just the cooldown, already counted.
+  if (!opts.cooldownOnly) addEvent('block_start', { block: block.id });
 
   // The block counts as done once the work is finished: reaching the cooldown logs it, so leaving during
   // the cooldown (or the phone closing the app) never loses the block.
   const cooldownAt = steps.findIndex((s, k) => k > 0 && s.phase === 'Cooldown');
-  let counted = false;
+  let counted = !!opts.cooldownOnly;
   const logDone = () => addEvent('block_done', { block: block.id, started_at: startedAt, done_at: now().toISOString(), palms: entry.palms || entry.palmsSaved || null });
 
   // Android back gesture: ask before leaving instead of dropping the block silently.
@@ -283,7 +284,8 @@ export function runBlock(block, opts = {}) {
   }
 
   // Pick up where this block was left earlier today.
-  db.getMeta(resumeKey).then(r => {
+  if (opts.cooldownOnly && cooldownAt > 0) enter(cooldownAt, true);
+  else db.getMeta(resumeKey).then(r => {
     if (r && r.i > 0 && r.i < steps.length) { enter(r.i, false); toast(`Resumed at step ${r.i + 1} of ${steps.length}`); }
     else enter(0, true);
   });

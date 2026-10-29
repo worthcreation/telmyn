@@ -171,7 +171,10 @@ export async function verseSheet(date = null) {
     def.style.minHeight = '';
     let tallest = 0;
     for (let k = 0; k < words.length; k++) { define(k); tallest = Math.max(tallest, def.offsetHeight); }
-    def.style.minHeight = `${tallest}px`;
+    // Long passages: the panel never takes more than a third of the page; the grammar line drops first if needed.
+    const cap = (body.closest('.layer-body')?.clientHeight || 600) * 0.32;
+    def.classList.toggle('tight', tallest > cap);
+    def.style.minHeight = `${Math.min(tallest, cap)}px`;
     current = -1;
     text.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
     // Nothing is marked until you pick a word; the panel says how to start.
@@ -208,12 +211,11 @@ export async function verseSheet(date = null) {
       for (const x of groups) { if (x.group !== last) { list.append(h('p', { class: 'lbl' }, x.group)); last = x.group; } list.append(videoRow(x, false, () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title)), favs)); }
       screen('Videos', list);
     };
-    // Lead video: no picture, just what it covers, its title and who made it, with More on the same card.
-    const lead = h('button', { class: 'vs-lead', onclick: () => playVideo(`https://www.youtube.com/watch?v=${first.id}`, decode(first.title)) },
-      h('span', { class: 'vs-lead-i', 'aria-hidden': 'true' }, '▶'),
-      h('span', { class: 'vs-lead-t' }, h('small', {}, `${first.group} · ${decode(first.channel || 'BibleProject')}`), h('b', {}, decode(first.title))));
-    fill(watch, h('div', { class: 'vs-leadrow' }, lead,
-      rest.length ? h('button', { class: 'chip pill', onclick: more }, `More (${rest.length}) ›`) : null));
+    // Study page: the first few videos with what each covers, a heart to favorite, and All videos for the rest.
+    const shown = h('div', { class: 'vs-vlist' });
+    let last = null;
+    for (const x of groups.slice(0, 3)) { if (x.group !== last) { shown.append(h('p', { class: 'lbl' }, x.group)); last = x.group; } shown.append(videoRow(x, false, () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title)), favs)); }
+    fill(watch, shown, rest.length > 2 ? h('button', { class: 'btn ghost', onclick: more }, `All ${groups.length} videos`) : null);
   });
 
   listVersions().then(list => {
@@ -227,23 +229,35 @@ export async function verseSheet(date = null) {
     placeholder: past ? 'Nothing written that day.' : 'Where I applied it today', readOnly: past,
     onSave: v2 => setField('verse_applied_notes', v2) });
 
+  // Two pages, so a long passage never fights the study tools for room: Verse (the text and its words) and Study
+  // (videos, the chapter, where it was applied). Side by side in landscape.
+  const pageTabs = h('div', { class: 'seg vs-pages', role: 'tablist' });
+  const setPage = pg => {
+    body.dataset.page = pg;
+    fill(pageTabs, [['verse', 'Verse'], ['study', 'Study']].map(([k, label]) => h('button', { class: k === pg ? 'on' : '', role: 'tab', 'aria-selected': k === pg, onclick: () => setPage(k) }, label)));
+    if (pg === 'verse') requestAnimationFrame(fit);
+  };
   const body = h('div', { class: 'vs' },
     h('div', { class: 'vs-top' },
       h('span', { class: 'vs-theme' }, past ? `${v.theme} · ${prettyDay(date)}` : v.theme),
-      h('span', { class: 'vs-top-r' }, h('button', { class: 'chip pill', onclick: chapter }, `${r.book} ${r.ch} ›`), select)),
-    h('blockquote', { class: 'vs-verse card spirit' }, text, cite),
-    def,
-    watch,
-    h('div', { class: 'vs-apply' }, note, past ? null : h('button', { class: 'btn ghost', onclick: journalSheet }, 'Journal')));
+      h('span', { class: 'vs-top-r' }, select)),
+    pageTabs,
+    h('blockquote', { class: 'vs-verse card spirit vs-p-verse' }, text, cite),
+    h('div', { class: 'vs-p-verse vs-defwrap' }, def),
+    h('div', { class: 'vs-p-study vs-studypage' },
+      h('div', { class: 'vs-apply' }, note, past ? null : h('button', { class: 'btn ghost', onclick: journalSheet }, 'Journal')),
+      h('button', { class: 'card vs-chapterrow', onclick: chapter }, h('span', { class: 'lbl' }, 'The whole chapter'), h('b', {}, `Read ${r.book} ${r.ch} ›`)),
+      watch));
   screen(v.ref, body);
   // The verse keeps a large, readable size; it only shrinks (down to 17 px) if a long passage would not fit.
   // The verse takes whatever room is left; one shared routine sizes it (tokens set the range).
   const scroller = body.closest('.layer-body');
-  const fit = () => fitText(body.querySelector('.vs-verse'), text);
+  const fit = () => fitText(body.querySelector('.vs-verse'), text, { min: 15 });
   new ResizeObserver(fit).observe(scroller);
   // Refit once the serif font has loaded: it sets taller than the fallback, which clipped the citation.
   document.fonts?.ready.then(() => requestAnimationFrame(fit));
   new MutationObserver(() => requestAnimationFrame(fit)).observe(text, { childList: true });
   new MutationObserver(() => requestAnimationFrame(fit)).observe(watch, { childList: true });
+  setPage('verse');
   load();
 }

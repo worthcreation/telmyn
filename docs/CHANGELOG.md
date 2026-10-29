@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.1 (2026-10-29)
+Verse study has two pages, Verse and Study, so long passages fit without scrolling: Verse is the text with every word
+tappable and the word panel; Study holds where it was applied, the whole chapter, and the videos (first three with
+hearts, then All videos). Landscape shows both side by side. Today's card says "tap to read all" when a passage is too
+long to show whole. Fab Five's video now flows into the block's cooldown (doorway chest and forearm stretches), which it
+had been skipping. Focus rings on text boxes sit inside the box, so no container can clip them.
+
 ## 0.15.0 (2026-10-28)
 Push reminders that arrive with Telmyn closed. The Worker checks every minute (Cloudflare's shortest schedule) and sends
 an urgent push when something is due: grip break 60 minutes after the last, ankle pumps after 30, weekdays 8 to 5;

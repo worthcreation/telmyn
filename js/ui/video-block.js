@@ -9,7 +9,7 @@ import { fetchDaily } from '../scripture.js';
 import { loadApi, ytHost, ytVars } from './study-player.js';
 import { exitLandscape } from './media.js';
 
-export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
+export async function runVideoBlock(block, source, { onExit, fallback, cooldown } = {}) {
   let video;
   try { video = await fetchDaily(source, state.date); } catch { video = null; }
   if (!video) { toast('Video unavailable. Running the steps instead.'); return fallback(); }
@@ -59,6 +59,8 @@ export async function runVideoBlock(block, source, { onExit, fallback } = {}) {
     if (ok || type) await addEvent(ok ? 'block_done' : type, { block: block.id, started_at: startedAt, done_at: now().toISOString(), video: video.id, palms: null });
     if (ok) burst(innerWidth / 2, innerHeight * 0.45);
     root.classList.add('closing');
-    setTimeout(() => { root.remove(); onExit?.(); }, 200);
+    // Done with the video: the block's own cooldown (v1.1: doorway chest and forearm stretches) follows, so the
+    // video never skips it. Leaving the video without finishing goes straight back to Today.
+    setTimeout(() => { root.remove(); if (ok && cooldown) cooldown(); else onExit?.(); }, 200);
   }
 }
