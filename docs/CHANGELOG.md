@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.2 (2026-10-29)
+Tab bar fixed at the source. The app was sized with 100dvh, and Chrome on Android can resolve that taller than the
+real window after a reload (every update) or a keyboard, so the bottom of the app, the tab bar, sat under the system
+buttons. The phone's own report after the 0.16.1 update showed it: window 749 px tall, with the buttons outside it.
+The app now fills exactly its real window (height 100%), and the guesswork built around the symptom is gone: the
+measured button-space fallback (0.15.x) and the manual button-space switch (0.16.1). The screen report sent with the
+cloud copy now shows window, app and 100dvh heights side by side.
+
 ## 0.16.1 (2026-10-29)
 Due reminders pulse on the item they are about (Grip in the top strip, Pumps and Weight on Today) with a slow
 heartbeat glow: soft at first, then faster, wider and deeper red at a half hour and an hour past due (weight at 9 am

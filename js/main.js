@@ -10,36 +10,21 @@ import { startSync, takeLinkKey, setSyncKey } from './sync.js';
 
 const root = document.getElementById('app');
 
-// Android Chrome can draw an installed app behind the system buttons without reporting their height.
-// Reserve their usual height (48px) so nothing tappable sits under them.
-// Android: reserve room for the system buttons only when the app is actually drawn behind them, measured each time
-// the window changes (rotation, Chrome updates, call banners), never assumed. If the page already ends above the
-// buttons, nothing extra is reserved, so the layout cannot drift up.
-function reserveAndroidNav() {
-  // Measure what the phone reports for the button area: a hidden probe padded by env(safe-area-inset-bottom).
+// Screen report for the cloud copy (Me and sync read it). The layout itself measures nothing: #app is 100% of the real
+// window, because Chrome on Android can resolve 100dvh taller than the window after a reload (an app update) or a
+// keyboard, which pushed the tab bar under the system buttons. The report shows both numbers so any gap is visible.
+function screenReport() {
   const probe = document.createElement('div');
-  probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom,0px)';
+  probe.style.cssText = 'position:fixed;top:0;left:0;width:0;visibility:hidden;pointer-events:none;height:100dvh;padding-bottom:env(safe-area-inset-bottom,0px)';
   document.body.append(probe);
-  // The full height for each orientation: a keyboard, a permission dialog or a call banner only ever shrinks the
-  // window for a moment, so the decision uses the largest height seen, and those moments cannot flip the layout.
-  const tallest = {};
   const set = () => {
-    const key = innerWidth > innerHeight ? 'land' : 'port';
-    tallest[key] = Math.max(tallest[key] || 0, innerHeight);
+    const dvh = probe.offsetHeight - (parseFloat(getComputedStyle(probe).paddingBottom) || 0);
     const inset = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+    const app = document.getElementById('app')?.offsetHeight || 0;
     const standalone = matchMedia('(display-mode: standalone)').matches;
-    // App height short of the screen by less than 45 px (only the status bar) means the buttons cover the app.
-    const short = screen.height - tallest[key];
-    const auto = standalone && /Android/i.test(navigator.userAgent) && inset === 0 && key === 'port' && short < 45;
-    // Me can force it (tap the version line): auto, on, off. Kept in localStorage so it applies before anything loads.
-    let mode = 'auto'; try { mode = localStorage.getItem('telmyn-navspace') || 'auto'; } catch { /* private mode */ }
-    const behind = mode === 'on' ? true : mode === 'off' ? false : auto;
-    document.documentElement.style.setProperty('--nav-fallback', behind ? '48px' : '0px');
-    document.documentElement.dataset.navspace = mode;
-    document.documentElement.dataset.screen = `${innerWidth}x${tallest[key]} of ${screen.width}x${screen.height} (short ${short}), inset ${inset}, dpr ${devicePixelRatio}, ${standalone ? 'standalone' : 'browser'}, mode ${mode}, ${behind ? 'reserving 48 for buttons' : 'no reserve'}`;
+    document.documentElement.dataset.screen = `window ${innerWidth}x${innerHeight}, app ${app}, 100dvh ${dvh}, screen ${screen.width}x${screen.height}, inset ${inset}, dpr ${devicePixelRatio}, ${standalone ? 'standalone' : 'browser'}`;
   };
-  set(); addEventListener('resize', set); screen.orientation?.addEventListener('change', () => setTimeout(set, 300));
-  addEventListener('telmyn-navspace', set);
+  set(); setTimeout(set, 2000); addEventListener('resize', () => requestAnimationFrame(set)); screen.orientation?.addEventListener('change', () => setTimeout(set, 300));
 }
 
 // Layers size themselves to the visible screen, so the keyboard never covers what you are writing.
@@ -49,7 +34,7 @@ function trackVisibleHeight() {
 }
 
 async function boot() {
-  reserveAndroidNav();
+  screenReport();
   trackVisibleHeight();
   // Setup link from tools/sync-setup.ps1 (#sync=KEY): take the key out of the address before anything shows.
   const linkKey = TEST ? null : takeLinkKey();

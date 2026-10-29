@@ -29,7 +29,7 @@ a { color: var(--lane); }
 .nw { white-space: nowrap; }
 
 /* ===== Shell: status pills, the view, the tab bar ===== */
-#app { height: 100dvh; max-width: var(--max-w); margin: 0 auto; display: flex; flex-direction: column; gap: var(--s2); overflow: hidden;
+#app { height: 100%; max-width: var(--max-w); margin: 0 auto; display: flex; flex-direction: column; gap: var(--s2); overflow: hidden;
   padding: calc(var(--safe-top) + var(--s2)) var(--s4) calc(var(--safe-bottom) + var(--s2)); }
 .view { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--gap-v); overflow: hidden; }
 .view > * { flex: none; }
@@ -151,7 +151,6 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 /* Status on chips and pills: behind or overdue is red, met is green, on track is plain. */
 .chip.behind, .pill.behind { color: var(--warn); border-color: var(--warn); }
 .chip.met { color: var(--ok); border-color: var(--ok); }
-.fine.navspace { background: none; border: 0; padding: 0 var(--s2); color: inherit; width: 100%; }
 /* Due reminders: a slow heartbeat glow on the item, faster, wider and deeper the longer it waits (status.js levels).
    Inset plus outer glow, so a clipping parent still shows it. Not a drop shadow: no offset, it pulses and goes away. */
 @keyframes heartbeat {
@@ -297,7 +296,7 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .vs-chapterrow b { font: 600 var(--fs-body) var(--font-verse); color: var(--spirit); }
 
 /* ===== Layers: every sheet and full-screen view ===== */
-.layer { position: fixed; left: 0; right: 0; top: 0; height: var(--vvh, 100dvh); z-index: var(--z-layer); display: flex; flex-direction: column; }
+.layer { position: fixed; left: 0; right: 0; top: 0; height: var(--vvh, 100%); z-index: var(--z-layer); display: flex; flex-direction: column; }
 .layer.closing { animation: sink .18s ease-in forwards; }
 .layer-panel { display: flex; flex-direction: column; min-height: 0; color: var(--ink); animation: rise .18s ease-out;
   background: color-mix(in srgb, var(--paper) 90%, transparent); -webkit-backdrop-filter: blur(20px) saturate(1.1); backdrop-filter: blur(20px) saturate(1.1); }
