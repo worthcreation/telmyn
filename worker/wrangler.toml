@@ -4,3 +4,9 @@ main = "src/index.js"
 # With this set, a deploy can never land in the NFC account: if the wrong login is active, it fails instead.
 account_id = "947472feabdf0ab4c1be6624f9c72b2f"
 compatibility_date = "2026-06-01"
+
+# Push reminders: checked every minute (the shortest schedule Cloudflare allows).
+[triggers]
+crons = ["* * * * *"]
+
+# Push subscriptions and reminder state live in a KV namespace that tools/push-setup.ps1 creates once and adds below.

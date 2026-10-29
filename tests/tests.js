@@ -107,6 +107,14 @@ test('template choices left in a handoff are not imported as values', () => {
 test('Sunday offers the optional walk', () => eq(planFor('2026-11-01').blocks.some(b => b.id === 'walk'), true));
 test('weekdays have no walk', () => eq(planFor('2026-11-02').blocks.some(b => b.id === 'walk'), false));
 test('status: met at target, blank never crashes', async () => { const { paceStatus, staleStatus } = await import('../js/status.js'); eq([paceStatus('fluids', 100, 100), paceStatus('protein', null, 160) === 'met', staleStatus(0), staleStatus(null), staleStatus(2)], ['met', false, 'met', 'behind', 'behind']); });
+test('push rules: grip after an hour on a workday, weight once, nothing on weekends when logged', async () => {
+  const { due } = await import('../worker/src/push.js');
+  const t = s => Date.parse(s), off = 300;
+  const rec = { offset: off, state: { grip: t('2026-10-28T14:00:00Z'), pumps: t('2026-10-28T14:40:00Z'), weight: '2026-10-27' }, sent: {} };
+  eq([due(rec, t('2026-10-28T15:05:00Z')).map(d => d.kind).join(), due(rec, t('2026-10-28T14:30:00Z')).map(d => d.kind).join(),
+    due({ ...rec, state: { ...rec.state, weight: '2026-10-31' } }, t('2026-10-31T15:05:00Z')).length, due({ ...rec, sent: { weight: '2026-10-28', grip: t('2026-10-28T15:00:00Z') } }, t('2026-10-28T15:05:00Z')).length],
+    ['grip,weight', 'weight', 0, 0]);
+});
 test('no data stays blank', () => eq(fluidTotals(blankDay('2026-10-27'), []), { water_oz: null, other_drinks_oz: null }));
 test('hourly: imported 3 plus 1 in app', () => {
   const { day, sets } = parseHandoff(SAMPLE);

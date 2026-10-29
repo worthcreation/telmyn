@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.15.0 (2026-10-28)
+Push reminders that arrive with Telmyn closed. The Worker checks every minute (Cloudflare's shortest schedule) and sends
+an urgent push when something is due: grip break 60 minutes after the last, ankle pumps after 30, weekdays 8 to 5;
+weight once from 6 am when nothing is logged. The phone shows them through Android's notifications for Telmyn, with
+sound and vibration, until dismissed. Only the push address, the time zone offset and the last grip, pumps and weight
+times go to the Worker. One-time setup: tools/push-setup.ps1 (KV namespace, VAPID keys as Worker secrets, deploy).
+In-app checks remain as the fallback when push is unavailable.
+
 ## 0.14.0 (2026-10-28)
 Study while you train has three ways in: watch a video on the day's verse, read its chapter on a glass panel (today's
 verses marked), or listen to the verse and chapter read aloud by the phone; each follows the block (plays during timers,

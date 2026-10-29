@@ -11,6 +11,11 @@ python -m http.server 8000
 ```
 Open http://localhost:8000. The real app has no test mode.
 
+## Push reminders
+The Worker (worker/src/push.js) runs every minute and pushes due reminders. One-time setup:
+powershell -ExecutionPolicy Bypass -File "$HOME\telmyn\tools\push-setup.ps1"
+Then on the phone: Me, Reminders off and on again.
+
 ## Test app
 A separate copy at https://telmyn-test.pages.dev, with its own icon (TEST badge) and its own storage, so nothing done
 there can touch real data. tools/test-site.ps1 deploys it (apply.ps1 runs it after every push). It swaps in the files in

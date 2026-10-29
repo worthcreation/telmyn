@@ -1,5 +1,5 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.14.0';
+const VERSION = '0.15.0';
 const CACHE = `telmyn-${VERSION}`;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/app.css',
@@ -32,13 +32,26 @@ self.addEventListener('fetch', e => {
   }
 });
 
-// Phase 2: tight-mode alarms pushed from the Cloudflare Worker. Payload carries only a block name.
+// Push reminders: the Worker sends an empty, urgent push; the details come from /push/pending. Vibrates and rings
+// through Android's normal notification settings for Telmyn, and stays until dismissed.
+const API = 'https://telmyn-api.worthcreation.workers.dev';
+const SITE = /telmyn-test/.test(location.hostname) ? 'test' : 'live';
 self.addEventListener('push', e => {
-  const data = e.data ? e.data.json() : { title: 'Telmyn', body: 'Next block is ready.' };
-  e.waitUntil(self.registration.showNotification(data.title || 'Telmyn', { body: data.body, icon: 'icons/icon-192.png', tag: data.tag || 'block' }));
+  e.waitUntil((async () => {
+    let list = [];
+    try { list = (await (await fetch(`${API}/push/pending?site=${SITE}`)).json()).pending || []; } catch { /* offline */ }
+    if (!list.length) list = [{ kind: 'telmyn', title: 'Telmyn', body: 'A reminder is due.' }];
+    for (const n of list) {
+      await self.registration.showNotification(n.title, { body: n.body, tag: n.kind, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png',
+        renotify: true, requireInteraction: true, silent: false, vibrate: [300, 150, 300, 150, 300], data: { kind: n.kind } });
+    }
+  })());
 });
-
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(self.clients.matchAll({ type: 'window' }).then(list => list[0]?.focus() || self.clients.openWindow('./')));
+  e.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (all.length) return all[0].focus();
+    return self.clients.openWindow('./#today');
+  })());
 });

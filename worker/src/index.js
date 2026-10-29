@@ -1,3 +1,4 @@
+import { pushRoute, pushTick } from './push.js';
 // Telmyn API (Cloudflare Worker). Personal, non-commercial use.
 // GET /verse?ref=Galatians%206:9&v=NKJV  -> { ref, version, text, verses[], copyright, source }
 // GET /versions                         -> { versions: [{ abbr, name }] }
@@ -15,7 +16,8 @@ function cors(req) {
   const o = req.headers.get('Origin');
   return {
     'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(o) || TEST_ORIGIN.test(o || '') ? o : ALLOWED_ORIGINS[0],
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
     Vary: 'Origin',
   };
 }
@@ -184,6 +186,8 @@ async function handle(req, ctx, env) {
   const url = new URL(req.url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors(req) });
   if (url.pathname !== '/' && !fromTelmyn(req)) return json(req, { error: 'Not allowed.' }, 403);
+  // Push reminders; never cached.
+  if (url.pathname.startsWith('/push/')) return pushRoute(req, url, env, (r, b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...cors(r) } }));
 
   const cache = caches.default;
   const hit = await cache.match(req);
@@ -227,4 +231,8 @@ async function handle(req, ctx, env) {
   return res;
 }
 
-export default { fetch: (req, env, ctx) => handle(req, ctx, env).catch(e => json(req, { error: e.message }, 500)) };
+export default {
+  fetch: (req, env, ctx) => handle(req, ctx, env).catch(e => json(req, { error: e.message }, 500)),
+  // Every minute: send any reminder that is due (push.js).
+  scheduled: (event, env, ctx) => ctx.waitUntil(pushTick(env)),
+};
