@@ -229,6 +229,16 @@ export async function verseSheet(date = null) {
     placeholder: past ? 'Nothing written that day.' : 'Where I applied it today', readOnly: past,
     onSave: v2 => setField('verse_applied_notes', v2) });
 
+  // When a verse comes back around (5-week rotation), show what was written the last time it came up, so a repeat
+  // builds on the first time instead of starting over. Today's page only; the date decides the verse (verses.js).
+  const when = past ? date : state.date;
+  const before = (await db.all('days'))
+    .filter(d => d.date < when && d.verse_applied_notes && verseFor(d.date).ref === v.ref)
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+  const lastTime = !past && before
+    ? h('div', { class: 'vs-last' }, h('p', { class: 'lbl' }, `Last time, ${prettyDay(before.date)}`), h('p', { class: 'vs-last-t' }, before.verse_applied_notes))
+    : null;
+
   // Two pages, so a long passage never fights the study tools for room: Verse (the text and its words) and Study
   // (videos, the chapter, where it was applied). Side by side in landscape.
   const pageTabs = h('div', { class: 'seg vs-pages', role: 'tablist' });
@@ -245,6 +255,7 @@ export async function verseSheet(date = null) {
     h('blockquote', { class: 'vs-verse card spirit vs-p-verse' }, text, cite),
     h('div', { class: 'vs-p-verse vs-defwrap' }, def),
     h('div', { class: 'vs-p-study vs-studypage' },
+      lastTime,
       h('div', { class: 'vs-apply' }, note, past ? null : h('button', { class: 'btn ghost', onclick: journalSheet }, 'Journal')),
       h('button', { class: 'card vs-chapterrow', onclick: chapter }, h('span', { class: 'lbl' }, 'The whole chapter'), h('b', {}, `Read ${r.book} ${r.ch} ›`)),
       watch));

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.0 (2026-10-29)
+Verse repeats build on the first time: when a verse comes back in its 5-week rotation, its Study page shows what you
+wrote the last time it came up. Me cut from nine controls to six: Back up (one file; Copy full record folded in as
+its fallback), Restore (one way in: a backup file, or pasted text that is a backup or a handoff; Import a handoff
+folded in), Reminders, Cloud copy, one status line, version. Copy today's handoff removed: chats read the cloud copy,
+and a past day's handoff now reads "day complete" by its date unless set otherwise in the Day log. The reminders
+explainer line is gone (the heartbeat pulse shows what is due). Test app starts at #today like the real one.
+
 ## 0.16.4 (2026-10-29)
 Launch splash and system bar colors. Brave (Chromium) keeps a home-screen web app's splash image and colors in a
 store keyed by its start address, and re-adding the app reused that store: the launcher icon was refreshed, the

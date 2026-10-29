@@ -276,6 +276,8 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .vs-vt { display: grid; gap: 2px; min-width: 0; text-align: left; }
 .vs-vt b { font-size: var(--fs-small); line-height: 1.25; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .vs-vt small { font-size: var(--fs-caption); color: var(--ink-2); }
+.vs-last { border-left: 3px solid var(--spirit); padding: var(--s1) var(--s3); }
+.vs-last-t { color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .vs-apply { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s2); align-items: stretch; }
 .vs-apply .btn.ghost { min-width: 6.5em; min-height: 56px; }
 .ctx { padding: 0 var(--s1); }

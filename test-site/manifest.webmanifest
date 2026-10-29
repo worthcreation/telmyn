@@ -2,7 +2,7 @@
   "name": "Telmyn Test",
   "short_name": "Telmyn Test",
   "id": "telmyn-test",
-  "start_url": "./",
+  "start_url": "./#today",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

@@ -1,5 +1,6 @@
 // Converts between the chat handoff text and app records, both directions.
 // Import keeps the full original text in handoff_raw so nothing is ever lost, then parses what is clean.
+import { isoDate } from './clock.js';
 import { cleanNumber, blankDay, fluidTotals } from './schema.js';
 import { planFor, blockStatus } from './program/index.js';
 import { verseFor } from './verses.js';
@@ -120,7 +121,7 @@ export function buildHandoff({ day, sets, events, fluids }) {
 
   const lines = [
     `DATE: ${day.date}`,
-    `STATUS: ${v(day.day_status) || 'day in progress'}`,
+    `STATUS: ${v(day.day_status) || (day.date && day.date < isoDate() ? 'day complete' : 'day in progress')}`,
     `PROGRAM: ${plan.version} | Week ${plan.week}, Day ${plan.day} | ${plan.typeLabel}`,
     `SLEEP: bed ${v(day.bed_time)} | wake ${v(day.wake_time)}`,
     `WEIGHT_LB: ${v(day.weight_lb)}`,
