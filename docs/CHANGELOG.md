@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.1 (2026-10-30)
+tools/model.ps1 reads the model's words from either field the speech library accepts (this model lists them as
+"words", not "wordLabels"), so the download no longer stops with "no stop word".
+
 ## 0.22.0 (2026-10-30)
 Voice stop runs on the phone. It no longer uses Chrome's speech service (which sent audio to Google and chimed every
 few seconds). A small open speech model (Google's speech-commands, which knows "stop") runs on the phone with

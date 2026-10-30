@@ -1,6 +1,6 @@
 # Telmyn voice stop: fetch Google's open speech-commands model (18 words, Apache 2.0) into the repo once, so the app
 # serves it itself and no audio or request ever goes to Google from the phone. Then push it and refresh the test app.
-# Run once after the 0.22.0 patch:
+# Run once (after the 0.22.0 patch or later):
 #   powershell -ExecutionPolicy Bypass -File "$HOME\telmyn\tools\model.ps1"
 $ErrorActionPreference = 'Stop'
 $repo = Join-Path $HOME 'telmyn'
@@ -14,12 +14,14 @@ try {
   $model = Get-Content (Join-Path $dir 'model.json') -Raw | ConvertFrom-Json
   foreach ($group in $model.weightsManifest) { foreach ($p in $group.paths) { Invoke-WebRequest "$base/$p" -OutFile (Join-Path $dir $p) -UseBasicParsing } }
   $meta = Get-Content (Join-Path $dir 'metadata.json') -Raw | ConvertFrom-Json
-  if (-not ($meta.wordLabels -contains 'stop')) { throw 'The model has no "stop" word.' }
+  # Newer models list their words as wordLabels, this one (like the library allows) as words.
+  $words = @(if ($meta.wordLabels) { $meta.wordLabels } else { $meta.words })
+  if (-not ($words -contains 'stop')) { throw "The model has no ""stop"" word (words found: $($words -join ', '))." }
 } catch {
   Write-Host "Download failed: $($_.Exception.Message). Nothing was pushed. Send this output to Claude." -ForegroundColor Red; exit 1
 }
 $size = [math]::Round(((Get-ChildItem $dir | Measure-Object Length -Sum).Sum) / 1MB, 1)
-Write-Host "Model ready ($size MB, words: $($meta.wordLabels -join ', '))" -ForegroundColor Green
+Write-Host "Model ready ($size MB, words: $($words -join ', '))" -ForegroundColor Green
 git add data/models; git commit -q -m 'Speech model for voice stop (Google speech-commands 18w, Apache 2.0)'
 if ($LASTEXITCODE -ne 0) { Write-Host 'Nothing new to commit (model already in place).' -ForegroundColor Yellow; exit 0 }
 git push -q
