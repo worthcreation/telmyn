@@ -1,5 +1,5 @@
 // Study while you train: a video on today's verse, its chapter to read, or the chapter read aloud, inside a block.
-// It plays while a timer runs (holds, rests, hangs) and pauses when the app is waiting on you (reps, logging).
+// It starts with the first timer and keeps playing through reps, logging and pauses; only you pause it.
 // Beeps duck the video volume for a moment so alerts are always heard. Your own pause or play always wins.
 import { utterance } from '../voice.js';
 import { h, fill, layer, toast } from './dom.js';
@@ -25,7 +25,8 @@ export function loadApi() {
 const decode = t => { const e = document.createElement('textarea'); e.innerHTML = t; return e.value; };
 
 // Study while you train: watch a video on today's verse, read its chapter, or listen to it read aloud.
-// It follows the block: plays while a timer runs, holds while the app waits on you. Your own pause or play wins.
+// Started by the first timer, then left alone: your own pause or play is the only thing that stops or starts it,
+// apart from opening an exercise demo, which pauses it so two videos never play at once.
 // Overlay is minimal: one "Study" button (top right) opens the choices; the video always shows whole.
 export function studyPlayer(container, { daily = null } = {}) {
   let mode = null, player = null, video = null, list = [], index = 0, armed = false, ours = false, playing = false, duckTimer = null;

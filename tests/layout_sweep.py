@@ -25,10 +25,12 @@ async def main():
             for tab in ('today','progress','gear','me'):
                 await pg.evaluate(f"location.hash='#{tab}'"); await pg.wait_for_timeout(500); res[tab]=await pg.evaluate(CHECK) + (['verse clamped'] if tab=='today' and await pg.locator('.vp-text.clamped').count() else [])
             await pg.evaluate("location.hash='#me'"); await pg.wait_for_timeout(300)
-            await pg.click('text=Day log'); await pg.wait_for_timeout(400)
+            await pg.click('text=Day log'); await pg.wait_for_timeout(500); res['day view']=await pg.evaluate(CHECK)
+            await pg.click('text=Edit this day'); await pg.wait_for_timeout(400)
             for g in ('Day','Body','Fuel','Watch','Notes'):
                 await pg.click(f'.log-form .tabs >> text={g}'); await pg.wait_for_timeout(150); res['log '+g]=await pg.evaluate(CHECK)
-            await pg.click('.layer-head [aria-label=Close]'); await pg.wait_for_timeout(300)
+            await pg.click('.layer-head [aria-label=Close] >> nth=-1'); await pg.wait_for_timeout(300)
+            await pg.click('.layer-head [aria-label=Close] >> nth=-1'); await pg.wait_for_timeout(300)
             await pg.evaluate("location.hash='#today'"); await pg.wait_for_timeout(400)
             await pg.click('.verse-card'); await pg.wait_for_timeout(1200); res['verse']=await pg.evaluate(CHECK)
             await pg.click('.layer-head [aria-label=Close]'); await pg.wait_for_timeout(300)

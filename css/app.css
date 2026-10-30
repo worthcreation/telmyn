@@ -185,6 +185,18 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .stat-bar.met span { background: var(--ok); }
 .stat.spirit .stat-l { color: var(--spirit); }
 .avg { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); }
+/* Day view (Day log): This week's look for one day. */
+.layer-body > .dayview { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: var(--gap-v); }
+.dayview > * { flex: none; }
+.dayview .stats { flex: 1 1 auto; }
+.dayblocks { grid-template-columns: repeat(var(--n), 1fr); }
+.dayblocks .wk-d { font-size: var(--fs-micro); line-height: 1.1; min-height: 2.2em; display: grid; align-items: end; }
+.dv-nav { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s2); text-align: center; }
+.dv-title { display: grid; }
+.dv-title b { font: 700 var(--fs-title)/var(--lh-tight) var(--font-display); }
+.dv-title span { font-size: var(--fs-small); color: var(--ink-2); }
+.dv-nav .icon-btn:disabled { opacity: .3; }
+.dv-note { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: left; }
 .progress-hint { text-align: center; }
 
 /* ===== Gear ===== */
@@ -505,6 +517,12 @@ body:has(.runner.video-mode) .toast { bottom: 50%; }
   .tabs-bar button { grid-auto-flow: column; justify-content: center; align-items: center; gap: var(--s2); padding: var(--s1) 0; }
   .view { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; column-gap: var(--s4); align-content: stretch; }
   .view-today { grid-template-rows: auto 1fr auto; }
+  .layer-body > .dayview { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto 1fr auto; column-gap: var(--s4); row-gap: var(--s2); }
+  .dayview .dv-nav { grid-column: 1; grid-row: 1; }
+  .dayview .dayblocks { grid-column: 1; grid-row: 2; }
+  .dayview .avg { grid-column: 1; grid-row: 3; align-self: end; }
+  .dayview > .btn { grid-column: 1; grid-row: 4; }
+  .dayview .stats { grid-column: 2; grid-row: 1 / -1; }
   .view-today .top { grid-column: 1; grid-row: 1; }
   .view-today .verse-card { grid-column: 1; grid-row: 2 / 4; min-height: 0; max-height: none; }
   .view-today .next { grid-column: 2; grid-row: 1 / 3; align-self: start; }

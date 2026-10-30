@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.18.0 (2026-10-30)
+Day log looks like This week. One day on one screen: a circle per block (filled when done, with its finish time),
+then bars against the targets (the day's routine, Grip with hangs, Fuel, Hydration), Spirit with the verse note,
+and tiles for weight, pumps and sleep. Arrows step between days. Tapping a row opens where it is edited (today's
+Fuel and Hydration open the Protein and Fluids lists); Edit this day opens the full form. Tapping a day on This
+week opens the same view. Also restores 0.17.8, which was never pushed: the study video keeps playing once started
+and only you pause it.
+
 ## 0.17.10 (2026-10-30)
 Project instructions handling. tools/instructions.ps1 takes the newest telmyn-project-instructions-*.md from
 Downloads, keeps a dated private copy in .cfhome\instructions (never in git: the repo is public), and puts it on the

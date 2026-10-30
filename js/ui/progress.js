@@ -3,7 +3,7 @@
 import { h, fill } from './dom.js';
 import * as db from '../db.js';
 import { journalSheet } from './journal.js';
-import { logSheet } from './forms.js';
+import { daySheet } from './day.js';
 import { fluidTotals } from '../schema.js';
 import { state } from '../state.js';
 import { planFor, blockStatus, PROGRAMS } from '../program/index.js';
@@ -36,7 +36,7 @@ export async function renderProgress(root) {
     const frac = p.blocks.length ? n / p.blocks.length : 0;
     const before = d < start;
     const open = d <= today && !before;
-    return h(open ? 'button' : 'div', { class: `wk${d === today ? ' today' : ''}${d > today ? ' future' : ''}${before ? ' before' : ''}`, onclick: open ? () => logSheet(d) : null, 'aria-label': open ? `Open the log for ${d}` : null },
+    return h(open ? 'button' : 'div', { class: `wk${d === today ? ' today' : ''}${d > today ? ' future' : ''}${before ? ' before' : ''}`, onclick: open ? () => daySheet(d) : null, 'aria-label': open ? `Open the log for ${d}` : null },
       h('span', { class: 'wk-d' }, WEEKDAYS[weekday(d)][0]),
       h('span', { class: 'wk-dot', style: `--p:${before ? 0 : frac}` }),
       h('span', { class: 'wk-n' }, d > today || before ? '' : `${n}/${p.blocks.length}`));

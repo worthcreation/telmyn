@@ -283,8 +283,8 @@ export function runBlock(block, opts = {}) {
     fill(footEl, secondary, primary);
     const cw = mainEl.querySelector('.clock-wrap');
     if (root.classList.contains('video-mode') && cw) fill(clockEl, cw); else fill(clockEl);
-    // Study video follows the timers: plays while one runs, pauses while the app waits on you.
-    if (running) study.play(); else study.hold();
+    // Study video starts with the first timer and then keeps playing; only you pause it (tap the video).
+    if (running) study.play();
   }
 
   // Pick up where this block was left earlier today.
