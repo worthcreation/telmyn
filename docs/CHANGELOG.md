@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.21.3 (2026-10-30)
+Weight floats. The weight card is gone from the bottom of Today; a small Weight button floats in the header's corner,
+level with the date, pulsing as the morning goes on, and disappears once today's weight is logged. Hold it for the
+last 7 readings. It floats, so nothing moves when it goes.
+
 ## 0.21.2 (2026-10-30)
 Update Ready can no longer loop. The tap now asks whichever version is waiting at that moment, and if it has not
 taken over within 4 seconds the app drops the stuck copy and reloads, so the new version installs fresh. Tested with

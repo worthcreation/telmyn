@@ -52,7 +52,7 @@ a { color: var(--lane); }
 .tabs-bar.compact button { padding: 2px 0; font-size: var(--fs-micro); }
 .tabs-bar.compact .tab-i { font-size: var(--fs-body); }
 .tabs-bar button.on { color: var(--lane); background: color-mix(in srgb, var(--lane) 12%, transparent); }
-.top { display: grid; justify-items: center; gap: 2px; padding: var(--s1) 2px; text-align: center; }
+.top { position: relative; display: grid; justify-items: center; gap: 2px; padding: var(--s1) 2px; text-align: center; }
 .daytype { font: 700 var(--fs-display)/var(--lh-tight) var(--font-display); letter-spacing: .01em; }
 .date { font-size: var(--fs-small); color: var(--ink-2); }
 .date .wkday { margin-left: var(--s3); }
@@ -170,13 +170,10 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .due[data-due="3"] { --due-c: var(--warn); --glow: 14px; --beat: 1.3s; background: color-mix(in srgb, var(--warn) 14%, var(--surface)); }
 .weight-in { text-align: center; font: 700 var(--fs-display)/var(--lh-tight) var(--font-display); padding: var(--s2); }
 /* Quick chips share the row by their content (a longer label gets more width) and always keep 8 px inside each edge. */
-.weight-card { flex: none; display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: var(--s2) var(--s4); background: var(--surface);
-  border: 1px solid var(--line); border-radius: var(--r-btn); color: var(--ink); font: inherit; text-align: left; }
-.wc-l { font-weight: 600; }
-.wc-last { font-size: var(--fs-small); color: var(--ink-2); }
-.weight-card.logged { padding-block: var(--s1); }
-.weight-card.logged b { font: 700 var(--fs-lead) var(--font-display); margin-left: auto; }
-.wc-ok { color: var(--ok); font-weight: 700; }
+/* Floats in the header's corner, level with the date line, so it never moves the title and nothing shifts when it goes. */
+.weigh { position: absolute; right: 0; top: 0; padding: 0 var(--s3); min-height: 24px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pill); color: var(--ink); font: 600 var(--fs-small) var(--font-body); }
+.weigh[hidden] { display: none; }
 
 /* ===== Progress ===== */
 .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s1); text-align: center; }
@@ -576,7 +573,6 @@ details.dl-row[open] > .dl-sum::after { transform: rotate(90deg); }
   .view-today .verse-card { grid-column: 1; grid-row: 2 / 4; min-height: 0; max-height: none; }
   .view-today .next { grid-column: 2; grid-row: 1 / 3; align-self: start; }
   .view-today .day { grid-column: 2; grid-row: 2; align-self: end; max-height: 100%; }
-  .view-today .weight-card { grid-column: 2; grid-row: 3; }
   .view-progress { grid-template-rows: auto auto 1fr; }
   .view-progress .top { grid-column: 1; grid-row: 1; }
   .view-progress .week { grid-column: 1; grid-row: 2; }

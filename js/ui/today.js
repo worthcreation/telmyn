@@ -1,5 +1,5 @@
 // Today tab: date and verse, the next block with the day ring, the rest of the day, verse text in spare space,
-// and the weight card. Status pills (Fluids, Protein, Grip, Pumps) and tabs live in the shell.
+// and the weight button in the header until weight is logged. Status pills (Fluids, Protein, Grip, Pumps) and tabs live in the shell.
 import { h, fill, fitText, holdable } from './dom.js';
 import { weightList } from './history.js';
 import { state, addEvent } from '../state.js';
@@ -62,17 +62,13 @@ export function renderToday(root, rerender) {
     verseText.classList.remove('loading');
   }).catch(() => { verseText.textContent = 'Tap to read today’s verse.'; verseText.classList.remove('loading'); verseText.classList.add('offline'); });
 
-  // Weight, once a day: a slim card asking for it until it is logged (pulsing as the morning goes on), then a small
-  // tile with today's reading. Tap to log or change it; hold for the last 7 readings and the 7-day average.
-  const weightCard = holdable(h('button', { class: 'weight-card', onclick: () => weightSheet(rerender) }, h('span', { class: 'muted small' }, 'Weight')), weightList);
-  lastWeight().then(({ value, date }) => {
+  // Weight, once a day: a small floating button in the header corner, pulsing as the morning goes on, gone once
+  // today's weight is logged (it floats, so nothing moves when it goes). Hold it for the last 7 readings.
+  const weigh = holdable(h('button', { class: 'weigh', hidden: true, onclick: () => weightSheet(rerender), 'aria-label': 'Log today’s weight' }, 'Weight'), weightList);
+  lastWeight().then(({ date }) => {
     const age = date ? daysBetween(date, state.date) : null;
-    const done = age === 0;
-    weightCard.classList.toggle('logged', done);
-    dueMark(weightCard, weightLevel(age));
-    fill(weightCard, done
-      ? [h('span', { class: 'wc-l' }, 'Weight'), h('b', {}, `${value} lb`), h('span', { class: 'wc-ok', 'aria-hidden': 'true' }, '✓')]
-      : [h('span', { class: 'wc-l' }, 'Log weight'), h('span', { class: 'wc-last' }, value === null ? 'first reading' : `last ${value} lb, ${age === 1 ? 'yesterday' : `${age} days ago`}`)]);
+    weigh.hidden = age === 0;
+    dueMark(weigh, weightLevel(age));
   });
 
   // Two columns, each centered on its own. Left: what's next and what it involves, and the button named for it.
@@ -96,9 +92,9 @@ export function renderToday(root, rerender) {
   fill(root,
     h('header', { class: 'top' },
       h('p', { class: 'date' }, prettyDate(plan.date), h('span', { class: 'wkday' }, `Week ${plan.week}, Day ${plan.day}`)),
-      h('h1', { class: 'daytype' }, `${plan.typeLabel} Day`)),
+      h('h1', { class: 'daytype' }, `${plan.typeLabel} Day`),
+      weigh),
     versePanel,
     nextCard,
-    h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList),
-    weightCard);
+    h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList));
 }
