@@ -84,6 +84,38 @@ async function voiceSheet() {
   sheet('Reading speed', body, { onClose: () => speechSynthesis.cancel() });
 }
 
+// Voice stop dial: how clear a "stop" has to be. While it is open the mic listens and a live meter shows how sure
+// the model is that it hears "stop", with a mark at the setting, so you can say it a few ways and set the dial just
+// under your normal "stop". Nothing is recorded; the mic closes when the sheet does.
+async function voiceStopSheet() {
+  const { ready, listen, quiet, getThreshold, setThreshold, DEFAULT_THRESHOLD, voiceSupported } = await import('../listen.js');
+  if (!voiceSupported()) return toast('This phone cannot use voice stop.');
+  let t = getThreshold();
+  const fillEl = h('span', { class: 'vm-fill' }), mark = h('span', { class: 'vm-mark' });
+  const said = h('p', { class: 'vm-said' }, 'Getting the speech model ready');
+  const value = h('b', {}, `${Math.round(t * 100)}%`);
+  const place = () => { mark.style.left = `${t * 100}%`; value.textContent = `${Math.round(t * 100)}%`; };
+  const slider = h('input', { type: 'range', min: 50, max: 95, step: 5, value: Math.round(t * 100), 'aria-label': 'How sure it must be',
+    oninput: e => { t = Number(e.target.value) / 100; place(); }, onchange: () => setThreshold(t) });
+  let lastHit = 0;
+  const body = h('div', { class: 'stack vstop' },
+    h('p', { class: 'muted small' }, 'Say “stop” the way you would mid-set. The bar shows how sure it is; it stops a timer when the bar passes the mark.'),
+    h('div', { class: 'vm' }, fillEl, mark), said,
+    h('div', { class: 'vm-dial' }, h('span', { class: 'muted small' }, 'Softer stop'), slider, h('span', { class: 'muted small' }, 'Clearer stop')),
+    h('p', { class: 'center' }, 'Acts at ', value, ' sure'),
+    h('button', { class: 'btn ghost', onclick: () => { t = DEFAULT_THRESHOLD; slider.value = Math.round(t * 100); place(); setThreshold(t); } }, 'Back to 85%'));
+  place();
+  sheet('Voice stop', body, { onClose: quiet });
+  try {
+    await ready();
+    said.textContent = 'Listening. Say “stop”.';
+    await listen(null, s => {
+      fillEl.style.transform = `scaleX(${s})`;
+      if (s >= t && Date.now() - lastHit > 1200) { lastHit = Date.now(); said.textContent = `Heard it (${Math.round(s * 100)}% sure)`; said.classList.add('ok'); setTimeout(() => { said.textContent = 'Listening. Say “stop”.'; said.classList.remove('ok'); }, 1200); }
+    });
+  } catch { said.textContent = 'The speech model did not load, or the microphone is not allowed.'; }
+}
+
 export async function dataActions() {
   const persisted = await navigator.storage?.persisted?.();
   const on = await remindersOn();
@@ -98,7 +130,9 @@ export async function dataActions() {
     h('div', { class: 'bar' },
       h('button', { class: 'btn ghost', onclick: backUp }, 'Back up'),
       h('button', { class: 'btn ghost', onclick: restoreSheet }, 'Restore')),
-    h('button', { class: 'btn ghost', onclick: voiceSheet }, 'Reading speed'),
+    h('div', { class: 'bar' },
+      h('button', { class: 'btn ghost', onclick: voiceSheet }, 'Reading speed'),
+      h('button', { class: 'btn ghost', onclick: voiceStopSheet }, 'Voice stop')),
     h('div', { class: 'bar' },
       h('button', { class: `btn ghost reminders${on ? ' on' : ''}`, onclick: async () => { const v = await setReminders(!on); if (v !== !on && !on) return; location.reload(); } }, on ? 'Reminders on' : 'Reminders off'),
       TEST ? h('button', { class: 'btn ghost', onclick: testSheet }, 'Test controls')

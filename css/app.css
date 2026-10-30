@@ -80,6 +80,14 @@ a { color: var(--lane); }
 /* Voice stop: dim when off, lit when on. */
 .mic { font-size: var(--fs-lead); opacity: .45; filter: grayscale(1); }
 .mic.on { opacity: 1; filter: none; }
+/* Voice stop dial: live meter of how sure the model is that it hears "stop", with the setting marked. */
+.vm { position: relative; height: 18px; border-radius: var(--r-pill); background: var(--line); overflow: hidden; }
+.vm-fill { position: absolute; inset: 0; background: var(--lane); transform-origin: left; transform: scaleX(0); transition: transform .12s linear; }
+.vm-mark { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: var(--ink); }
+.vm-said { text-align: center; font-weight: 600; min-height: 1.5em; }
+.vm-said.ok { color: var(--ok); }
+.vm-dial { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s2); }
+.vm-dial input { width: 100%; accent-color: var(--lane); }
 .runner.video-mode .mic { display: none; }
 .icon-btn:disabled { opacity: .25; }
 .seg { display: flex; gap: var(--s1); }

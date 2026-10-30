@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.2 (2026-10-30)
+Voice stop dial (Me, Voice stop). A live meter shows how sure the model is that it hears "stop", with a mark at the
+setting; slide toward Softer stop until your normal "stop" passes the mark. The setting is saved (85% to start,
+50 to 95%) and blocks use it. Nothing is recorded; the mic closes with the sheet.
+
 ## 0.22.1 (2026-10-30)
 tools/model.ps1 reads the model's words from either field the speech library accepts (this model lists them as
 "words", not "wordLabels"), so the download no longer stops with "no stop word".
