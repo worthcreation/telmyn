@@ -15,7 +15,9 @@ export async function setThreshold(v) { threshold = v; await db.setMeta('voice_t
 
 export const voiceSupported = () => !!(navigator.mediaDevices?.getUserMedia && (globalThis.AudioContext || globalThis.webkitAudioContext));
 
-let recognizer = null, loading = null, stopIndex = -1, onHit = null, fired = false, wanted = false;
+// recognizer: what listens. Your trained "stop" once you have trained it (Me, Voice stop), else the general model.
+let recognizer = null, base = null, trainer = null, loading = null, stopIndex = -1, onHit = null, fired = false, wanted = false;
+export const TRAINED_NAME = 'telmyn-stop';
 let denied = null;
 export const onDenied = fn => { denied = fn; };
 
@@ -31,10 +33,15 @@ export function ready() {
   loading ??= (async () => {
     threshold = (await db.getMeta('voice_threshold', DEFAULT_THRESHOLD)) ?? DEFAULT_THRESHOLD;
     for (const src of ENGINE) await script(src);
-    const r = globalThis.speechCommands.create('BROWSER_FFT', undefined, new URL(MODEL, location.href).href, new URL(META, location.href).href);
-    await r.ensureModelLoaded();
-    stopIndex = r.wordLabels().indexOf('stop');
-    recognizer = r;
+    base = globalThis.speechCommands.create('BROWSER_FFT', undefined, new URL(MODEL, location.href).href, new URL(META, location.href).href);
+    await base.ensureModelLoaded();
+    // One add-on per name (the library allows no second), made here once: loaded if trained before, else empty.
+    trainer = base.createTransfer(TRAINED_NAME);
+    let r = base;
+    try { await trainer.load(); r = trainer; } catch { /* not trained yet: the general model */ }
+    const saved = await db.getMeta('voice_examples', null);
+    if (saved) try { trainer.loadExamples(saved, false); } catch { /* unreadable: start fresh */ }   // false: nothing to clear yet (clearing an empty set throws)
+    use(r);
     return r;
   })().catch(e => { loading = null; throw e; });
   return loading;
@@ -51,6 +58,38 @@ export function judge(scores, index, mark) {
   streak = top && s >= mark ? streak + 1 : 0;
   return streak >= 2;
 }
+function use(r) { recognizer = r; stopIndex = r.wordLabels().indexOf('stop'); }
+export const isTrained = () => recognizer && recognizer !== base;
+
+// ---------- Training on your voice (Me, Voice stop) ----------
+// Examples: your "stop" (about 1 second each), your room with no one talking (_background_noise_), and normal
+// talking ("talk"). They stay on the phone (kept so more can be added later); the trained add-on is saved in the
+// phone's storage. Nothing is sent anywhere.
+async function getTrainer() { await ready(); return trainer; }
+const keep = async t => db.setMeta('voice_examples', t.serializeExamples());
+export async function counts() {
+  const t = await getTrainer();
+  try { return t.countExamples(); } catch { return {}; }
+}
+export async function recordStop() { quiet(); const t = await getTrainer(); await t.collectExample('stop'); await keep(t); }
+export async function recordRoom(label, sec) { quiet(); const t = await getTrainer(); await t.collectExample(label, { durationSec: sec }); await keep(t); }
+export async function train(progress) {
+  quiet();
+  const t = await getTrainer();
+  const epochs = 20;
+  await t.train({ epochs, windowHopRatio: 0.25, augmentByMixingNoiseRatio: 0.5,
+    callback: { onEpochEnd: async epoch => progress?.((epoch + 1) / epochs) } });
+  await t.save();
+  use(t);
+}
+export async function forget() {
+  quiet();
+  await db.setMeta('voice_examples', null);
+  try { await globalThis.tf?.io.removeModel(`indexeddb://tfjs-speech-commands-model/${TRAINED_NAME}`); } catch { /* none saved */ }
+  try { trainer?.clearExamples(); } catch { /* already empty (clearing an empty set throws) */ }
+  if (base) use(base);
+}
+
 export async function listen(hit, score = null) {
   onHit = hit; onScore = score; fired = false; wanted = true; streak = 0;
   const r = await ready();

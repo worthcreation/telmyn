@@ -84,8 +84,11 @@ a { color: var(--lane); }
 .vm { position: relative; height: 18px; border-radius: var(--r-pill); background: var(--line); overflow: hidden; }
 .vm-fill { position: absolute; inset: 0; background: var(--lane); transform-origin: left; transform: scaleX(0); transition: transform .12s linear; }
 .vm-mark { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: var(--ink); }
-.vm-said { text-align: center; font-weight: 600; min-height: 1.5em; }
+.vm-said { text-align: center; font-weight: 600; min-height: calc(var(--fs-heading) * 1.4); display: grid; place-items: center; }
 .vm-said.ok { color: var(--ok); }
+.vm-said.now { color: var(--lane); font: 700 var(--fs-heading) var(--font-display); }
+.vt-steps { display: grid; gap: var(--s2); }
+.vt-steps .btn.done { border-color: var(--ok); color: var(--ok); }
 .vm-dial { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s2); }
 .vm-dial input { width: 100%; accent-color: var(--lane); }
 .runner.video-mode .mic { display: none; }

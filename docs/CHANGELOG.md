@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.23.0 (2026-10-30)
+Voice stop learns your voice (Me, Voice stop). Record 20 of your "stop"s as prompted, 20 seconds of your room (10
+quiet, 10 talking), then Train: it learns your "stop" on the phone in about a minute and uses it from then on. The
+recordings and the trained add-on stay on the phone (more stops can be added and trained again; Start over clears
+them). The test meter and dial stay on the same screen. Includes 0.22.4 (say "stop" once).
+
 ## 0.22.3 (2026-10-30)
 Voice stop no longer fires on room noise. A reading counted whenever "stop" scored past the mark, even when the
 model's best guess was background noise, so quiet spikes stopped timers. Now "stop" must be the best guess, past the
