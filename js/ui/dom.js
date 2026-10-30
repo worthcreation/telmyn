@@ -113,12 +113,17 @@ export function fitText(box, text, { max, min, clamp = false } = {}) {
   }
 }
 
+// Every notice (toasts, the update card) goes in one centered stack, where the video title card also appears.
+export function notices() {
+  return document.querySelector('.notices') || document.body.appendChild(h('div', { class: 'notices', 'aria-live': 'polite' }));
+}
+
 export function toast(msg, action = null) {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const hide = () => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); };
   const t = h('div', { class: 'toast notice', role: 'status' }, h('b', {}, msg),
     action ? h('button', { class: 'toast-act', onclick: () => { hide(); action.fn(); } }, action.label) : null);
-  document.body.append(t);
+  notices().append(t);
   requestAnimationFrame(() => t.classList.add('show'));
   setTimeout(hide, action ? 5000 : 2200);
 }

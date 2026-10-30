@@ -2,7 +2,7 @@ import * as db from './db.js';
 import { load, state, onChange } from './state.js';
 import { TEST, isoDate, now } from './clock.js';
 import { renderShell, startShell } from './ui/shell.js';
-import { toast, h } from './ui/dom.js';
+import { toast, h, notices } from './ui/dom.js';
 import { APP_VERSION } from './version.js';
 import { loadPicks } from './ui/media.js';
 import { startReminders } from './remind.js';
@@ -71,7 +71,7 @@ function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   const offer = w => {
     if (!w || document.querySelector('.update')) return;
-    document.body.append(h('button', { class: 'update notice', onclick: e => { e.currentTarget.querySelector('span').textContent = 'Loading…'; w.postMessage('skipWaiting'); } },
+    notices().prepend(h('button', { class: 'update notice', onclick: e => { e.currentTarget.querySelector('span').textContent = 'Loading…'; w.postMessage('skipWaiting'); } },
       h('b', {}, 'Update ready'), h('span', {}, 'Tap to load it')));
   };
   navigator.serviceWorker.register('sw.js').then(reg => {

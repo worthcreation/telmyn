@@ -429,7 +429,6 @@ details.dl-row[open] > .dl-sum::after { transform: rotate(90deg); }
   border: 1px solid var(--glass-line); border-radius: var(--r-pill); color: var(--glass-ink); }
 .runner-clock .clock { font-size: var(--fs-display); line-height: 1.1; color: var(--glass-ink); }
 .runner-clock .clock-bar { width: 72px; height: 5px; }
-body:has(.runner.video-mode) .toast { bottom: 50%; }
 .runner.video-mode:not(.show-detail) .step-kind, .runner.video-mode:not(.show-detail) .step-note, .runner.video-mode:not(.show-detail) .step-cue, .runner.video-mode:not(.show-detail) .links { display: none; }
 .runner.video-mode .step-kind, .runner.video-mode .step-note { color: var(--glass-ink-2); }
 .runner.video-mode .step-text { font-size: var(--fs-lead); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -490,11 +489,14 @@ body:has(.runner.video-mode) .toast { bottom: 50%; }
 .notice small { font-size: var(--fs-caption); color: var(--glass-ink-2); letter-spacing: .04em; text-transform: uppercase; }
 .notice b { font: 700 var(--fs-title)/var(--lh-tight) var(--font-display); }
 .notice span { font-size: var(--fs-small); color: var(--glass-ink-2); }
-.toast { position: fixed; left: 50%; bottom: calc(var(--safe-bottom) + 80px); transform: translate(-50%, 20px); opacity: 0; z-index: var(--z-toast); transition: .2s; padding: var(--s3) var(--s4); }
+/* Toasts and the update card sit in one stack at the same spot as the video title card, so they never cover each
+   other and every notice appears in the same place. */
+.notices { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: var(--z-update); display: grid; gap: var(--s2); justify-items: center; pointer-events: none; }
+.notices > * { pointer-events: auto; }
+.toast { padding: var(--s3) var(--s4); opacity: 0; transform: scale(.96); transition: .2s; }
 .toast b { font-size: var(--fs-lead); }
-.toast.show { transform: translate(-50%, 0); opacity: 1; }
+.toast.show { opacity: 1; transform: none; }
 .toast-act { justify-self: center; background: transparent; border: 0; color: var(--glass-ink); font-weight: 700; text-decoration: underline; padding: 6px var(--s3); min-height: var(--h-ctrl-sm); }
-.update { position: fixed; top: calc(var(--safe-top) + 8px); left: 50%; transform: translateX(-50%); z-index: var(--z-update); }
 
 /* ===== Short screens (680px of visible height or less): tighter spacing, nothing hidden that matters ===== */
 /* Up to 800px of visible height (most phones): the next card keeps only its essentials so the verse and the day list both fit. */

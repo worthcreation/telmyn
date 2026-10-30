@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.2 (2026-10-30)
+Every notice is centered. Toasts and the update card appear in one stack at the same spot as the video title card,
+so they never cover each other.
+
 ## 0.19.1 (2026-10-30)
 Updates wait for you. A new version downloads in the background and loads only when you tap the Update ready card
 (or after every Telmyn window has closed); before, it loaded by itself. A waiting update is offered again the next
