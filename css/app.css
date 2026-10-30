@@ -77,6 +77,10 @@ a { color: var(--lane); }
 .chip .wc-i { font-size: var(--fs-micro); opacity: .8; }
 .icon-btn { background: none; border: 0; width: var(--h-tap); height: var(--h-tap); font-size: var(--fs-title); color: var(--ink); }
 .home-btn { display: grid; place-items: center; }
+/* Voice stop: dim when off, lit when on. */
+.mic { font-size: var(--fs-lead); opacity: .45; filter: grayscale(1); }
+.mic.on { opacity: 1; filter: none; }
+.runner.video-mode .mic { display: none; }
 .icon-btn:disabled { opacity: .25; }
 .seg { display: flex; gap: var(--s1); }
 .seg.wrap { flex-wrap: wrap; }

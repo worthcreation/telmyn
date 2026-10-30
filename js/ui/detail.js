@@ -104,11 +104,21 @@ function dayArea(area, date, data, tips) {
   const ev = data.events.filter(e => e.date === date), st = data.sets.filter(s => s.date === date), fl = data.fluids.filter(f => f.date === date);
   const status = id => blockStatus(id, ev, rec, plan);
   const doneEv = id => [...ev].reverse().find(e => e.block === id && e.type === 'block_done');
+  // A block's timeline: every logged step and set in the order done, each with its time.
+  const timeline = (id, pick = () => true) => {
+    const steps = ev.filter(e => e.type === 'step' && e.block === id && pick(e))
+      .map(e => ({ at: e.at, what: e.text, amt: e.sec != null ? `${e.sec} sec` : '' }));
+    const sets = st.filter(x => x.block === id && pick(x)).map(x => {
+      const f = fieldOf([x]);
+      return { at: x.at, what: `${EX[x.exercise]?.name || x.exercise}, set ${x.set_no || 1}${x.side && x.side !== 'each' ? ` ${x.side}` : ''}`, amt: `${x[f]} ${UNIT[f]}${x.lb != null ? ` at ${x.lb} lb` : ''}` };
+    });
+    return [...steps, ...sets].sort((a, b) => (a.at || '').localeCompare(b.at || ''));
+  };
   const blockRow = (id, label) => {
     const st2 = status(id);
     if (!st2) return null;
     const e = doneEv(id);
-    return row(`${label}${st2 === 'done' ? '' : st2 === 'skip' ? ' skipped' : ` ${st2}`}`, [e ? span(e.started_at, e.done_at || e.at) : null], { ok: st2 === 'done' });
+    return row(`${label}${st2 === 'done' ? '' : st2 === 'skip' ? ' skipped' : ` ${st2}`}`, [e ? span(e.started_at, e.done_at || e.at) : null, ...timeline(id)], { ok: st2 === 'done' });
   };
   // Every logged exercise in a block, in program order, each with its sets behind a tap.
   const exerciseRows = (blockId, filter = () => true) => {
@@ -147,7 +157,14 @@ function dayArea(area, date, data, tips) {
     out.push(blockRow('hangs', 'Dead hangs'));
     out.push(...exerciseRows('hangs'));
   } else if (area === 'mobility') {
-    out.push(row(`Morning stretch${status('stretch') === 'done' ? '' : ` ${status('stretch') || 'not done'}`}`, [doneEv('stretch') ? span(doneEv('stretch').started_at, doneEv('stretch').done_at) : null, rec.toe_touch_notes ? `Toe touch: ${rec.toe_touch_notes}` : null], { ok: status('stretch') === 'done' }));
+    out.push(row(`Morning stretch${status('stretch') === 'done' ? '' : ` ${status('stretch') || 'not done'}`}`, [doneEv('stretch') ? span(doneEv('stretch').started_at, doneEv('stretch').done_at) : null, rec.toe_touch_notes ? `Toe touch: ${rec.toe_touch_notes}` : null, ...timeline('stretch')], { ok: status('stretch') === 'done' }));
+    // Every warm-up and cooldown done elsewhere in the day, one row per block, each stretch with its time.
+    const warm = e => e.phase === 'Warm-up' || e.phase === 'Cooldown';
+    const names = Object.fromEntries([...plan.blocks.map(b => [b.id, b.name]), ['hourly', 'Grip breaks']]);
+    for (const id of [...new Set(ev.filter(e => e.type === 'step' && e.block !== 'stretch' && warm(e)).map(e => e.block))]) {
+      const items = timeline(id, x => x.type === 'step' && warm(x));
+      out.push(row(`${names[id] || id} warm-up and cooldown, ${items.length} ${items.length === 1 ? 'stretch' : 'stretches'}`, items, { ok: true }));
+    }
   } else if (area === 'fuel') {
     const target = plan.program.data.TARGETS.protein_g[0], g = rec.protein_g || 0;
     const timed = ev.filter(e => (e.type === 'protein' || e.type === 'food') && e.protein_g);

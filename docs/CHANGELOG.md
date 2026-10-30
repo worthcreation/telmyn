@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.21.8 (2026-10-30)
+Voice stop. A mic in a block's top bar turns it on (remembered). While a timer runs, saying "stop" or "done" acts as
+the main button: a hang stops and saves what you held, a hold ends early, a rest ends. It listens only while a
+timer runs, never during "Starts in". It uses the phone's speech recognition, so it needs a connection and the
+microphone allowed for Telmyn. Includes 0.21.7.
+
+## 0.21.7 (2026-10-30)
+What was done and when, everywhere. Every stretch, hold and move finished in a block is now logged with its time
+(and the seconds held). Opening any block in a breakdown shows its full timeline: each step and set in order, with
+times, seconds, reps and weight. Mobility also lists every warm-up and cooldown done in the day's other blocks
+(Fab Five, hangs, the row, strength, grip breaks), one row per block. Days before this update only have block start
+and finish times.
+
 ## 0.21.6 (2026-10-30)
 No more blinking. Today is redrawn every minute and after every change, and the verse was loaded fresh each time
 (hidden, fetched, faded back in), with the weight button appearing a moment later. Today is now gathered first and

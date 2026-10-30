@@ -12,6 +12,7 @@ import { hourlyHistory, nextPalms } from '../hourly.js';
 import { studyPlayer } from './study-player.js';
 import { DAILY_VIDEO } from '../config.js';
 import { runVideoBlock } from './video-block.js';
+import { listen, quiet, voiceSupported, onDenied } from '../listen.js';
 import { watchButton, exitLandscape } from './media.js';
 
 let wakeLock = null;
@@ -88,11 +89,21 @@ export function runBlock(block, opts = {}) {
   const weighted = s => s.kind === 'set' && EXERCISES[s.exercise]?.weight_lb != null;
   const suggestPalms = () => nextPalms(hourlyHistory(state.day, state.events));
 
-  function clearTimers() { clearInterval(timer?.int); timer = null; clearInterval(stopwatch?.int); stopwatch = null; }
+  function clearTimers() { clearInterval(timer?.int); timer = null; clearInterval(stopwatch?.int); stopwatch = null; quiet(); }
+
+  // Voice stop (the mic in the top bar turns it on and off, remembered): while a timer runs, "stop" or "done" acts as
+  // the main button. A hang stops and saves what you held; a hold or a rest ends and moves on.
+  let voiceOn = false;
+  db.getMeta('voice_stop', false).then(v => { voiceOn = !!v && voiceSupported(); if (root.isConnected) render(); });
+  onDenied(() => { voiceOn = false; db.setMeta('voice_stop', false); toast('Microphone not allowed', null, 'Allow it for Telmyn in the phone’s settings to use voice stop'); render(); });
+  const hear = () => { if (voiceOn) listen(() => (timer?.kind === 'countup' ? stopCountUp() : next())); };
+  const micButton = () => voiceSupported() ? h('button', { class: `icon-btn mic${voiceOn ? ' on' : ''}`, 'aria-pressed': String(voiceOn), 'aria-label': voiceOn ? 'Voice stop on. Say stop to end a timer.' : 'Voice stop off',
+    onclick: async () => { voiceOn = !voiceOn; await db.setMeta('voice_stop', voiceOn); if (voiceOn && timer) hear(); else if (!voiceOn) quiet(); render(); toast(voiceOn ? 'Voice stop on' : 'Voice stop off', null, voiceOn ? 'Say “stop” while a timer runs' : null); } }, '🎙') : null;
 
   function startTimer(sec, kind, onEnd) {
     clearTimers();
     timer = { end: now().getTime() + sec * 1000, total: sec, kind, lastWhole: Math.ceil(sec) };
+    if (kind !== 'transition') hear();   // not during "Starts in": stop there would skip the step
     timer.int = setInterval(() => {
       const left = Math.max(0, (timer.end - now().getTime()) / 1000);
       const whole = Math.ceil(left);
@@ -124,6 +135,7 @@ export function runBlock(block, opts = {}) {
     const [lo, hi] = rangeOf(s);
     const start = now().getTime();
     timer = { kind: 'countup', total: hi || 60, beeped: false, topped: false };
+    hear();
     entry.value = 0;
     timer.int = setInterval(() => {
       const sec = Math.floor((now().getTime() - start) / 1000);
@@ -182,7 +194,17 @@ export function runBlock(block, opts = {}) {
     if (s.choice === 'palms') entry.palmsSaved = entry.mode;
   }
 
+  // Every stretch, hold and move you finish is logged with its time (and, for a hold, the seconds held), so a day's
+  // breakdown can show what was done and when. Sets are logged as sets; rests are not logged.
+  function logStep() {
+    const s = steps[i];
+    if (s.kind !== 'timed' && s.kind !== 'do') return;
+    const held = s.kind === 'timed' ? (timer?.kind === 'hold' ? Math.round(timer.total - Math.max(0, (timer.end - now().getTime()) / 1000)) : s.sec) : null;
+    addEvent('step', { block: block.id, i, text: s.text, exercise: s.exercise || null, phase: s.phase || null, sec: held });
+  }
+
   async function advance(auto = true) {
+    logStep();
     await saveCurrent();
     const keepPalms = entry.palmsSaved ?? entry.palms;
     clearTimers();
@@ -193,6 +215,7 @@ export function runBlock(block, opts = {}) {
 
   async function finish(type) {
     clearTimers();
+    quiet();
     unlockScreen();
     study.destroy();
     removeEventListener('popstate', onPop);
@@ -321,6 +344,7 @@ export function runBlock(block, opts = {}) {
       h('button', { class: 'icon-btn', 'aria-label': 'Leave block', onclick: leave }, '✕'),
       h('span', { class: 'runner-title' }, block.name),
       h('span', { class: 'runner-count' }, `${i + 1} of ${steps.length}`),
+      micButton(),
       homeButton(leave));
     fill(mainEl,
       h('p', { class: `step-kind ${inTransition ? 'upnext' : s.kind}` }, inTransition ? 'Next' : (s.phase || { rest: 'Rest', set: 'Set', timed: 'Hold', do: 'Do' }[s.kind])),
