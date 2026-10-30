@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.23.1 (2026-10-30)
+The Weight button's pulsing glow shows whole (the page cut it flat along the top). In video blocks, opening a
+step's explainer centers it with the cue in its own box and grows it upward; Back and Done keep their size.
+
 ## 0.23.0 (2026-10-30)
 Voice stop learns your voice (Me, Voice stop). Record 20 of your "stop"s as prompted, 20 seconds of your room (10
 quiet, 10 talking), then Train: it learns your "stop" on the phone in about a minute and uses it from then on. The
