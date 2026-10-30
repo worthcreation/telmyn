@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.19.1 (2026-10-30)
+Updates wait for you. A new version downloads in the background and loads only when you tap the Update ready card
+(or after every Telmyn window has closed); before, it loaded by itself. A waiting update is offered again the next
+time the app opens. Toasts, the update card and the video title card now share one look, the frosted card.
+
 ## 0.19.0 (2026-10-30)
 Everything on This week and the Day log opens a breakdown at the level you are on. On This week, a bar or average
 opens that area for the week, day by day, each day linking to its Day log. On a Day log, every block circle, bar

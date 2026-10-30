@@ -65,17 +65,21 @@ async function boot() {
   if (linkKey) setSyncKey(linkKey).then(n => toast(`Cloud copy on. ${n} day${n === 1 ? '' : 's'} sent.`)).catch(err => toast(err.message));
 }
 
+// A new version installs in the background and waits. It loads only when you tap the update card (or once every
+// Telmyn window has closed), never on its own in the middle of something.
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
+  const offer = w => {
+    if (!w || document.querySelector('.update')) return;
+    document.body.append(h('button', { class: 'update notice', onclick: e => { e.currentTarget.querySelector('span').textContent = 'Loading…'; w.postMessage('skipWaiting'); } },
+      h('b', {}, 'Update ready'), h('span', {}, 'Tap to load it')));
+  };
   navigator.serviceWorker.register('sw.js').then(reg => {
+    // Installed earlier and still waiting (the app was closed before you tapped): offer it again now.
+    if (reg.waiting && navigator.serviceWorker.controller) offer(reg.waiting);
     reg.addEventListener('updatefound', () => {
       const w = reg.installing;
-      w?.addEventListener('statechange', () => {
-        if (w.state === 'installed' && navigator.serviceWorker.controller) {
-          const b = h('button', { class: 'update', onclick: () => { w.postMessage('skipWaiting'); } }, 'Update ready. Tap to load it.');
-          document.body.append(b);
-        }
-      });
+      w?.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) offer(w); });
     });
   });
   let reloaded = false;

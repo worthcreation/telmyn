@@ -86,7 +86,7 @@ export function studyPlayer(container, { daily = null } = {}) {
   // What is playing, large and centered for a moment whenever the video starts or changes.
   function titleCard() {
     runner()?.querySelector('.vs-switch')?.remove();
-    const card = h('div', { class: 'vs-switch', role: 'status' },
+    const card = h('div', { class: 'vs-switch notice', role: 'status' },
       list.length > 1 ? h('small', {}, `${index + 1} of ${list.length}`) : null,
       h('b', {}, decode(video.title)), h('span', {}, decode(video.channel || video.source || 'BibleProject')),
       video.sec ? h('small', { class: 'vs-dur' }, fmtDuration(video.sec)) : null);

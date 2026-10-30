@@ -261,6 +261,9 @@ if (typeof document !== 'undefined') {
   group('App rules');
   try { new Function(fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8')); results.push(['sw.js parses', true]); }
   catch (e) { results.push(['sw.js parses', false, e.message]); failed.push(results[results.length - 1]); }
+  { const swText = fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
+    const install = (swText.match(/addEventListener\('install'[^\n]*/) || [''])[0];
+    results.push(['an update waits for the tap (no skipWaiting on install)', !/skipWaiting/.test(install) && /'skipWaiting'/.test(swText), install]); }
   results.push(['version.js and sw.js versions match', app === sw, app === sw ? '' : `version.js ${app}, sw.js ${sw}`]);
   if (app !== sw) failed.push(results[results.length - 1]);
   // The real app must never ship as the test app.

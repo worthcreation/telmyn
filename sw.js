@@ -1,5 +1,5 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.19.0';
+const VERSION = '0.19.1';
 const CACHE = `telmyn-${VERSION}`;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/app.css',
@@ -10,7 +10,8 @@ const SHELL = [
 ];
 
 // Install and take over right away, so a new release never waits behind an old cached copy.
-self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())));
+// No skipWaiting here: a new version waits until you tap Update (main.js), so it never reloads the app on its own.
+self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))));
 
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('telmyn-') && k !== CACHE).map(k => caches.delete(k))))

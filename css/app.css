@@ -445,13 +445,8 @@ body:has(.runner.video-mode) .toast { bottom: 50%; }
   background: var(--glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: 1px solid var(--glass-line); color: var(--glass-ink); }
 .runner.video-mode .runner-head, .runner.read-mode .runner-head { padding-right: 96px; }
 /* What is playing: large, centered, for a moment when a video starts or changes. */
-.vs-switch { position: absolute; z-index: 4; left: 50%; top: 42%; transform: translate(-50%, -50%); width: min(86vw, 520px); display: grid; gap: var(--s1); text-align: center;
-  background: var(--glass-strong); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: 1px solid var(--glass-line); border-radius: var(--r-card);
-  padding: var(--s4) var(--s5); color: var(--glass-ink); transition: opacity .5s; pointer-events: none; }
+.vs-switch { position: absolute; z-index: 4; left: 50%; top: 42%; transform: translate(-50%, -50%); transition: opacity .5s; pointer-events: none; }
 .vs-switch.out { opacity: 0; }
-.vs-switch small { font-size: var(--fs-caption); color: var(--glass-ink-2); letter-spacing: .04em; text-transform: uppercase; }
-.vs-switch b { font: 700 var(--fs-title)/var(--lh-tight) var(--font-display); }
-.vs-switch span { font-size: var(--fs-small); color: var(--glass-ink-2); }
 .vs-switch .vs-dur { font-size: var(--fs-small); text-transform: none; letter-spacing: normal; font-variant-numeric: tabular-nums; }
 /* Read mode: the chapter on a glass panel, scrolling inside itself. */
 .runner.read-mode .study { margin: 0 0 var(--s2); }
@@ -487,12 +482,19 @@ body:has(.runner.video-mode) .toast { bottom: 50%; }
 
 /* ===== Notices ===== */
 #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: var(--z-fx); }
-.toast { position: fixed; left: 50%; bottom: calc(var(--safe-bottom) + 80px); transform: translate(-50%, 20px); opacity: 0; z-index: var(--z-toast); transition: .2s;
-  background: var(--ink); color: var(--paper); padding: var(--s2) var(--s4); border-radius: var(--r-pill); }
+/* One notice look for everything the app tells you: the frosted card that names a video when it starts. Video titles,
+   toasts and the update card all use it; only where each sits differs. */
+.notice { width: min(86vw, 520px); display: grid; gap: var(--s1); text-align: center; color: var(--glass-ink);
+  background: var(--glass-strong); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: 1px solid var(--glass-line); border-radius: var(--r-card);
+  padding: var(--s4) var(--s5); font: inherit; }
+.notice small { font-size: var(--fs-caption); color: var(--glass-ink-2); letter-spacing: .04em; text-transform: uppercase; }
+.notice b { font: 700 var(--fs-title)/var(--lh-tight) var(--font-display); }
+.notice span { font-size: var(--fs-small); color: var(--glass-ink-2); }
+.toast { position: fixed; left: 50%; bottom: calc(var(--safe-bottom) + 80px); transform: translate(-50%, 20px); opacity: 0; z-index: var(--z-toast); transition: .2s; padding: var(--s3) var(--s4); }
+.toast b { font-size: var(--fs-lead); }
 .toast.show { transform: translate(-50%, 0); opacity: 1; }
-.toast.has-action { display: flex; align-items: center; gap: var(--s3); white-space: nowrap; padding-right: var(--s2); }
-.toast-act { background: transparent; border: 0; color: var(--paper); font-weight: 700; text-decoration: underline; padding: 6px var(--s2); min-height: var(--h-ctrl-sm); }
-.update { position: fixed; top: calc(var(--safe-top) + 8px); left: 50%; transform: translateX(-50%); z-index: var(--z-update); background: var(--spirit); color: var(--lane-ink); border: 0; border-radius: var(--r-pill); padding: var(--s2) var(--s4); font-weight: 600; }
+.toast-act { justify-self: center; background: transparent; border: 0; color: var(--glass-ink); font-weight: 700; text-decoration: underline; padding: 6px var(--s3); min-height: var(--h-ctrl-sm); }
+.update { position: fixed; top: calc(var(--safe-top) + 8px); left: 50%; transform: translateX(-50%); z-index: var(--z-update); }
 
 /* ===== Short screens (680px of visible height or less): tighter spacing, nothing hidden that matters ===== */
 /* Up to 800px of visible height (most phones): the next card keeps only its essentials so the verse and the day list both fit. */
