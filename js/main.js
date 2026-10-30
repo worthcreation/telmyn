@@ -71,12 +71,18 @@ function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   const offer = w => {
     if (!w || document.querySelector('.update')) return;
-    notices().prepend(h('button', { class: 'update notice', onclick: e => {
+    notices().prepend(h('button', { class: 'update notice', onclick: async e => {
       e.currentTarget.querySelector('span').textContent = 'Loading…';
-      w.postMessage('skipWaiting');
-      // The new version reloads the app when it takes over. If that signal never comes (it already took over, or
-      // the phone dropped it), reload anyway so the card can never sit on Loading.
-      setTimeout(() => location.reload(), 4000);
+      // Ask whichever version is waiting right now (not one remembered from earlier) to take over; the app reloads
+      // when it does. If it has not taken over within 4 seconds, start clean: drop the stuck copy and reload, and
+      // the new version installs fresh. (A stuck copy used to send the card round Tap to load it, Loading forever.)
+      const reg = await navigator.serviceWorker.getRegistration();
+      (reg?.waiting || w).postMessage('skipWaiting');
+      setTimeout(async () => {
+        const r = await navigator.serviceWorker.getRegistration();
+        if (r?.waiting) await r.unregister();
+        location.reload();
+      }, 4000);
     } }, h('b', {}, 'Update Ready'), h('span', {}, 'Tap to load it')));
   };
   navigator.serviceWorker.register('sw.js').then(reg => {

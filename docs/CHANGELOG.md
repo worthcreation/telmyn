@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.21.2 (2026-10-30)
+Update Ready can no longer loop. The tap now asks whichever version is waiting at that moment, and if it has not
+taken over within 4 seconds the app drops the stuck copy and reloads, so the new version installs fresh. Tested with
+a version that ignores the tap: one tap still lands on the new version.
+
 ## 0.21.1 (2026-10-30)
 Update Ready shows up while the app is open. The phone only looked for a new version when the app opened; now it
 also checks every 5 minutes and whenever you come back to the app.
