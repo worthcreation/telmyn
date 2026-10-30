@@ -66,7 +66,7 @@ export function due(rec, now = Date.now()) {
     const start = L.at('08:00');
     const lastGrip = Math.max(s.grip || 0, start), lastPumps = Math.max(s.pumps || 0, start);
     if (now - lastGrip >= 60 * 60000 && now - (sent.grip || 0) >= 60 * 60000) out.push({ kind: 'grip', title: 'Grip break', body: s.grip && s.grip > start ? 'It has been an hour since the last one.' : 'First grip break of the day.' });
-    if (now - lastPumps >= 30 * 60000 && now - (sent.pumps || 0) >= 30 * 60000) out.push({ kind: 'pumps', title: 'Ankle pumps', body: '20 per foot. It has been over 30 minutes.' });
+    if (now - lastPumps >= 30 * 60000 && now - (sent.pumps || 0) >= 30 * 60000) out.push({ kind: 'pumps', title: 'Ankle pumps', body: 'Time for a set. It has been over 30 minutes.' });
   }
   if (L.hm >= '06:00' && s.weight !== L.date && sent.weight !== L.date) out.push({ kind: 'weight', title: 'Weight', body: 'Nothing logged today. Tap Weight on Today.' });
   return out;

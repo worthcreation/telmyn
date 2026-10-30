@@ -153,3 +153,6 @@ export async function importDay({ day, sets }) {
   for (const s of sets) await db.put('sets', s);
   if (day.date === state.date) await load(day.date);
 }
+
+// Ankle pumps per foot for today's program (one number for every screen and reminder).
+export const pumpsPerFoot = () => state.plan?.program.data.HABITS?.ankle_pumps?.perFoot ?? 20;

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.6 (2026-10-30)
+No more blinking. Today is redrawn every minute and after every change, and the verse was loaded fresh each time
+(hidden, fetched, faded back in), with the weight button appearing a moment later. Today is now gathered first and
+built complete before it shows, with the verse kept in memory, so a redraw changes nothing you can see. Ankle pumps
+are 30 per foot (Ross's count), one number used by every screen and reminder; the server's reminder no longer names a
+count.
+
 ## 0.21.5 (2026-10-30)
 Grip and Pumps measure against your own days. Each pill fills toward your daily average first (plain fill, "5 / 7
 avg"), then, once you pass it, fills green toward your best day ("12 / 15 best"), and reads "best" or "new best"

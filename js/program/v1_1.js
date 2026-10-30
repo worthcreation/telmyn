@@ -198,7 +198,8 @@ export const BLOCKS = {
 export const DAY_TYPES = v1.DAY_TYPES;
 export const SCHEDULE = v1.SCHEDULE;
 export const DEFAULT_TIMING = v1.DEFAULT_TIMING;
-export const HABITS = v1.HABITS;
+// Ankle pumps: 30 per foot (Ross, 2026-10-30; was 20). perFoot is the one number every screen and reminder uses.
+export const HABITS = { ...v1.HABITS, ankle_pumps: { ...v1.HABITS.ankle_pumps, perFoot: 30, note: '30 per foot, every 20-30 min while sitting.' } };
 export const TARGETS = v1.TARGETS;
 
 // Hangs go before the routine, except on strength days, where they would tire the grip before pull-ups.

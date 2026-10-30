@@ -2,7 +2,7 @@
 // Same list as Fluids and Protein. Removing an entry offers Undo, which puts it back with its original time.
 import { h, sheet, toast, fill } from './dom.js';
 import * as db from '../db.js';
-import { state, removeEvent, restoreEvent } from '../state.js';
+import { state, removeEvent, restoreEvent, pumpsPerFoot } from '../state.js';
 import { entryList } from './forms.js';
 import { addDays } from '../clock.js';
 
@@ -23,7 +23,7 @@ export const gripList = () => eventList('Grip breaks', e => e.type === 'block_do
   e => (e.palms ? `Palms ${e.palms}` : 'Grip break'), 'No grip breaks yet today.');
 
 export const pumpsList = () => eventList('Ankle pumps', e => e.type === 'habit' && e.habit === 'ankle_pumps',
-  () => '20 per foot', 'No pumps yet today.');
+  () => `${pumpsPerFoot()} per foot`, 'No pumps yet today.');
 
 // Weight: the last 7 readings with dates, and the average of the last 7 days (the number to judge by).
 export async function weightList() {

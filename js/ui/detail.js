@@ -3,7 +3,7 @@
 // times. Strength, Endurance and Grip end with how to push next time, worked out from your own last session.
 import { h, fill, sheet } from './dom.js';
 import * as db from '../db.js';
-import { state } from '../state.js';
+import { state, pumpsPerFoot } from '../state.js';
 import { planFor, blockStatus, PROGRAMS } from '../program/index.js';
 import { fluidTotals, FLUID_KINDS } from '../schema.js';
 import { addDays, hhmm, weekday, WEEKDAYS } from '../clock.js';
@@ -165,7 +165,7 @@ function dayArea(area, date, data, tips) {
   } else if (area === 'recovery') {
     out.push(blockRow('evening_legs', 'Legs up'));
     const pumps = ev.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps');
-    if (pumps.length) out.push(row(`Ankle pumps, ${plural(pumps.length, 'set')}`, pumps.map(e => ({ at: e.at, what: 'Ankle pumps', amt: '20 a foot' }))));
+    if (pumps.length) out.push(row(`Ankle pumps, ${plural(pumps.length, 'set')}`, pumps.map(e => ({ at: e.at, what: 'Ankle pumps', amt: `${pumpsPerFoot()} a foot` }))));
     if (rec.bed_time || rec.wake_time) out.push(row(`Sleep ${rec.bed_time || '?'} to ${rec.wake_time || '?'}`, []));
   }
   return out.filter(Boolean);

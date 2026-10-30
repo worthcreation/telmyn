@@ -5,7 +5,7 @@
 // The phone only tells the Worker its push address, its time zone offset, and when the last grip break, pumps and
 // weight happened. Without push (not set up, or a phone that cannot), the in-app checks below still run while open.
 import * as db from './db.js';
-import { state, onChange } from './state.js';
+import { state, onChange, pumpsPerFoot } from './state.js';
 import { API_BASE } from './config.js';
 import { SITE } from './site.js';
 import { now, hhmm } from './clock.js';
@@ -89,7 +89,7 @@ async function check() {
   if (state.plan.hourly) {
     const grip = lastAt(e => e.type === 'block_done' && e.block === 'hourly');
     if (overdueStatus(grip, 60) === 'behind') notify('grip', 'Grip break', grip ? 'It has been an hour since the last one.' : 'First grip break of the day.');
-    if (overdueStatus(lastAt(e => e.type === 'habit' && e.habit === 'ankle_pumps'), 30) === 'behind') notify('pumps', 'Ankle pumps', '20 per foot. It has been over 30 minutes.');
+    if (overdueStatus(lastAt(e => e.type === 'habit' && e.habit === 'ankle_pumps'), 30) === 'behind') notify('pumps', 'Ankle pumps', `${pumpsPerFoot()} per foot. It has been over 30 minutes.`);
   }
   if (clock >= '06:00' && (state.day.weight_lb === null || state.day.weight_lb === undefined)) {
     const days = (await db.all('days')).filter(d => d.weight_lb !== null && d.weight_lb !== undefined && d.date < state.date);

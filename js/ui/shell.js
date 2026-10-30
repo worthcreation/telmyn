@@ -1,7 +1,7 @@
 // App frame: status pills on top (every tab), the current tab, and the tab bar at the bottom.
 import { h, fill, toast, holdable, TABS as TAB_LIST, tabBar } from './dom.js';
 import { gripList, pumpsList } from './history.js';
-import { state, logGripBreak, removeEvent, addEvent } from '../state.js';
+import { state, logGripBreak, removeEvent, addEvent, pumpsPerFoot } from '../state.js';
 import { fluidTotals } from '../schema.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
 import { overdueLevel, towardBest } from '../status.js';
@@ -58,7 +58,7 @@ function gripPill(day, rerender, past) {
     h('span', { class: 'pill-v' }, String(hist.length), h('small', {}, a.label))), gripList);
 }
 
-// Ankle pumps live in the top strip too: tap logs a set (20 per foot), hold for today's list. Pulses when due.
+// Ankle pumps live in the top strip too: tap logs a set, hold for today's list. Pulses when due.
 function pumpsPill(rerender, past) {
   const list = state.events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps');
   const lvl = overdueLevel(list[list.length - 1]?.at, 30);
@@ -66,7 +66,7 @@ function pumpsPill(rerender, past) {
   return holdable(h('button', { class: a.cls, style: a.style, 'data-due': lvl || null, 'aria-label': `Ankle pumps, ${list.length} today${a.label}. Tap to log a set.`, onclick: async () => {
     const e = await addEvent('habit', { habit: 'ankle_pumps' });
     rerender();
-    toast('Ankle pumps logged', { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); toast('Ankle pumps removed'); } }, `${list.length + 1} today, 20 per foot`);
+    toast('Ankle pumps logged', { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); toast('Ankle pumps removed'); } }, `${list.length + 1} today, ${pumpsPerFoot()} per foot`);
   } },
     h('span', { class: 'pill-l' }, 'Pumps'),
     h('span', { class: 'pill-v' }, String(list.length), h('small', {}, a.label))), pumpsList);
