@@ -46,3 +46,5 @@ The Worker answers only requests from Telmyn's own addresses. Telmyn has its own
 
 ## Credits
 Greek and Hebrew word data (data/original.json): STEPBible.org TAGNT and TAHOT, from Tyndale House Cambridge, CC BY 4.0.
+Voice stop: TensorFlow.js 3.21.0 and speech-commands 0.5.4 (js/vendor), and the speech-commands 18w model
+(data/models/speech-commands, fetched by tools/model.ps1), all from Google, Apache License 2.0.

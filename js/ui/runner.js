@@ -12,7 +12,7 @@ import { hourlyHistory, nextPalms } from '../hourly.js';
 import { studyPlayer } from './study-player.js';
 import { DAILY_VIDEO } from '../config.js';
 import { runVideoBlock } from './video-block.js';
-import { listen, quiet, voiceSupported, onDenied } from '../listen.js';
+import { listen, quiet, ready, voiceSupported, onDenied } from '../listen.js';
 import { watchButton, exitLandscape } from './media.js';
 
 let wakeLock = null;
@@ -96,9 +96,15 @@ export function runBlock(block, opts = {}) {
   let voiceOn = false;
   db.getMeta('voice_stop', false).then(v => { voiceOn = !!v && voiceSupported(); if (root.isConnected) render(); });
   onDenied(() => { voiceOn = false; db.setMeta('voice_stop', false); toast('Microphone not allowed', null, 'Allow it for Telmyn in the phone’s settings to use voice stop'); render(); });
-  const hear = () => { if (voiceOn) listen(() => (timer?.kind === 'countup' ? stopCountUp() : next())); };
+  const hear = () => { if (voiceOn) listen(() => (timer?.kind === 'countup' ? stopCountUp() : next())).catch(() => toast('Voice stop could not start', null, 'The speech model did not load')); };
   const micButton = () => voiceSupported() ? h('button', { class: `icon-btn mic${voiceOn ? ' on' : ''}`, 'aria-pressed': String(voiceOn), 'aria-label': voiceOn ? 'Voice stop on. Say stop to end a timer.' : 'Voice stop off',
-    onclick: async () => { voiceOn = !voiceOn; await db.setMeta('voice_stop', voiceOn); if (voiceOn && timer) hear(); else if (!voiceOn) quiet(); render(); toast(voiceOn ? 'Voice stop on' : 'Voice stop off', null, voiceOn ? 'Say “stop” while a timer runs' : null); } }, '🎙') : null;
+    onclick: async () => {
+      voiceOn = !voiceOn; await db.setMeta('voice_stop', voiceOn); render();
+      if (!voiceOn) { quiet(); return toast('Voice stop off'); }
+      toast('Voice stop on', null, 'Getting the speech model ready');
+      try { await ready(); toast('Voice stop on', null, 'Say “stop” while a timer runs'); if (timer && timer.kind !== 'transition') hear(); }
+      catch { voiceOn = false; await db.setMeta('voice_stop', false); render(); toast('Voice stop could not start', null, 'The speech model did not load'); }
+    } }, '🎙') : null;
 
   function startTimer(sec, kind, onEnd) {
     clearTimers();

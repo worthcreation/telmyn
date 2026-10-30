@@ -1,9 +1,12 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.21.8';
+const VERSION = '0.22.0';
 const CACHE = `telmyn-${VERSION}`;
 // Fonts keep their own cache across versions: dropping them with each update made every update load with the
 // stand-in font first and then jump when the real one arrived.
 const FONTS = 'fonts-telmyn';
+// The voice-stop engine and speech model (several MB, unchanged between versions) keep their own cache too, so an
+// update does not download them again.
+const ENGINE = 'engine-telmyn';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/app.css',
   'js/main.js', 'js/version.js', 'js/clock.js', 'js/db.js', 'js/schema.js', 'js/state.js', 'js/handoff.js', 'js/verses.js', 'js/xp.js', 'js/flow.js', 'js/hourly.js', 'js/foods.js', 'js/site.js', 'js/remind.js', 'js/sync.js', 'js/voice.js', 'js/status.js', 'js/config.js', 'js/scripture.js',
@@ -29,6 +32,10 @@ self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipW
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
+  if (url.origin === location.origin && /\/(js\/vendor|data\/models)\//.test(url.pathname)) {
+    e.respondWith(caches.open(ENGINE).then(async c => (await c.match(e.request)) || fetch(e.request).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; })));
+    return;
+  }
   if (url.origin === location.origin) {
     e.respondWith(caches.open(CACHE).then(async c => (await c.match(e.request, { ignoreSearch: true }))
       || fetch(e.request).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; })));

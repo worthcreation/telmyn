@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.22.0 (2026-10-30)
+Voice stop runs on the phone. It no longer uses Chrome's speech service (which sent audio to Google and chimed every
+few seconds). A small open speech model (Google's speech-commands, which knows "stop") runs on the phone with
+TensorFlow.js; the mic's sound is scored in memory and never stored or sent. The engine and model are Telmyn's own
+files, cached for offline use and loaded only when voice stop is first used. Say "stop" ("done" is not one of its
+words). tools/model.ps1 fetches the model into the repo once.
+
 ## 0.21.8 (2026-10-30)
 Voice stop. A mic in a block's top bar turns it on (remembered). While a timer runs, saying "stop" or "done" acts as
 the main button: a hang stops and saves what you held, a hold ends early, a rest ends. It listens only while a
