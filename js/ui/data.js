@@ -1,5 +1,6 @@
 import { h, sheet, toast, fill } from './dom.js';
 import * as db from '../db.js';
+import { VOICE_STOP } from '../config.js';
 import { importDay } from '../state.js';
 import { parseHandoff } from '../handoff.js';
 import { APP_VERSION } from '../version.js';
@@ -164,9 +165,10 @@ export async function dataActions() {
     h('div', { class: 'bar' },
       h('button', { class: 'btn ghost', onclick: backUp }, 'Back up'),
       h('button', { class: 'btn ghost', onclick: restoreSheet }, 'Restore')),
-    h('div', { class: 'bar' },
+    VOICE_STOP ? h('div', { class: 'bar' },
       h('button', { class: 'btn ghost', onclick: voiceSheet }, 'Reading speed'),
-      h('button', { class: 'btn ghost', onclick: voiceStopSheet }, 'Voice stop')),
+      h('button', { class: 'btn ghost', onclick: voiceStopSheet }, 'Voice stop'))
+      : h('button', { class: 'btn ghost', onclick: voiceSheet }, 'Reading speed'),
     h('div', { class: 'bar' },
       h('button', { class: `btn ghost reminders${on ? ' on' : ''}`, onclick: async () => { const v = await setReminders(!on); if (v !== !on && !on) return; location.reload(); } }, on ? 'Reminders on' : 'Reminders off'),
       TEST ? h('button', { class: 'btn ghost', onclick: testSheet }, 'Test controls')

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.23.2 (2026-10-30)
+Voice stop is shelved. One switch (VOICE_STOP in js/config.js) hides the mic button and the Voice stop screen and
+keeps anything from listening, even if voice stop was left on. The code, the model and any recordings stay for
+when it comes back.
+
 ## 0.23.1 (2026-10-30)
 The Weight button's pulsing glow shows whole (the page cut it flat along the top). In video blocks, opening a
 step's explainer centers it with the cue in its own box and grows it upward; Back and Done keep their size.
