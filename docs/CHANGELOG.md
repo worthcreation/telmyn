@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.21.1 (2026-10-30)
+Update Ready shows up while the app is open. The phone only looked for a new version when the app opened; now it
+also checks every 5 minutes and whenever you come back to the app.
+
 ## 0.21.0 (2026-10-30)
 One look, every screen. The tab bar is on every full screen (compact on layers), replacing the Home button; blocks
 keep ✕ and Home at the top, and video keeps only ✕. The top strip holds Fluids, Protein, Grip and Pumps; the bottom

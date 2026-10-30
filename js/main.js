@@ -82,6 +82,11 @@ function registerSW() {
   navigator.serviceWorker.register('sw.js').then(reg => {
     // Installed earlier and still waiting (the app was closed before you tapped): offer it again now.
     if (reg.waiting && navigator.serviceWorker.controller) offer(reg.waiting);
+    // The phone only looks for a new version when the app opens. While it stays open, ask every 5 minutes and each
+    // time you come back to it, so Update Ready shows up without closing the app.
+    const check = () => reg.update().catch(() => {});
+    setInterval(check, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
     reg.addEventListener('updatefound', () => {
       const w = reg.installing;
       w?.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) offer(w); });
