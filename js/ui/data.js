@@ -43,7 +43,8 @@ async function backUp() {
 }
 
 // Restore: one way in for everything. A backup file, or pasted text that is either a backup or a chat handoff.
-// A backup merges every record; a handoff updates that one day (blank lines change nothing).
+// A backup merges every record; a handoff updates that one day (blank lines change nothing; a filled exercise line
+// replaces that exercise's sets for the day, so a short handoff can fix or fill in a past day's sets).
 async function restoreText(text) {
   const t = text.trim();
   if (t.startsWith('{')) { await db.importAll(JSON.parse(t)); await syncAll().catch(() => {}); toast('Backup restored'); setTimeout(() => location.reload(), 600); return; }
@@ -61,7 +62,7 @@ function restoreSheet() {
       } })),
     ta,
     h('button', { class: 'btn', onclick: async () => { try { await restoreText(ta.value); s.close(); } catch (err) { toast(err.message); } } }, 'Restore pasted text'),
-    h('p', { class: 'muted small' }, 'Nothing is deleted. A backup puts back every record it holds; a handoff updates that one day.')), { full: true });
+    h('p', { class: 'muted small' }, 'A backup puts back every record it holds. A handoff updates that one day; an exercise line in it replaces that exercise’s sets.')), { full: true });
 }
 
 // Reading speed for Listen. The voice itself is set in Android (Text-to-speech, preferred engine and its voice):

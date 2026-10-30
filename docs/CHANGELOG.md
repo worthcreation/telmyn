@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.19.4 (2026-10-30)
+A past day's sets can be filled in or fixed from a short handoff pasted into Me, Restore. Each exercise line in it
+replaces that exercise's sets for the day (sets logged in the app included, so nothing is counted twice); exercises
+it leaves out, warm-up sets, hangs and everything else on the day stay as they were.
+
 ## 0.19.3 (2026-10-30)
 Update Ready now really waits. App files come from the version in charge instead of the network, so new code no
 longer runs before the tap (that is why Me already showed 0.19.2 while the card sat on Loading). If the reload
