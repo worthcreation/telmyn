@@ -95,7 +95,7 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .derived { color: var(--ink-2); font-size: var(--fs-small); }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: var(--s3) var(--s4); color: var(--ink); text-align: left; }
 .card.spirit { border-top: 3px solid var(--spirit); }
-.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-btn); padding: var(--s2); text-align: center; display: grid; gap: 2px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-btn); padding: var(--s2); text-align: center; display: grid; gap: 2px; color: var(--ink); font: inherit; width: 100%; }
 .tile-l { font-size: var(--fs-caption); color: var(--ink-2); }
 .tile b { font: 700 var(--fs-title)/var(--lh-tight) var(--font-display); }
 .tile small { font-size: var(--fs-caption); color: var(--ink-2); }
@@ -185,6 +185,24 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .stat-bar.met span { background: var(--ok); }
 .stat.spirit .stat-l { color: var(--spirit); }
 .avg { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); }
+/* Breakdown sheets (detail.js): next-time tips on top, then rows that open for sets, reps and times. */
+.layer-body > .dl { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: var(--s3); }
+.dl > * { flex: none; }
+.dl-push { display: grid; gap: var(--s1); }
+.dl-push > summary { display: grid; gap: var(--s1); list-style: none; cursor: pointer; }
+.dl-push > summary::-webkit-details-marker { display: none; }
+.dl-push > summary .lbl::after { content: ' ›'; }
+.dl-push[open] > summary .lbl::after { content: ' ⌄'; }
+.dl-push p { font-size: var(--fs-small); }
+.dl-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: var(--s1); }
+.dl-day { display: flex; justify-content: space-between; align-items: baseline; margin-top: var(--s2); padding: var(--s1) 0; background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--ink); font: 700 var(--fs-body) var(--font-display); text-align: left; }
+.dl-day span { font: 600 var(--fs-small) var(--font-body); color: var(--ink-2); }
+.dl-row { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-btn); }
+.dl-sum { display: flex; justify-content: space-between; gap: var(--s2); padding: var(--s2) var(--s3); list-style: none; cursor: pointer; }
+.dl-sum::-webkit-details-marker { display: none; }
+details.dl-row > .dl-sum::after { content: '›'; color: var(--ink-2); transition: transform .15s; }
+details.dl-row[open] > .dl-sum::after { transform: rotate(90deg); }
+.dl-more { padding: 0 var(--s3) var(--s2); display: grid; gap: 2px; font-size: var(--fs-small); color: var(--ink-2); font-variant-numeric: tabular-nums; }
 /* Day view (Day log): This week's look for one day. */
 .layer-body > .dayview { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: var(--gap-v); }
 .dayview > * { flex: none; }
@@ -485,14 +503,14 @@ body:has(.runner.video-mode) .toast { bottom: 50%; }
   .ring-n { padding-top: 12px; }
   .quick .chip { min-height: 40px; }
   .next-sum, .next-then, .progress-hint { display: none; }
-  .tile { padding: var(--s1); }
+  .tile { padding: var(--s1) var(--s2); }
   .gear-rule { font-size: var(--fs-caption); }
 }
 @media (max-height: 680px) {
   .closed-summary { padding: 2px 0; }
   .verse-card { min-height: 96px; padding: var(--s2) var(--s3); gap: var(--s1); }
   .stat-l { font-size: var(--fs-body); }
-  .tile { padding: var(--s1); }
+  .tile { padding: var(--s1) var(--s2); }
   .tile b { font-size: var(--fs-lead); }
   .progress-hint, .gear-rule { display: none; }
   .log-form, .fields { gap: 6px; }

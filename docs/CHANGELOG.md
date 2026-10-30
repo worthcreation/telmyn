@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.19.0 (2026-10-30)
+Everything on This week and the Day log opens a breakdown at the level you are on. On This week, a bar or average
+opens that area for the week, day by day, each day linking to its Day log. On a Day log, every block circle, bar
+and tile opens that area for the day. Rows say only what was done; tap one for its sets, reps and times. Strength,
+Endurance and Grip open with how to push next time, from the progression rules and your last session of each
+exercise (one step shown, the rest behind a tap). Edit this day sits at the bottom of every day breakdown. Tests now
+print one line per group (Program, Data, Verses, Reminders, App rules) and name only failures.
+
 ## 0.18.1 (2026-10-30)
 Every rep and time reaches the cloud copy. Sets saved nothing when Save was tapped on the grey number carried over
 from the last set; that number is now a real value, so what shows is what is kept, and an empty box cannot be saved

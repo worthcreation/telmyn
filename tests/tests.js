@@ -11,6 +11,10 @@ import { encryptPayload } from '../worker/src/push.js';
 import { fmtDuration, pickDaily } from '../js/scripture.js';
 
 const results = [];
+// Every result is filed under the group named last, so the run prints one line per group (failures by name).
+let GROUP = 'App rules';
+const group = g => { GROUP = g; };
+results.push = function (...rows) { for (const r of rows) r[3] ??= GROUP; return Array.prototype.push.apply(this, rows); };
 const waits = [];   // async tests finish before the results are counted
 const test = (name, fn) => {
   try { const r = fn(); if (r?.then) { const slot = [name, false, 'did not finish']; results.push(slot); waits.push(r.then(() => { slot[1] = true; slot[2] = undefined; }, e => { slot[2] = e.message; })); } else results.push([name, true]); }
@@ -18,6 +22,7 @@ const test = (name, fn) => {
 };
 const eq = (a, b, msg = '') => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${msg} expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); };
 
+group('Reminders');
 test('sync keys must match exactly', () => {
   eq(sameKey('ab12', 'ab12'), true); eq(sameKey('ab12', 'ab13'), false); eq(sameKey('ab1', 'ab12'), false);
   eq(sameKey('', ''), false); eq(sameKey(undefined, 'ab12'), false);
@@ -49,6 +54,7 @@ test('push payload decrypts to the reminders', async () => {
   eq(new TextDecoder().decode(plain.slice(0, -1)), text);
 });
 
+group('Verses');
 test('video lengths read as m:ss or h:mm:ss', () => { eq(fmtDuration(526), '8:46'); eq(fmtDuration(59), '0:59'); eq(fmtDuration(3725), '1:02:05'); eq(fmtDuration(null), ''); });
 
 test('daily video: newest not shown in the last 13 days, never two days running', () => {
@@ -88,11 +94,14 @@ FLAGS_FOR_TOMORROW: Book doctor visit
 TOMORROW: Wed Off
 INSTRUCTION UPDATES: applied in full on 2026-10-27.`;
 
+group('Program');
 test('week 1 day 1 on start date', () => eq(weekAndDay('2026-10-27'), { version: 'v1.1', week: 1, day: 1 }));
 test('next Monday is week 2', () => eq(weekAndDay('2026-11-02').week, 2));
+group('Verses');
 test('Tue week 1 verse is Galatians 6:9', () => eq(verseFor('2026-10-27').ref, 'Galatians 6:9'));
 test('Wed week 1 verse is James 1:5 (Wisdom)', () => { const v = verseFor('2026-10-28'); eq([v.ref, v.theme], ['James 1:5', 'Wisdom']); });
 test('Tue week 2 rotates to James 1:12', () => eq(verseFor('2026-11-03').ref, 'James 1:12'));
+group('Program');
 test('Tue plan is v1.1 Row, hangs before row, stretch at 06:30', () => { const p = planFor('2026-10-27'); eq([p.version, p.typeLabel, p.blocks.map(b => b.id), p.blocks[0].time], ['v1.1', 'Row', ['stretch', 'gates', 'hangs', 'row', 'evening_legs'], '06:30']); });
 test('Strength day keeps hangs after the routine', () => eq(planFor('2026-11-02').blocks.map(b => b.id), ['stretch', 'gates', 'strength_a', 'hangs', 'evening_legs']));
 test('every v1.1 step has a cue except rests, palms choice and curls without cues', () => {
@@ -108,11 +117,14 @@ test('row, hangs, hourly, Fab Five each have warm-up and cooldown', () => {
 });
 test('Wed plan has no routine', () => eq(planFor('2026-10-28').blocks.map(b => b.id), ['stretch', 'gates', 'hangs', 'evening_legs']));
 test('Sat has no hourly blocks', () => eq(planFor('2026-10-31').hourly, null));
+group('Data');
 test('cleanNumber keeps blank as null and 0 as 0', () => eq([cleanNumber(''), cleanNumber('0'), cleanNumber('about 6'), cleanNumber('22.9')], [null, 0, null, 22.9]));
+group('Program');
 test('every rest is its own step', () => {
   for (const b of Object.values(planFor('2026-10-26').program.data.BLOCKS)) for (const s of b.steps) if (s.kind === 'rest' && !s.sec) throw new Error(`rest without sec in ${b.name}`);
 });
 
+group('Data');
 test('parse sample handoff', () => {
   const { day, sets } = parseHandoff(SAMPLE);
   eq([day.date, day.week, day.day, day.protein_g, day.water_oz, day.other_drinks_oz, day.weight_lb, day.bed_time], ['2026-10-27', 1, 1, 40, 22.9, 24, null, null]);
@@ -154,9 +166,12 @@ test('template choices left in a handoff are not imported as values', () => {
   const { day } = parseHandoff(t);
   eq([day.pinch_level, day.fab_five_status], [null, null]);
 });
+group('Program');
 test('Sunday offers the optional walk', () => eq(planFor('2026-11-01').blocks.some(b => b.id === 'walk'), true));
 test('weekdays have no walk', () => eq(planFor('2026-11-02').blocks.some(b => b.id === 'walk'), false));
+group('Data');
 test('status: met at target, blank never crashes', async () => { const { paceStatus, staleStatus } = await import('../js/status.js'); eq([paceStatus('fluids', 100, 100), paceStatus('protein', null, 160) === 'met', staleStatus(0), staleStatus(null), staleStatus(2)], ['met', false, 'met', 'behind', 'behind']); });
+group('Reminders');
 test('push rules: grip after an hour on a workday, weight once, nothing on weekends when logged', async () => {
   const { due } = await import('../worker/src/push.js');
   const t = s => Date.parse(s), off = 300;
@@ -165,6 +180,7 @@ test('push rules: grip after an hour on a workday, weight once, nothing on weeke
     due({ ...rec, state: { ...rec.state, weight: '2026-10-31' } }, t('2026-10-31T15:05:00Z')).length, due({ ...rec, sent: { weight: '2026-10-28', grip: t('2026-10-28T15:00:00Z') } }, t('2026-10-28T15:05:00Z')).length],
     ['grip,weight', 'weight', 0, 0]);
 });
+group('Data');
 test('no data stays blank', () => eq(fluidTotals(blankDay('2026-10-27'), []), { water_oz: null, other_drinks_oz: null }));
 test('hourly: imported 3 plus 1 in app', () => {
   const { day, sets } = parseHandoff(SAMPLE);
@@ -196,6 +212,20 @@ test('every routine exercise prints, with per-set pull-up modes, per-arm rows, w
   eq(back.filter(x => x.exercise === 'dead_hang' && x.block === 'strength_a').map(x => x.sec), [15, 16]);
   eq(buildHandoff({ day: blankDay(d), sets: back, events: [], fluids: [] }).includes('HANGS_SEC: 24'), true);
 });
+group('Program');
+test('push tips follow the progression rules and your last session', async () => {
+  const { pushTip } = await import('../js/ui/detail.js');
+  const EX = planFor('2026-10-29').program.data.EXERCISES;
+  const S = (n, o = {}) => ({ reps: n, ...o });
+  const prev = rows => ({ date: '2026-10-26', rows });
+  eq(pushTip('neutral_pullup', [S(2), S(2), S(5, { mode: 'negative' })], null, EX).startsWith('1 set of negatives'), true);
+  eq(pushTip('chin_up', [S(5), S(5), S(5)], prev([S(5), S(5), S(5)]), EX).startsWith('All 3 sets at 5 two sessions running'), true);
+  eq(pushTip('goblet', [S(30), S(28)], prev([S(25)]), EX).includes('25 lb is now too light'), true);
+  eq(pushTip('goblet', [S(12), S(12)], prev([S(11), S(11)]), EX).startsWith('Up 2 reps'), true);
+  eq(pushTip('paused_pushup', [S(10)], prev([S(10)]), EX).startsWith('Same 10 reps'), true);
+  eq(pushTip('windmills', [S(15)], null, EX).startsWith('First windmills'), true);
+  eq(pushTip('dead_hang', [{ sec: 25 }], prev([{ sec: 20 }]), EX).startsWith('Best hang up 5 sec'), true);
+});
 test('transitions: start 5, sides 5, new position 10, after rest 0, row segments 0', () => {
   const R = planFor('2026-10-27').program.data.BLOCKS.row.steps;
   const at = t => R.findIndex(s => s.text === t);
@@ -204,6 +234,7 @@ test('transitions: start 5, sides 5, new position 10, after rest 0, row segments
   eq(transitionSec(undefined, { kind: 'timed' }), 5);
   eq(transitionSec({ kind: 'rest' }, { kind: 'timed' }), 0);
 });
+group('Data');
 test('hourly history: imported palms plus app blocks, next alternates', () => {
   const { day } = parseHandoff(SAMPLE);
   const hist = hourlyHistory(day, [{ type: 'block_done', block: 'hourly', palms: 'down', at: '2026-10-27T19:00:00Z' }]);
@@ -223,9 +254,11 @@ if (typeof document !== 'undefined') {
   const orig = JSON.parse(fs.readFileSync(new URL('../data/original.json', import.meta.url), 'utf8'));
   const { BANK } = await import('../js/verses.js');
   const missingWords = BANK.flat().filter(ref => !orig.verses[ref]?.words?.length);
+  group('Verses');
   results.push(['every bank verse has Greek or Hebrew key words', !missingWords.length, missingWords.join(', ')]);
   if (missingWords.length) failed.push(results[results.length - 1]);
   // The service worker must parse, or phones silently stop taking updates.
+  group('App rules');
   try { new Function(fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8')); results.push(['sw.js parses', true]); }
   catch (e) { results.push(['sw.js parses', false, e.message]); failed.push(results[results.length - 1]); }
   results.push(['version.js and sw.js versions match', app === sw, app === sw ? '' : `version.js ${app}, sw.js ${sw}`]);
@@ -271,6 +304,7 @@ if (typeof document !== 'undefined') {
   const mk = markKeyWords(nkjv, orig.verses['James 1:5'].words);
   const hl = mk.parts.filter(p => p.w).map(p => p.t.toLowerCase());
   const okKw = ['lacks', 'wisdom', 'ask', 'god'].every(x => hl.includes(x)) && mk.parts.map(p => p.t).join('') === nkjv;
+  group('Verses');
   results.push(['verse study highlights key words without changing the text', okKw, hl.join(', ')]);
   if (!okKw) failed.push(results[results.length - 1]);
   // Every key word lands inside the verse text (no separate chips), for James 1:5 and Galatians 6:9 in NKJV.
@@ -286,6 +320,7 @@ if (typeof document !== 'undefined') {
       if (!ok) failed.push(results[results.length - 1]);
     }
   }
+  group('App rules');
   // Design-system guards: every size and color comes from tokens.css, every selector is defined once, and text is
   // only ever fitted by the one routine in dom.js.
   {
@@ -317,7 +352,12 @@ if (typeof document !== 'undefined') {
     results.push(['text is fitted only by dom.js fitText', !sizers.length, sizers.join(', ')]);
     if (sizers.length) failed.push(results[results.length - 1]);
   }
-  for (const [n, ok, m] of results) console.log(`${ok ? 'PASS' : 'FAIL'} ${n}${m ? ': ' + m : ''}`);
+  // One line per group; a failing test is named under its group with the reason.
+  for (const g of [...new Set(['Program', 'Data', 'Verses', 'Reminders', 'App rules', ...results.map(r => r[3])])]) {
+    const rs = results.filter(r => r[3] === g), bad = rs.filter(r => !r[1]);
+    console.log(`${g.padEnd(10)} ${bad.length ? `${bad.length} of ${rs.length} failed` : `${rs.length} passed`}`);
+    for (const [n, , m] of bad) console.log(`  FAIL ${n}${m ? ': ' + m : ''}`);
+  }
   console.log(failed.length ? `${failed.length} failed` : `All ${results.length} passed`);
   if (failed.length) process.exitCode = 1;
 }

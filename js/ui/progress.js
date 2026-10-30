@@ -4,14 +4,17 @@ import { h, fill } from './dom.js';
 import * as db from '../db.js';
 import { journalSheet } from './journal.js';
 import { daySheet } from './day.js';
+import { areaSheet } from './detail.js';
+import { weightList } from './history.js';
 import { fluidTotals } from '../schema.js';
 import { state } from '../state.js';
 import { planFor, blockStatus, PROGRAMS } from '../program/index.js';
 import { addDays, weekday, WEEKDAYS } from '../clock.js';
 
-function bar(label, value, target, detail) {
+// Every bar opens its breakdown for the week.
+function bar(label, value, target, detail, onclick) {
   const p = target ? Math.min(1, value / target) : null;
-  return h('div', { class: 'stat' },
+  return h('button', { class: 'stat', onclick, 'aria-label': `${label}: ${detail}. Open this week's breakdown.` },
     h('div', { class: 'stat-top' }, h('span', { class: 'stat-l' }, label), h('span', { class: 'stat-d' }, detail)),
     p === null ? null : h('div', { class: `stat-bar${p >= 1 ? ' met' : ''}` }, h('span', { style: `--p:${p}` })));
 }
@@ -43,6 +46,7 @@ export async function renderProgress(root) {
   }));
 
   const past = dates.filter(d => d <= today && d >= start);   // days the program was running
+  const week = area => () => areaSheet(area, monday, dates[6]);
   const elapsed = Math.max(1, past.length);
   const typeOn = d => planFor(d).typeKey;
   const strengthPlanned = past.filter(d => /strength/.test(typeOn(d))).length;
@@ -61,7 +65,7 @@ export async function renderProgress(root) {
   const fluidOn = d => { const t = fluidTotals(dayRec[d] || {}, fluids.filter(f => f.date === d)); return t.water_oz === null && t.other_drinks_oz === null ? null : (t.water_oz || 0) + (t.other_drinks_oz || 0); };
   const fluidDays = past.filter(d => (fluidOn(d) || 0) >= TARGETS.fluids_oz[0]).length;
   const avg = vals => { const v = vals.filter(x => x !== null && x !== undefined); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null; };
-  const avgTile = (label, v, unit, n) => h('div', { class: 'tile' }, h('span', { class: 'tile-l' }, label), h('b', {}, v === null ? '–' : `${Math.round(v)}`), h('small', {}, v === null ? 'not logged' : `${unit} avg, ${n} day${n === 1 ? '' : 's'}`));
+  const avgTile = (label, v, unit, n, onclick) => h('button', { class: 'tile', onclick }, h('span', { class: 'tile-l' }, label), h('b', {}, v === null ? '–' : `${Math.round(v)}`), h('small', {}, v === null ? 'not logged' : `${unit} avg, ${n} day${n === 1 ? '' : 's'}`));
   const proteinVals = past.map(d => dayRec[d]?.protein_g ?? null), fluidVals = past.map(fluidOn), weightVals = past.map(d => dayRec[d]?.weight_lb ?? null);
   const nOf = v => v.filter(x => x !== null && x !== undefined).length;
 
@@ -69,18 +73,18 @@ export async function renderProgress(root) {
     h('header', { class: 'top' }, h('div', { class: 'top-text' }, h('h1', { class: 'daytype' }, 'This week'), h('p', { class: 'date' }, `Week of ${monday}`))),
     strip,
     h('section', { class: 'stats' },
-      bar('Strength', strengthDone, strengthPlanned || null, `${strengthDone}/${strengthPlanned} sessions${pulls.length ? `, best pull set ${Math.max(...pulls)}` : ''}`),
-      bar('Endurance', rowDone, rowPlanned || null, `${rowDone}/${rowPlanned} rows, ${Math.round(rowMin)} min`),
-      bar('Grip', hangs.length ? Math.max(...hangs) : 0, 20, `${hourly} grip breaks${hangs.length ? `, best hang ${Math.max(...hangs)} sec` : ''}`),
-      bar('Mobility', stretchDays, elapsed, `${stretchDays}/${elapsed} morning stretches`),
-      bar('Fuel', proteinDays, elapsed, `${proteinDays}/${elapsed} days at ${TARGETS.protein_g[0]} g protein`),
-      bar('Hydration', fluidDays, elapsed, `${fluidDays}/${elapsed} days at ${TARGETS.fluids_oz[0]} oz`),
-      bar('Recovery', legsDays, elapsed, `${legsDays}/${elapsed} evenings legs up`),
+      bar('Strength', strengthDone, strengthPlanned || null, `${strengthDone}/${strengthPlanned} sessions${pulls.length ? `, best pull set ${Math.max(...pulls)}` : ''}`, week('strength')),
+      bar('Endurance', rowDone, rowPlanned || null, `${rowDone}/${rowPlanned} rows, ${Math.round(rowMin)} min`, week('endurance')),
+      bar('Grip', hangs.length ? Math.max(...hangs) : 0, 20, `${hourly} grip breaks${hangs.length ? `, best hang ${Math.max(...hangs)} sec` : ''}`, week('grip')),
+      bar('Mobility', stretchDays, elapsed, `${stretchDays}/${elapsed} morning stretches`, week('mobility')),
+      bar('Fuel', proteinDays, elapsed, `${proteinDays}/${elapsed} days at ${TARGETS.protein_g[0]} g protein`, week('fuel')),
+      bar('Hydration', fluidDays, elapsed, `${fluidDays}/${elapsed} days at ${TARGETS.fluids_oz[0]} oz`, week('hydration')),
+      bar('Recovery', legsDays, elapsed, `${legsDays}/${elapsed} evenings legs up`, week('recovery')),
       h('button', { class: 'stat spirit', onclick: journalSheet }, h('div', { class: 'stat-top' }, h('span', { class: 'stat-l' }, 'Spirit'),
         h('span', { class: 'stat-d' }, `Verse applied on ${versesApplied} of ${elapsed} days. Tap for your journal.`)))),
     h('section', { class: 'avg', 'aria-label': 'Weekly averages' },
-      avgTile('Protein', avg(proteinVals), 'g', nOf(proteinVals)),
-      avgTile('Fluids', avg(fluidVals), 'oz', nOf(fluidVals)),
-      avgTile('Weight', avg(weightVals), 'lb', nOf(weightVals))),
-    h('p', { class: 'muted small progress-hint' }, 'Tap a day above to open or close out its log.'));
+      avgTile('Protein', avg(proteinVals), 'g', nOf(proteinVals), week('fuel')),
+      avgTile('Fluids', avg(fluidVals), 'oz', nOf(fluidVals), week('hydration')),
+      avgTile('Weight', avg(weightVals), 'lb', nOf(weightVals), weightList)),
+    h('p', { class: 'muted small progress-hint' }, 'Tap a day for its log, or anything else for its breakdown.'));
 }
