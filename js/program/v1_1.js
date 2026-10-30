@@ -17,7 +17,7 @@ export const EXERCISES = {
   doorway_chest: { name: 'Doorway chest stretch' },
   forearm: { name: 'Forearm stretch', video: 'https://www.youtube.com/watch?v=mLVLLGUbyfU&t=36s' }, // approved by Ross 2026-10-27, starts at 0:36
   toe_touch: { name: 'Toe touch' },
-  // Starting weights (Ross, 2026-10-30): 25 lb for RDLs and squats, 20 lb for arm work (rows and curls). The runner
+  // Starting weights (Ross, 2026-10-30): 25 lb for RDLs and squats, 20 lb for arm work (rows, curls, windmills). The runner
   // starts each exercise at the weight of your last session and shows it on the step, so step texts name no weight.
   bss: { ...v1.EXERCISES.bss, weight_lb: 25 },
   goblet: { ...v1.EXERCISES.goblet, weight_lb: 25 },
@@ -25,6 +25,7 @@ export const EXERCISES = {
   sa_row: { ...v1.EXERCISES.sa_row, weight_lb: 20 },
   magnet_curl: { ...v1.EXERCISES.magnet_curl, weight_lb: 20 },
   champagne_curl: { ...v1.EXERCISES.champagne_curl, weight_lb: 20 },
+  windmills: { ...v1.EXERCISES.windmills, weight_lb: 20 },
 };
 
 const C = {

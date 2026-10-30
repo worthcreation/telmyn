@@ -61,17 +61,20 @@ export function renderToday(root, rerender) {
   const verseRef = h('span', { class: 'vp-ref' }, verse.ref);
   const versePanel = h('button', { class: 'verse-card', onclick: verseSheet, 'aria-label': `Today's verse, ${verse.ref}` },
     h('span', { class: 'vp-theme' }, verse.theme), verseText, verseRef);
-  // A passage too long for the card ends with … and the reference says how to read the rest.
-  const fit = () => requestAnimationFrame(() => {
+  // A passage too long for the card ends with … and the reference says how to read the rest. Fitted right away
+  // (resize notices arrive before the screen is drawn), and the text fades in only once it is sized, so it never
+  // shows at one size and then jumps to another.
+  const fit = () => {
     fitText(versePanel, verseText, { clamp: true });
     verseRef.dataset.more = verseText.classList.contains('clamped') ? 'yes' : '';
-  });
+  };
   new ResizeObserver(fit).observe(versePanel);
-  document.fonts?.ready.then(() => requestAnimationFrame(fit));
+  document.fonts?.ready.then(fit);
   getVersion().then(v => fetchVerse(verse.ref, v)).then(d => {
-    verseText.textContent = d.text; verseText.classList.remove('loading');
+    verseText.textContent = d.text;
     verseRef.textContent = `${verse.ref} ${d.version}`;
-    requestAnimationFrame(fit);
+    fit();
+    verseText.classList.remove('loading');
   }).catch(() => { verseText.textContent = 'Tap to read today’s verse.'; verseText.classList.remove('loading'); verseText.classList.add('offline'); });
 
   // Weight: a chip in the quick row (used once a day). Red when nothing has been logged for a day or more.

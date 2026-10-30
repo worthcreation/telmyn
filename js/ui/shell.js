@@ -44,7 +44,11 @@ function pill(label, value, target, unit, onclick) {
     h('span', { class: 'pill-v' }, value === null || value === undefined ? '–' : String(value), target ? h('small', {}, ` / ${target} ${unit}`) : h('small', {}, ` ${unit}`)));
 }
 
-export function renderShell(root) {
+// A tab whose content loads from storage (Progress, Me) is built off screen and swapped in whole, so switching tabs
+// never shows an empty page that then fills and jumps. Only the newest render is shown.
+let renderSeq = 0;
+export async function renderShell(root) {
+  const seq = ++renderSeq;
   const { plan, day } = state;
   const { TARGETS } = plan.program.data;
   const t = fluidTotals(day, state.fluids);
@@ -53,6 +57,8 @@ export function renderShell(root) {
   const view = h('main', { class: `view view-${tab.id}` });
   const rerender = () => renderShell(root);
 
+  await tab.render(view, rerender);
+  if (seq !== renderSeq) return;
   fill(root,
     TEST ? h('button', { class: 'test-banner', onclick: testSheet }, `Test app, ${state.date} ${hhmm()}. Tap for controls.`) : null,
     h('nav', { class: 'status', 'aria-label': 'Today at a glance' },
@@ -63,7 +69,6 @@ export function renderShell(root) {
     h('nav', { class: 'tabs-bar', 'aria-label': 'Sections' }, TABS.map(x =>
       h('button', { class: x === tab ? 'on' : '', 'aria-current': x === tab ? 'page' : null, onclick: () => { location.hash = `#${x.id}`; } },
         h('span', { class: 'tab-i', 'aria-hidden': 'true' }, x.icon), h('span', {}, x.label)))));
-  tab.render(view, rerender);
 }
 
 export const startShell = root => addEventListener('hashchange', () => renderShell(root));

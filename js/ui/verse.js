@@ -275,9 +275,9 @@ export async function verseSheet(date = null) {
   const fit = () => fitText(body.querySelector('.vs-verse'), text, { min: 15 });
   new ResizeObserver(fit).observe(scroller);
   // Refit once the serif font has loaded: it sets taller than the fallback, which clipped the citation.
-  document.fonts?.ready.then(() => requestAnimationFrame(fit));
-  new MutationObserver(() => requestAnimationFrame(fit)).observe(text, { childList: true });
-  new MutationObserver(() => requestAnimationFrame(fit)).observe(watch, { childList: true });
+  document.fonts?.ready.then(fit);
+  new MutationObserver(fit).observe(text, { childList: true });
+  new MutationObserver(fit).observe(watch, { childList: true });
   setPage('verse');
   load();
 }

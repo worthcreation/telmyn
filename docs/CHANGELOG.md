@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.20.1 (2026-10-30)
+No more jumping text. Today's verse was measured while its card could squeeze it, so its size flipped between visits
+(30 px one time, 21 the next); it is now measured whole, fitted before it shows, and fades in at its final size.
+Switching tabs builds the new tab off screen and swaps it in whole instead of showing an empty page that fills.
+Fonts keep their own cache across updates (they were dropped with each version, so every update opened with the
+stand-in font and jumped when the real one arrived), and text waits for its font instead of swapping. Windmills log
+their weight (20 lb to start).
+
 ## 0.20.0 (2026-10-30)
 Weights. Dumbbell sets log their weight: the step shows it with −5 and +5, starting at your last session's weight
 (to begin: 25 lb for RDLs and squats, 20 lb for rows and curls, Ross's call; step texts no longer name a weight).

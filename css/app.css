@@ -143,9 +143,11 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 .verse-card { flex: 1 1 auto; min-height: clamp(110px, 18vh, 280px); max-height: 42vh; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; text-align: center;
   color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--spirit); border-radius: var(--r-card); padding: var(--s3) var(--s4); }
 .vp-theme { font-size: var(--fs-caption); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
-.vp-text { font: 400 var(--fs-verse-max)/var(--lh-verse) var(--font-verse); font-style: normal; }
+/* flex: none: the card may never squeeze the verse, so fitting always measures its true height (a squeezed
+   measurement let the size flip between 30 and 21 px from one visit to the next). */
+.vp-text { flex: none; font: 400 var(--fs-verse-max)/var(--lh-verse) var(--font-verse); font-style: normal; transition: opacity .15s; }
 .vp-text.clamped { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
-.vp-text.loading { min-height: 3em; }
+.vp-text.loading { min-height: 3em; opacity: 0; }
 .vp-text.offline { font-size: var(--fs-body); color: var(--ink-2); }
 .vp-ref { font: 600 var(--fs-small) var(--font-verse); color: var(--spirit); }
 .vp-ref[data-more='yes']::after { content: ' · tap to read all'; font-family: var(--font-body); font-weight: 500; color: var(--ink-2); }

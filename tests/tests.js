@@ -238,7 +238,7 @@ test('push tips follow the progression rules and your last session', async () =>
   eq(step('goblet', [S(30, { lb: 25 }), S(28, { lb: 25 })], prev([S(25)]), EX), '30 reps at 25 lb: go heavier');
   eq(step('goblet', [S(12), S(12)], prev([S(11), S(11)]), EX), 'Up 2. Keep building');
   eq(step('paused_pushup', [S(10)], prev([S(10)]), EX), 'Same as last. +1 on set 1');
-  eq(pushTip('windmills', [S(15)], null, EX), { name: 'Windmills (forearm rotation)', step: 'Beat 15', rule: false });
+  eq(pushTip('windmills', [S(15)], null, EX), { name: 'Windmills (forearm rotation)', step: 'Beat 15 at 20 lb', rule: false });
   eq(step('sl_rdl', [S(10, { side: 'L', lb: 20 }), S(10, { side: 'R', lb: 20 })], null, EX), 'Beat 10 a side at 20 lb');
   eq(step('dead_hang', [{ sec: 25 }], prev([{ sec: 20 }]), EX), 'Up 5 sec. Keep it active');
 });
