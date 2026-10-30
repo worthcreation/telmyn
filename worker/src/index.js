@@ -123,7 +123,8 @@ async function daily(url, env) {
       thumb: x.snippet.thumbnails?.medium?.url || x.snippet.thumbnails?.default?.url }))
     .sort((a, b) => (b.published || '').localeCompare(a.published || ''));
   if (!list.length) return { status: 502, body: { error: 'No videos found on that channel.' } };
-  return { status: 200, body: { source: who.name, video: (await withDurations([list[0]], env))[0] } };
+  // Newest first; the app picks the newest one not shown in the last 13 days (pickDaily in js/scripture.js).
+  return { status: 200, body: { source: who.name, videos: await withDurations(list, env) } };
 }
 
 // Only Telmyn may use the service: browsers send Origin or Referer, and anything else is refused,

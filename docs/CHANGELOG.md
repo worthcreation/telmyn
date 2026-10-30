@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.9 (2026-10-30)
+Gator's daily video: the newest upload that has not been shown in the last 13 days, so the same video never plays
+two days in a row and none repeats until 13 days have passed since its last day (it can return on day 14). If every
+recent upload is inside that window, the one shown longest ago plays. The Worker now returns the recent uploads with
+lengths; the app keeps the day's pick and a record of when each video was last shown (seeded from earlier days).
+
 ## 0.17.7 (2026-10-29)
 Video lengths. Every video list from the Worker now carries each video's length, from one shared details lookup
 (1 API unit per list); the passage search's own lookup folds into it. The video card shows the length on its last

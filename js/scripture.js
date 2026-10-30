@@ -1,6 +1,7 @@
 // Verse text from Bible Gateway via the Telmyn API worker, cached on the phone so it works offline after the first load.
 import { API_BASE } from './config.js';
-import { getMeta, setMeta } from './db.js';
+import { getMeta, setMeta, all } from './db.js';
+import { daysBetween } from './clock.js';
 
 export const DEFAULT_VERSION = 'NKJV';
 // Used until the full Bible Gateway list loads (or if it can't).
@@ -62,15 +63,35 @@ export async function fetchVideos(ref, creator = 'bibleproject', topic = null) {
   return data.videos;
 }
 
+// Daily video (Gator's Fab Five): the newest upload not shown in the last 13 days, so the same video never plays two
+// days in a row and none repeats within 13 days of its last day. If every recent upload was shown inside that window,
+// the one shown longest ago plays. The pick is kept for the day; daily_seen records { videoId: last date shown }.
+export const DAILY_GAP = 13;
+export function pickDaily(videos, seen, date) {
+  const fresh = videos.find(v => !seen[v.id] || daysBetween(seen[v.id], date) > DAILY_GAP || seen[v.id] === date);
+  return fresh || [...videos].sort((a, b) => (seen[a.id] || '').localeCompare(seen[b.id] || ''))[0];
+}
+// First run with this rule: learn what was already shown from the days cached before it existed.
+async function seedSeen() {
+  const seen = {};
+  for (const m of await all('meta')) {
+    const d = m.key.match(/^daily:(?:[a-z0-9]+:)?[^:]+:(\d{4}-\d{2}-\d{2})$/)?.[1];
+    if (d && m.value?.id && (!seen[m.value.id] || seen[m.value.id] < d)) seen[m.value.id] = d;
+  }
+  return seen;
+}
 export async function fetchDaily(source, date) {
-  const key = `daily:${VID}:${source}:${date}`;
+  const key = `daily:d3:${source}:${date}`;
   const cached = await getMeta(key);
   if (cached) return cached;
-  const r = await fetch(`${API_BASE}/daily?source=${encodeURIComponent(source)}&v=${VID}`)
+  const r = await fetch(`${API_BASE}/daily?source=${encodeURIComponent(source)}&v=d3`)
     .catch(() => { throw new Error('Could not reach the video service.'); });
   const data = await r.json().catch(() => ({}));
-  if (!r.ok || !data.video) throw new Error(data.error || 'Could not load today’s video.');
-  const out = { ...data.video, source: data.source };
+  if (!r.ok || !data.videos?.length) throw new Error(data.error || 'Could not load today’s video.');
+  const seen = await getMeta('daily_seen', null) || await seedSeen();
+  const out = { ...pickDaily(data.videos, seen, date), source: data.source };
+  seen[out.id] = date;
+  await setMeta('daily_seen', seen);
   await setMeta(key, out);
   return out;
 }

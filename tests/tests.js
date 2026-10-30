@@ -8,7 +8,7 @@ import { hourlyHistory, nextPalms } from '../js/hourly.js';
 import { FOODS, foodByKey, foodLine, addLine, removeLine } from '../js/foods.js';
 import { sameKey, readText } from '../worker/src/sync.js';
 import { encryptPayload } from '../worker/src/push.js';
-import { fmtDuration } from '../js/scripture.js';
+import { fmtDuration, pickDaily } from '../js/scripture.js';
 
 const results = [];
 const waits = [];   // async tests finish before the results are counted
@@ -50,6 +50,16 @@ test('push payload decrypts to the reminders', async () => {
 });
 
 test('video lengths read as m:ss or h:mm:ss', () => { eq(fmtDuration(526), '8:46'); eq(fmtDuration(59), '0:59'); eq(fmtDuration(3725), '1:02:05'); eq(fmtDuration(null), ''); });
+
+test('daily video: newest not shown in the last 13 days, never two days running', () => {
+  const v = [{ id: 'new' }, { id: 'mid' }, { id: 'old' }];
+  eq(pickDaily(v, {}, '2026-10-30').id, 'new');
+  eq(pickDaily(v, { new: '2026-10-29' }, '2026-10-30').id, 'mid');
+  eq(pickDaily(v, { new: '2026-10-17' }, '2026-10-30').id, 'mid');
+  eq(pickDaily(v, { new: '2026-10-16' }, '2026-10-30').id, 'new');
+  eq(pickDaily(v, { new: '2026-10-30' }, '2026-10-30').id, 'new');
+  eq(pickDaily(v, { new: '2026-10-29', mid: '2026-10-25', old: '2026-10-20' }, '2026-10-30').id, 'old');
+});
 
 const SAMPLE = `DATE: 2026-10-27
 STATUS: day in progress
