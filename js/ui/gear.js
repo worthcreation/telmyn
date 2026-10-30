@@ -12,7 +12,7 @@ const GEAR = [
 export function renderGear(root) {
   const best = ex => Math.max(0, ...state.sets.filter(s => ex.test(s.exercise) && s.reps).map(s => s.reps));
   fill(root,
-    h('header', { class: 'top' }, h('div', { class: 'top-text' }, h('h1', { class: 'daytype' }, 'Gear'), h('p', { class: 'date' }, 'What you train with'))),
+    h('header', { class: 'top' }, h('p', { class: 'date' }, 'What you train with'), h('h1', { class: 'daytype' }, 'Gear')),
     h('section', { class: 'gear' }, GEAR.map(g => h('article', { class: 'gear-card' },
       h('div', { class: 'gear-head' }, h('span', { class: 'gear-name' }, g.name), h('span', { class: 'gear-kind' }, g.kind)),
       h('div', { class: 'ladder' }, g.ladder.map(x => h('span', { class: x === g.current ? 'on' : '' }, x))),

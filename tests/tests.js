@@ -226,6 +226,19 @@ test('weights print and read back, one number or set by set', () => {
   eq(back.filter(x => x.exercise === 'sl_rdl').map(x => x.lb), [20, 20]);
   eq(back.filter(x => x.exercise === 'goblet').map(x => `${x.reps}@${x.lb}`), ['10@25', '10@25', '10@25']);
 });
+test('a logged food shows once in EATING, whether or not old notes already hold its line', () => {
+  const line = '08:50: Huel Black Edition, 1 serving (40 g protein, 400 kcal per label), 500 ml water.';
+  const ev = [{ type: 'food', food: 'huel', protein_g: 40, line }];
+  const once = (notes) => buildHandoff({ day: { ...blankDay('2026-10-30'), eating_notes: notes }, sets: [], events: ev, fluids: [] }).split('\n').find(l => l.startsWith('EATING:'));
+  eq(once(null), `EATING: ${line}`);
+  eq(once(line), `EATING: ${line}`);
+  eq(once('Eggs and rice.'), `EATING: Eggs and rice. ${line}`);
+});
+test('quick amounts are the last 4 different ones, topped up from the starting set', async () => {
+  const { lastFour } = await import('../js/ui/forms.js');
+  eq(lastFour([12, 12, 20, 8, 30, 40], [8, 16.9, 24, 25]), [12, 20, 8, 30]);
+  eq(lastFour([12], [8, 16.9, 24, 25]), [12, 8, 16.9, 24]);
+});
 group('Program');
 test('push tips follow the progression rules and your last session', async () => {
   const { pushTip } = await import('../js/ui/detail.js');

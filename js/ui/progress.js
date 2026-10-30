@@ -70,7 +70,7 @@ export async function renderProgress(root) {
   const nOf = v => v.filter(x => x !== null && x !== undefined).length;
 
   fill(root,
-    h('header', { class: 'top' }, h('div', { class: 'top-text' }, h('h1', { class: 'daytype' }, 'This week'), h('p', { class: 'date' }, `Week of ${monday}`))),
+    h('header', { class: 'top' }, h('p', { class: 'date' }, `Week of ${monday}`), h('h1', { class: 'daytype' }, 'This Week')),
     strip,
     h('section', { class: 'stats' },
       bar('Strength', strengthDone, strengthPlanned || null, `${strengthDone}/${strengthPlanned} sessions${pulls.length ? `, best pull set ${Math.max(...pulls)}` : ''}`, week('strength')),

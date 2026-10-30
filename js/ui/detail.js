@@ -22,12 +22,23 @@ const dayName = iso => { const [y, m, d] = iso.split('-').map(Number); return ne
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const round = n => Math.round(n * 10) / 10;
 
-// One expandable row: the summary always shows; the detail lines only when opened.
-function row(summary, lines, extra = null) {
+// One expandable row, the same everywhere. The summary says what was done; a green check marks a target met or a
+// block done, a thin meter shows progress toward a target, and a green "up" tag marks a session that beat the last.
+// Opened, it lists the entries as time, what, amount (the Fluids and Protein list rows), then plain lines, and any
+// notes behind their own "Notes" line.
+const isEnt = x => x && typeof x === 'object' && 'what' in x;
+const entRow = x => h('div', { class: 'ent' }, h('span', { class: 'ent-at' }, x.at ? t(x.at) : ''), h('span', { class: 'ent-what' }, x.what), h('span', { class: 'ent-amt' }, x.amt || ''), h('span'));
+function row(summary, lines, { ok = false, meter = null, tag = null, notes = null } = {}) {
   const more = (lines || []).filter(Boolean);
-  if (!more.length && !extra) return h('div', { class: 'dl-row' }, h('span', { class: 'dl-sum' }, summary));
-  return h('details', { class: 'dl-row' }, h('summary', { class: 'dl-sum' }, summary),
-    h('div', { class: 'dl-more' }, more.map(l => h('p', {}, l)), extra));
+  const head = [h('span', { class: 'dl-text' }, ok ? h('span', { class: 'dl-ok', 'aria-label': 'done' }, '✓') : null, summary),
+    tag ? h('span', { class: 'dl-tag' }, tag) : null];
+  const bar = meter ? h('div', { class: `stat-bar${meter[0] >= meter[1] ? ' met' : ''}` }, h('span', { style: `--p:${Math.min(1, meter[0] / meter[1])}` })) : null;
+  if (!more.length && !notes) return h('div', { class: 'dl-row' }, h('div', { class: 'dl-sum' }, ...head), bar);
+  return h('details', { class: 'dl-row' }, h('summary', { class: 'dl-sum' }, ...head), bar,
+    h('div', { class: 'dl-more' },
+      more.some(isEnt) ? h('div', { class: 'entries dl-ents' }, more.filter(isEnt).map(entRow)) : null,
+      more.filter(x => !isEnt(x)).map(l => h('p', {}, l)),
+      notes ? h('details', { class: 'dl-notes' }, h('summary', {}, 'Notes'), h('p', {}, notes)) : null));
 }
 
 async function load(from, to) {
@@ -97,7 +108,7 @@ function dayArea(area, date, data, tips) {
     const st2 = status(id);
     if (!st2) return null;
     const e = doneEv(id);
-    return row(`${label} ${st2 === 'done' ? 'done' : st2 === 'skip' ? 'skipped' : st2}`, [e ? span(e.started_at, e.done_at || e.at) : null]);
+    return row(`${label}${st2 === 'done' ? '' : st2 === 'skip' ? ' skipped' : ` ${st2}`}`, [e ? span(e.started_at, e.done_at || e.at) : null], { ok: st2 === 'done' });
   };
   // Every logged exercise in a block, in program order, each with its sets behind a tap.
   const exerciseRows = (blockId, filter = () => true) => {
@@ -112,7 +123,13 @@ function dayArea(area, date, data, tips) {
       const times = rows.map(r => r.at).filter(Boolean).sort();
       if (ex !== 'scap_pullup' && !(ex === 'dead_hang' && blockId !== 'hangs')) tips.push({ ex, ...pushTip(ex, rows, lastSession(data.allSets, ex, date), EX) });
       const lbs = [...new Set(rows.filter(r => r.lb != null).map(r => r.lb))];
-      return row(`${EX[ex]?.name || ex}, ${plural(sets, 'set')}`, [`${setLine(rows, field)} ${UNIT[field]}${lbs.length ? ` at ${lbs.join(' / ')} lb` : ''}`, times.length ? (times.length > 1 ? `${t(times[0])} to ${t(times[times.length - 1])}` : t(times[0])) : null]);
+      // Beat last time? Same count as the next-time step uses (one side for per-side work).
+      const last = lastSession(data.allSets, ex, date);
+      const one = list => (list.some(r => r.side === 'L') ? list.filter(r => r.side === 'L') : list);
+      const amount = list => one(list).reduce((a, r) => a + (r[field] || 0), 0);
+      const gain = last ? amount(rows) - amount(last.rows) : 0;
+      return row(`${EX[ex]?.name || ex}, ${plural(sets, 'set')}`, [`${setLine(rows, field)} ${UNIT[field]}${lbs.length ? ` at ${lbs.join(' / ')} lb` : ''}`, times.length ? (times.length > 1 ? `${t(times[0])} to ${t(times[times.length - 1])}` : t(times[0])) : null],
+        { tag: gain > 0 ? `up ${gain}` : null });
     });
   };
   const routine = plan.program.data.DAY_TYPES[plan.typeKey]?.routine;
@@ -126,23 +143,29 @@ function dayArea(area, date, data, tips) {
   } else if (area === 'grip') {
     const breaks = ev.filter(e => e.type === 'block_done' && e.block === 'hourly');
     const n = breaks.length + (rec.hourly_blocks_count || 0);
-    if (n) out.push(row(plural(n, 'grip break'), [...breaks.map(e => `${t(e.done_at || e.at)}, palms ${e.palms || 'not noted'}`), rec.hourly_palm_notes ? `Earlier: ${rec.hourly_palm_notes}` : null]));
+    if (n) out.push(row(plural(n, 'grip break'), breaks.map(e => ({ at: e.done_at || e.at, what: 'Grip break', amt: `palms ${e.palms || '?'}` })), { notes: rec.hourly_palm_notes }));
     out.push(blockRow('hangs', 'Dead hangs'));
     out.push(...exerciseRows('hangs'));
   } else if (area === 'mobility') {
-    out.push(row(`Morning stretch ${status('stretch') === 'done' ? 'done' : status('stretch') || 'not done'}`, [doneEv('stretch') ? span(doneEv('stretch').started_at, doneEv('stretch').done_at) : null, rec.toe_touch_notes ? `Toe touch: ${rec.toe_touch_notes}` : null]));
+    out.push(row(`Morning stretch${status('stretch') === 'done' ? '' : ` ${status('stretch') || 'not done'}`}`, [doneEv('stretch') ? span(doneEv('stretch').started_at, doneEv('stretch').done_at) : null, rec.toe_touch_notes ? `Toe touch: ${rec.toe_touch_notes}` : null], { ok: status('stretch') === 'done' }));
   } else if (area === 'fuel') {
     const target = plan.program.data.TARGETS.protein_g[0], g = rec.protein_g || 0;
     const timed = ev.filter(e => (e.type === 'protein' || e.type === 'food') && e.protein_g);
-    out.push(row(g >= target ? `Protein met, ${round(g)} g` : `Protein ${round(g)} of ${target} g`, [...timed.map(e => `${t(e.at)}, ${e.type === 'food' ? (foodByKey(e.food)?.label || 'Food') : 'Added'} ${e.protein_g} g`), rec.eating_notes]));
+    // Notes without the food lines older versions copied into them (the food entries already show those).
+    let notes = rec.eating_notes || '';
+    for (const e of timed) if (e.line) notes = notes.replace(e.line, '');
+    notes = notes.replace(/\s{2,}/g, ' ').trim();
+    out.push(row(`Protein ${Math.round(g)} of ${target} g`, timed.map(e => ({ at: e.at, what: e.type === 'food' ? (foodByKey(e.food)?.label || 'Food') : 'Added', amt: `${Math.round(e.protein_g)} g` })),
+      { ok: g >= target, meter: [g, target], notes: notes || null }));
   } else if (area === 'hydration') {
     const target = plan.program.data.TARGETS.fluids_oz[0], ft = fluidTotals(rec, fl);
     const oz = round((ft.water_oz || 0) + (ft.other_drinks_oz || 0));
-    out.push(row(oz >= target ? `Fluids met, ${oz} oz` : `Fluids ${oz} of ${target} oz`, [...[...fl].sort((a, b) => (a.at || '').localeCompare(b.at || '')).map(f => `${t(f.at)}, ${FLUID_KINDS.find(k => k.key === f.kind)?.label || f.kind} ${f.oz} oz`), rec.drinks_notes]));
+    out.push(row(`Fluids ${oz} of ${target} oz`, [...fl].sort((a, b) => (a.at || '').localeCompare(b.at || '')).map(f => ({ at: f.at, what: FLUID_KINDS.find(k => k.key === f.kind)?.label || f.kind, amt: `${f.oz} oz` })),
+      { ok: oz >= target, meter: [oz, target], notes: rec.drinks_notes }));
   } else if (area === 'recovery') {
     out.push(blockRow('evening_legs', 'Legs up'));
     const pumps = ev.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps');
-    if (pumps.length) out.push(row(`Ankle pumps ${plural(pumps.length, 'time')}`, [pumps.map(e => t(e.at)).join(', ')]));
+    if (pumps.length) out.push(row(`Ankle pumps, ${plural(pumps.length, 'set')}`, pumps.map(e => ({ at: e.at, what: 'Ankle pumps', amt: '20 a foot' }))));
     if (rec.bed_time || rec.wake_time) out.push(row(`Sleep ${rec.bed_time || '?'} to ${rec.wake_time || '?'}`, []));
   }
   return out.filter(Boolean);

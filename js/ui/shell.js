@@ -1,7 +1,7 @@
 // App frame: status pills on top (every tab), the current tab, and the tab bar at the bottom.
-import { h, fill, toast, holdable } from './dom.js';
-import { gripList } from './history.js';
-import { state, logGripBreak, removeEvent } from '../state.js';
+import { h, fill, toast, holdable, TABS as TAB_LIST, tabBar } from './dom.js';
+import { gripList, pumpsList } from './history.js';
+import { state, logGripBreak, removeEvent, addEvent } from '../state.js';
 import { fluidTotals } from '../schema.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
 import { overdueLevel } from '../status.js';
@@ -13,12 +13,8 @@ import { renderGear } from './gear.js';
 import { renderMe } from './me.js';
 import { testSheet } from './data.js';
 
-const TABS = [
-  { id: 'today', label: 'Today', icon: '◉', render: renderToday },
-  { id: 'progress', label: 'Progress', icon: '▤', render: renderProgress },
-  { id: 'gear', label: 'Gear', icon: '◆', render: renderGear },
-  { id: 'me', label: 'Me', icon: '☰', render: renderMe },
-];
+const RENDER = { today: renderToday, progress: renderProgress, gear: renderGear, me: renderMe };
+const TABS = TAB_LIST.map(t => ({ ...t, render: RENDER[t.id] }));
 const current = () => TABS.find(t => `#${t.id}` === location.hash) || TABS[0];
 
 // Grip break lives in the top strip: tap logs one with the next palms; the arrow says which. Undo on the message.
@@ -34,6 +30,19 @@ function gripPill(day, rerender) {
   } },
     h('span', { class: 'pill-l' }, `Grip ${arrow}`),
     h('span', { class: 'pill-v' }, String(hist.length), h('small', {}, ' today'))), gripList);
+}
+
+// Ankle pumps live in the top strip too: tap logs a set (20 per foot), hold for today's list. Pulses when due.
+function pumpsPill(rerender) {
+  const list = state.events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps');
+  const lvl = overdueLevel(list[list.length - 1]?.at, 30);
+  return holdable(h('button', { class: `pill grip${lvl ? ' behind due' : ''}`, 'data-due': lvl || null, 'aria-label': `Ankle pumps, ${list.length} today. Tap to log a set.`, onclick: async () => {
+    const e = await addEvent('habit', { habit: 'ankle_pumps' });
+    rerender();
+    toast('Ankle pumps logged', { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); toast('Ankle pumps removed'); } }, `${list.length + 1} today, 20 per foot`);
+  } },
+    h('span', { class: 'pill-l' }, 'Pumps'),
+    h('span', { class: 'pill-v' }, String(list.length), h('small', {}, ' today'))), pumpsList);
 }
 
 // Labeled fill bar: the numbers sit inside the bar.
@@ -64,11 +73,10 @@ export async function renderShell(root) {
     h('nav', { class: 'status', 'aria-label': 'Today at a glance' },
       pill('Fluids', fluids, TARGETS.fluids_oz[0], 'oz', fluidSheet),
       pill('Protein', day.protein_g, TARGETS.protein_g[0], 'g', proteinSheet),
-      plan.hourly ? gripPill(day, rerender) : null),
+      plan.hourly ? gripPill(day, rerender) : null,
+      pumpsPill(rerender)),
     view,
-    h('nav', { class: 'tabs-bar', 'aria-label': 'Sections' }, TABS.map(x =>
-      h('button', { class: x === tab ? 'on' : '', 'aria-current': x === tab ? 'page' : null, onclick: () => { location.hash = `#${x.id}`; } },
-        h('span', { class: 'tab-i', 'aria-hidden': 'true' }, x.icon), h('span', {}, x.label)))));
+    tabBar(tab.id));
 }
 
 export const startShell = root => addEventListener('hashchange', () => renderShell(root));

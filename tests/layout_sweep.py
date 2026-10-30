@@ -34,8 +34,9 @@ async def main():
             await pg.evaluate("location.hash='#today'"); await pg.wait_for_timeout(400)
             await pg.click('.verse-card'); await pg.wait_for_timeout(1200); res['verse']=await pg.evaluate(CHECK)
             await pg.click('.layer-head [aria-label=Close]'); await pg.wait_for_timeout(300)
-            await pg.click('.quick .chip:has-text("Fluid")'); await pg.wait_for_timeout(400); res['fluid']=await pg.evaluate(CHECK)
-            await pg.click('.layer-head [aria-label=Close]'); await pg.wait_for_timeout(300)
+            for name in ('Fluids', 'Protein'):
+                await pg.click(f'.status .pill:has-text("{name}")'); await pg.wait_for_timeout(500); res[name]=await pg.evaluate(CHECK)
+                await pg.click('.layer-head [aria-label=Close]'); await pg.wait_for_timeout(300)
             await pg.click('.next .btn.go'); await pg.wait_for_timeout(500); res['runner']=await pg.evaluate("(()=>{const m=document.querySelector('.runner');return m&&m.scrollHeight>m.clientHeight+1?['runner overflows']:[]})()")
             bad={k:v for k,v in res.items() if v}
             print(hh, 'OK' if not bad else bad)

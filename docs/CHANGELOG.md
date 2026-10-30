@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.21.0 (2026-10-30)
+One look, every screen. The tab bar is on every full screen (compact on layers), replacing the Home button; blocks
+keep ✕ and Home at the top, and video keeps only ✕. The top strip holds Fluids, Protein, Grip and Pumps; the bottom
+chips are retired and Weight is a slim card on Today until logged, then a small tile with a green check. Huel lives
+in Protein (it still adds its water) and is no longer a drink to pick. Quick amounts are your last 4 different
+amounts, per drink for Fluids and in grams for Protein; grams show whole. A logged food no longer copies itself into
+the eating notes, so it shows once; the handoff builds EATING from the entries. Breakdowns use the Fluids and Protein
+row (time, what, amount), a green check when a target is met or a block is done, a meter toward each target, a
+green "up" tag when a session beats the last one, and notes behind their own line. Today's date sits above a
+centered day title ("Row Day"); every tab's header has the same form. In landscape video the timer sits centered
+and large between the title and the step.
+
 ## 0.20.1 (2026-10-30)
 No more jumping text. Today's verse was measured while its card could squeeze it, so its size flipped between visits
 (30 px one time, 21 the next); it is now measured whole, fitted before it shows, and fades in at its final size.

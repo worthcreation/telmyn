@@ -29,13 +29,27 @@ if (typeof addEventListener === 'function') addEventListener('popstate', e => {
 });
 export const layerDepth = () => layers.length;
 
-// Home, one tap from anywhere: closes every open layer and goes to Today.
-export function goHome() {
+// The four sections. The one tab bar is drawn by tabBar(): at the bottom of the app and, compact, at the bottom of
+// every full layer, so any section is one tap from anywhere.
+export const TABS = [
+  { id: 'today', label: 'Today', icon: '◉' },
+  { id: 'progress', label: 'Progress', icon: '▤' },
+  { id: 'gear', label: 'Gear', icon: '◆' },
+  { id: 'me', label: 'Me', icon: '☰' },
+];
+// Close every open layer and go to a section (Today by default).
+export function goTo(id = 'today') {
   const n = layers.length;
   while (layers.length) layers[layers.length - 1].dismiss();
-  const toToday = () => { if (location.hash !== '#today') location.hash = '#today'; };
-  if (n && history.state?.telmynLayer) { skipPops++; addEventListener('popstate', toToday, { once: true }); history.go(-n); }
-  else toToday();
+  const go = () => { if (location.hash !== `#${id}`) location.hash = `#${id}`; };
+  if (n && history.state?.telmynLayer) { skipPops++; addEventListener('popstate', go, { once: true }); history.go(-n); }
+  else go();
+}
+export const goHome = () => goTo('today');
+export function tabBar(current, compact = false) {
+  return h('nav', { class: `tabs-bar${compact ? ' compact' : ''}`, 'aria-label': 'Sections' }, TABS.map(x =>
+    h('button', { class: x.id === current ? 'on' : '', 'aria-current': x.id === current ? 'page' : null, onclick: () => goTo(x.id) },
+      h('span', { class: 'tab-i', 'aria-hidden': 'true' }, x.icon), h('span', {}, x.label))));
 }
 const HOUSE = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5.5 9.5V20h13V9.5"/></svg>';
 export function homeButton(extra, cls = 'icon-btn home-btn') {
@@ -46,8 +60,9 @@ export function homeButton(extra, cls = 'icon-btn home-btn') {
 
 export function layer(title, body, { onClose, full = true, cls = '' } = {}) {
   const panel = h('section', { class: 'layer-panel', role: 'dialog', 'aria-label': title },
-    h('header', { class: 'layer-head' }, h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: () => close() }, '✕'), h('h2', {}, title), homeButton()),
-    h('div', { class: 'layer-body' }, body));
+    h('header', { class: 'layer-head' }, h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: () => close() }, '✕'), h('h2', {}, title), h('span', { 'aria-hidden': 'true' })),
+    h('div', { class: 'layer-body' }, body),
+    full ? tabBar((location.hash || '#today').slice(1), true) : null);
   const wrap = h('div', { class: `layer ${full ? 'full' : 'half'} ${cls}` }, full ? null : h('div', { class: 'layer-scrim', onclick: () => close() }), panel);
   const entry = { dismiss };
   function dismiss() {

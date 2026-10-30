@@ -29,8 +29,8 @@ async def main():
             await pg.evaluate("location.hash='#today'"); await pg.wait_for_timeout(300)
             await pg.click('.verse-card'); await pg.wait_for_timeout(1000); res['verse']=await pg.evaluate(MEASURE)
             await pg.click('.layer-head [aria-label=Close]'); await pg.wait_for_timeout(300)
-            for chip in ('Fluid','Weight'):
-                await pg.click(f'.quick .chip:has-text("{chip}")'); await pg.wait_for_timeout(400); res[chip]=await pg.evaluate(MEASURE); await pg.click('.layer-head [aria-label=Close]'); await pg.wait_for_timeout(300)
+            for name, sel in (('Fluids', '.status .pill:has-text("Fluids")'), ('Protein', '.status .pill:has-text("Protein")'), ('Weight', '.weight-card')):
+                await pg.click(sel); await pg.wait_for_timeout(400); res[name]=await pg.evaluate(MEASURE); await pg.click('.layer-head [aria-label=Close]'); await pg.wait_for_timeout(300)
             await pg.click('.next .btn.go'); await pg.wait_for_timeout(500); res['runner']=await pg.evaluate(MEASURE)
             print(w,hh,{k:v for k,v in res.items() if v})
             await pg.close()

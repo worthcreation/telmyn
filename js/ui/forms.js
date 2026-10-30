@@ -1,24 +1,37 @@
 import { h, sheet, toast, fill, noteField } from './dom.js';
-import { state, setField, addFluid, removeFluid, restoreFluid, addProtein, removeProtein, undoFood, addEvent, load } from '../state.js';
-import { foodByKey } from '../foods.js';
+import { state, setField, addFluid, removeFluid, restoreFluid, addProtein, removeProtein, addFood, undoFood, addEvent, load } from '../state.js';
+import { FOODS, foodByKey } from '../foods.js';
 import * as db from '../db.js';
 import { planFor, blockStatus } from '../program/index.js';
 import { hourlyHistory } from '../hourly.js';
 import { now, hhmm, addDays, daysBetween } from '../clock.js';
 import { DAY_FIELDS, FLUID_KINDS, ozFromMl, cleanNumber, fluidTotals, blankDay } from '../schema.js';
 
-// Fluids: full screen. Total against the target, quick adds, and today's drinks with their times (newest first).
-// Adding keeps the screen open so the list shows it; any entry can be removed, with Undo.
+// Quick amounts learn from you: the last 4 different amounts you logged (newest first), topped up from a starting
+// set until you have 4 of your own.
+export function lastFour(values, start) {
+  const out = [];
+  for (const v of values) if (v != null && !out.includes(v)) { out.push(v); if (out.length === 4) return out; }
+  for (const v of start) if (!out.includes(v)) { out.push(v); if (out.length === 4) break; }
+  return out;
+}
+const g0 = n => Math.round(n);   // grams show whole; the exact number is kept
+
+// Fluids: full screen. Total against the target, the drink, its last 4 amounts, and today's drinks with their times.
+// Adding keeps the screen open so the list shows it; any entry can be removed, with Undo. Huel's water is added by
+// Huel itself (in Protein), so it is not a drink to pick here.
 export function fluidSheet() {
-  let kind = 'water';
+  let kind = 'water', history = [];
+  const kinds = FLUID_KINDS.filter(k => !k.viaFood);
   const body = h('div', { class: 'entries-wrap' });
   const draw = () => {
     const total = Math.round(state.fluids.reduce((t, f) => t + (f.oz || 0), 0) * 10) / 10;
     const target = state.plan.program.data.TARGETS.fluids_oz[0];
+    const quick = lastFour([...state.fluids, ...history].filter(f => f.kind === kind).sort((a, b) => (b.at || '').localeCompare(a.at || '')).map(f => f.oz), [8, 16.9, 24, 25]);
     fill(body,
-      h('p', { class: 'ent-total' }, h('b', {}, `${total}`), ` / ${target} oz`),
-      h('div', { class: 'seg wrap' }, FLUID_KINDS.map(k => h('button', { class: kind === k.key ? 'on' : '', onclick: () => { kind = k.key; draw(); } }, k.label))),
-      h('div', { class: 'grid4' }, [8, 16.9, 24, 25].map(oz => h('button', { class: 'chip', onclick: () => add(oz) }, `${oz} oz`))),
+      h('p', { class: `ent-total${total >= target ? ' met' : ''}` }, h('b', {}, `${total}`), ` / ${target} oz`),
+      h('div', { class: 'seg wrap' }, kinds.map(k => h('button', { class: kind === k.key ? 'on' : '', onclick: () => { kind = k.key; draw(); } }, k.label))),
+      h('div', { class: 'grid4' }, quick.map(oz => h('button', { class: 'chip', onclick: () => add(oz) }, `${oz} oz`))),
       h('div', { class: 'row' },
         h('input', { id: 'f-amt', type: 'number', inputmode: 'decimal', placeholder: 'Amount', 'aria-label': 'Amount' }),
         h('button', { class: 'chip', onclick: () => custom('oz') }, 'oz'),
@@ -29,12 +42,13 @@ export function fluidSheet() {
         remove: async () => { const gone = await removeFluid(f); draw(); toast(`Removed ${gone.oz} oz`, { label: 'Undo', fn: async () => { await restoreFluid(gone); draw(); } }); },
       })), 'No drinks logged today.'));
   };
-  const add = async (oz, ml = null) => { await addFluid(kind, oz, ml); toast(`Logged ${oz} oz ${FLUID_KINDS.find(k => k.key === kind).label.toLowerCase()}`); draw(); };
+  const add = async (oz, ml = null) => { await addFluid(kind, oz, ml); toast(`${FLUID_KINDS.find(k => k.key === kind).label} logged`, null, `${oz} oz`); draw(); };
   const custom = unit => {
     const n = cleanNumber(document.getElementById('f-amt').value);
     if (n === null) return toast('Enter an amount first');
     unit === 'ml' ? add(ozFromMl(n), n) : add(n);
   };
+  db.all('fluids').then(all => { history = all.filter(f => f.date < state.date); draw(); });
   draw();
   sheet('Fluids', body, { full: true });
 }
@@ -75,32 +89,44 @@ export function weightSheet(onSave) {
   });
 }
 
-// Protein: full screen, same shape as Fluids. Entries are hand adds and foods (Huel), with their times.
+// Protein: full screen, same shape as Fluids. Foods first (Huel adds its protein and its water in one tap), then
+// your last 4 gram amounts, then today's entries with their times.
 export function proteinSheet() {
+  let history = [];
   const body = h('div', { class: 'entries-wrap' });
   const draw = () => {
     const total = state.day.protein_g || 0;
     const target = state.plan.program.data.TARGETS.protein_g[0];
     const timed = state.events.filter(e => (e.type === 'protein' || e.type === 'food') && e.protein_g).reverse();
     const diff = Math.round((total - timed.reduce((t, e) => t + e.protein_g, 0)) * 10) / 10;
+    const quick = lastFour([...state.events, ...history].filter(e => e.type === 'protein' && e.protein_g).sort((a, b) => (b.at || '').localeCompare(a.at || '')).map(e => Math.round(e.protein_g)), [20, 30, 40, 50]);
     const rows = timed.map(e => ({
-      at: e.at, what: e.type === 'food' ? (foodByKey(e.food)?.label || 'Food') : 'Added', amt: `${e.protein_g} g`,
+      at: e.at, what: e.type === 'food' ? (foodByKey(e.food)?.label || 'Food') : 'Added', amt: `${g0(e.protein_g)} g`,
       remove: async () => {
-        if (e.type === 'food') { await undoFood(e); toast(`Removed ${foodByKey(e.food)?.label || 'food'} (protein, its water and note)`); }
-        else { await removeProtein(e); toast(`Removed ${e.protein_g} g`, { label: 'Undo', fn: async () => { await addProtein(e.protein_g); draw(); } }); }
+        if (e.type === 'food') { await undoFood(e); toast(`${foodByKey(e.food)?.label || 'Food'} removed`, null, 'Its protein and water too'); }
+        else { await removeProtein(e); toast(`Removed ${g0(e.protein_g)} g`, { label: 'Undo', fn: async () => { await addProtein(e.protein_g); draw(); } }); }
         draw();
       },
     }));
-    if (diff) rows.push({ at: null, what: diff > 0 ? 'Set in Day log or earlier' : 'Lowered in Day log', amt: `${diff > 0 ? '' : '−'}${Math.abs(diff)} g` });
+    if (diff) rows.push({ at: null, what: diff > 0 ? 'Set in Day log or earlier' : 'Lowered in Day log', amt: `${diff > 0 ? '' : '−'}${g0(Math.abs(diff))} g` });
     fill(body,
-      h('p', { class: 'ent-total' }, h('b', {}, `${total}`), ` / ${target} g`),
-      h('div', { class: 'grid4' }, [20, 30, 40, 50].map(g => h('button', { class: 'chip', onclick: () => add(g) }, `${g} g`))),
+      h('p', { class: `ent-total${total >= target ? ' met' : ''}` }, h('b', {}, `${g0(total)}`), ` / ${target} g`),
+      h('div', { class: 'foods' }, FOODS.map(f => h('button', { class: 'chip food', onclick: () => food(f) },
+        h('b', {}, f.label), h('small', {}, [f.protein_g ? `${f.protein_g} g` : '', f.fluid ? `${f.fluid.oz} oz water` : ''].filter(Boolean).join(' + '))))),
+      h('div', { class: 'grid4' }, quick.map(g => h('button', { class: 'chip', onclick: () => add(g) }, `${g0(g)} g`))),
       h('div', { class: 'row' },
         h('input', { id: 'p-amt', type: 'number', inputmode: 'numeric', placeholder: 'Grams', 'aria-label': 'Grams' }),
         h('button', { class: 'chip', onclick: () => { const n = cleanNumber(document.getElementById('p-amt').value); n === null ? toast('Enter grams first') : add(n); } }, 'Add')),
       entryList(rows, 'No protein logged today.'));
   };
-  const add = async g => { await addProtein(g); toast(`Added ${g} g`); draw(); };
+  const add = async g => { await addProtein(g); toast('Protein logged', null, `${g0(g)} g`); draw(); };
+  const food = async f => {
+    const e = await addFood(f);
+    draw();
+    toast(`${f.label} logged`, { label: 'Undo', fn: async () => { await undoFood(e); draw(); toast(`${f.label} removed`); } },
+      [f.protein_g ? `${f.protein_g} g protein` : '', f.fluid ? `${f.fluid.oz} oz water` : ''].filter(Boolean).join(', '));
+  };
+  db.all('events').then(all => { history = all.filter(e => e.date < state.date); draw(); });
   draw();
   sheet('Protein', body, { full: true });
 }

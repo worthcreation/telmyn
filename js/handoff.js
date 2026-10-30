@@ -176,6 +176,8 @@ export function buildHandoff({ day, sets, events, fluids }) {
     return `  ${x.key}: ${x.sides ? `${perLeg(rows, x.field || 'reps')} (${x.unit})` : joinSets(rows, x.field || 'reps')}${lbText(rows)}`;
   };
   const pumps = events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps').length;
+  // What was eaten: your own notes, then each logged food's line (skipping any already in the notes from before).
+  const eating = [day.eating_notes, ...events.filter(e => e.type === 'food' && e.line && !(day.eating_notes || '').includes(e.line)).map(e => e.line)].filter(Boolean).join(' ');
   // When each block finished, in the phone's local time, in program order (last finish if done more than once).
   const hhmm = iso => { const d = new Date(iso); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
   const doneAt = id => [...events].reverse().find(e => e.block === id && e.type === 'block_done')?.done_at;
@@ -200,7 +202,7 @@ export function buildHandoff({ day, sets, events, fluids }) {
     `PUMPS: ${pumps || ''}`,
     `BLOCK_TIMES: ${blockTimes}`,
     `PROTEIN_G: ${v(day.protein_g)}`,
-    `EATING: ${v(day.eating_notes)}`,
+    `EATING: ${eating}`,
     `WATER_OZ: ${v(totals.water_oz)}`,
     `OTHER_DRINKS_OZ: ${v(totals.other_drinks_oz)}`,
     `DRINKS_NOTES: ${v(day.drinks_notes)}`,

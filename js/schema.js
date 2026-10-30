@@ -27,7 +27,7 @@ export const IMPORT_ONLY = ['stretch_status', 'fab_five_status', 'routine_status
 
 export const FLUID_KINDS = [
   { key: 'water', label: 'Water', bucket: 'water_oz' },
-  { key: 'huel_water', label: 'Huel water', bucket: 'water_oz' },
+  { key: 'huel_water', label: 'Huel water', bucket: 'water_oz', viaFood: true },   // added by Huel, not picked
   { key: 'yerba_mate', label: 'Yerba mate', bucket: 'other_drinks_oz' },
   { key: 'coffee', label: 'Coffee', bucket: 'other_drinks_oz' },
   { key: 'other', label: 'Other', bucket: 'other_drinks_oz' },

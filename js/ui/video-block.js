@@ -1,7 +1,7 @@
 // Video blocks: the day's follow-along video IS the block (Fab Five with Gator).
 // The video fills the screen with only two small controls on top. When the video ends, the block is done.
 // If the video can't load (offline, no upload), the regular step-by-step block runs instead.
-import { h, toast, homeButton } from './dom.js';
+import { h, toast } from './dom.js';
 import { burst } from './fx.js';
 import { state, addEvent } from '../state.js';
 import { now } from '../clock.js';
@@ -20,7 +20,6 @@ export async function runVideoBlock(block, source, { onExit, fallback, cooldown 
   const root = h('div', { class: 'vblock', role: 'dialog', 'aria-label': block.name },
     slot,
     h('button', { class: 'vb-btn vb-x', 'aria-label': 'Leave', onclick: () => finish(false, null) }, '✕'),
-    homeButton(() => finish(false, null), 'vb-btn vb-home'),
     h('button', { class: 'vb-btn vb-done', onclick: () => finish(true) }, '✓ Done'));
   document.body.append(root);
   try { await navigator.wakeLock?.request('screen'); } catch { /* optional */ }

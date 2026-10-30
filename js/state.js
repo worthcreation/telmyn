@@ -114,7 +114,8 @@ export async function addFood(food) {
     state.fluids.push(f);
   }
   if (food.protein_g) state.day.protein_g = (state.day.protein_g || 0) + food.protein_g;
-  state.day.eating_notes = addLine(state.day.eating_notes, line);
+  // The food's line lives on its timed entry only (the handoff's EATING line is built from the entries), so it is
+  // never shown twice. Eating notes are for what you write yourself.
   await db.put('days', state.day);
   return addEvent('food', { food: food.key, protein_g: food.protein_g || 0, fluid_id: fluidId, line });
 }

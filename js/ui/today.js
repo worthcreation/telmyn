@@ -1,16 +1,14 @@
 // Today tab: date and verse, the next block with the day ring, the rest of the day, verse text in spare space,
-// hourly palms, and quick adds. Status pills and tabs live in the shell.
-import { h, toast, fill, fitText, holdable } from './dom.js';
-import { pumpsList, weightList } from './history.js';
-import { state, addEvent, addFood, undoFood, removeEvent } from '../state.js';
+// and the weight card. Status pills (Fluids, Protein, Grip, Pumps) and tabs live in the shell.
+import { h, fill, fitText, holdable } from './dom.js';
+import { weightList } from './history.js';
+import { state, addEvent } from '../state.js';
 import * as db from '../db.js';
-import { FOODS } from '../foods.js';
-import { fluidTotals } from '../schema.js';
-import { paceStatus, overdueStatus, overdueLevel, staleStatus, weightLevel } from '../status.js';
+import { weightLevel } from '../status.js';
 import { nextBlock, blockStatus } from '../program/index.js';
 import { hhmm, daysBetween } from '../clock.js';
 import { runBlock } from './runner.js';
-import { fluidSheet, proteinSheet, weightSheet, lastWeight } from './forms.js';
+import { weightSheet, lastWeight } from './forms.js';
 import { verseSheet } from './verse.js';
 import { getVersion, fetchVerse } from '../scripture.js';
 
@@ -34,19 +32,6 @@ export function renderToday(root, rerender) {
   const status = b => blockStatus(b.id, events, day, plan);
   const closed = plan.blocks.filter(status);
   const open = plan.blocks.filter(b => !status(b));
-  const pumps = events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps').length;
-  // Every quick chip carries its own state: red when behind or overdue, green when met, plain when on track.
-  const { TARGETS } = plan.program.data;
-  const totals = fluidTotals(day, state.fluids);
-  const lastPumps = events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps').pop()?.at;
-  const pumpsLvl = overdueLevel(lastPumps, 30);
-  const st = {
-    pumps: overdueStatus(lastPumps, 30),
-    fluid: paceStatus('fluids', (totals.water_oz || 0) + (totals.other_drinks_oz || 0), TARGETS.fluids_oz[0]),
-    protein: paceStatus('protein', day.protein_g, TARGETS.protein_g[0]),
-    huel: events.some(e => e.type === 'food' && e.food === 'huel') ? 'met' : null,
-  };
-  const chipClass = s => `chip raised${s ? ` ${s}` : ''}`;
 
   const dayList = h('ol', { class: 'daylist' },
     closed.length ? h('li', { class: 'closed-summary' }, h('span', { class: 'dl-mark' }, '✓'),
@@ -77,13 +62,17 @@ export function renderToday(root, rerender) {
     verseText.classList.remove('loading');
   }).catch(() => { verseText.textContent = 'Tap to read today’s verse.'; verseText.classList.remove('loading'); verseText.classList.add('offline'); });
 
-  // Weight: a chip in the quick row (used once a day). Red when nothing has been logged for a day or more.
-  const weightChip = holdable(h('button', { class: 'chip raised weight-chip', onclick: () => weightSheet(rerender) }, 'Weight'), weightList);
+  // Weight, once a day: a slim card asking for it until it is logged (pulsing as the morning goes on), then a small
+  // tile with today's reading. Tap to log or change it; hold for the last 7 readings and the 7-day average.
+  const weightCard = holdable(h('button', { class: 'weight-card', onclick: () => weightSheet(rerender) }, h('span', { class: 'muted small' }, 'Weight')), weightList);
   lastWeight().then(({ value, date }) => {
     const age = date ? daysBetween(date, state.date) : null;
-    const s2 = staleStatus(age); weightChip.classList.toggle('behind', s2 === 'behind'); weightChip.classList.toggle('met', s2 === 'met');
-    dueMark(weightChip, weightLevel(age));
-    weightChip.title = value === null ? 'Not logged yet' : `${value} lb, ${age === 0 ? 'today' : `${age} day${age === 1 ? '' : 's'} ago`}`;
+    const done = age === 0;
+    weightCard.classList.toggle('logged', done);
+    dueMark(weightCard, weightLevel(age));
+    fill(weightCard, done
+      ? [h('span', { class: 'wc-l' }, 'Weight'), h('b', {}, `${value} lb`), h('span', { class: 'wc-ok', 'aria-hidden': 'true' }, '✓')]
+      : [h('span', { class: 'wc-l' }, 'Log weight'), h('span', { class: 'wc-last' }, value === null ? 'first reading' : `last ${value} lb, ${age === 1 ? 'yesterday' : `${age} days ago`}`)]);
   });
 
   // Two columns, each centered on its own. Left: what's next and what it involves, and the button named for it.
@@ -106,20 +95,10 @@ export function renderToday(root, rerender) {
 
   fill(root,
     h('header', { class: 'top' },
-      h('div', { class: 'top-text' },
-        h('h1', { class: 'daytype' }, `${plan.typeLabel} day`),
-        h('p', { class: 'date' }, prettyDate(plan.date), h('span', { class: 'wkday' }, `Week ${plan.week}, Day ${plan.day}`)))),
+      h('p', { class: 'date' }, prettyDate(plan.date), h('span', { class: 'wkday' }, `Week ${plan.week}, Day ${plan.day}`)),
+      h('h1', { class: 'daytype' }, `${plan.typeLabel} Day`)),
     versePanel,
     nextCard,
     h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList),
-    h('section', { class: 'quick', 'aria-label': 'Quick add' },
-      holdable(h('button', { class: `${chipClass(st.pumps)}${pumpsLvl ? ' due' : ''}`, 'data-due': pumpsLvl || null, 'aria-label': `Ankle pumps, ${pumps} today. Hold for the list.`, onclick: async () => { const e = await addEvent('habit', { habit: 'ankle_pumps' }); rerender(); toast('Ankle pumps logged', { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); toast('Ankle pumps removed'); } }, `${pumps + 1} today, 20 per foot`); } }, `Pumps ${pumps}`), pumpsList),
-      h('button', { class: chipClass(st.fluid), onclick: fluidSheet }, 'Fluid'),
-      h('button', { class: chipClass(st.protein), onclick: proteinSheet }, 'Protein'),
-      FOODS.map(f => h('button', { class: chipClass(f.key === 'huel' ? st.huel : null), onclick: async () => {
-        const e = await addFood(f);
-        const parts = [f.protein_g ? `${f.protein_g} g protein` : '', f.fluid ? `${f.fluid.oz} oz water` : ''].filter(Boolean).join(', ');
-        toast(`${f.label}: ${parts}`, { label: 'Undo', fn: async () => { await undoFood(e); toast(`${f.label} removed`); } });
-      } }, f.label)),
-      weightChip));
+    weightCard);
 }
