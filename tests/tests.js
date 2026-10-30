@@ -239,6 +239,15 @@ test('quick amounts are the last 4 different ones, topped up from the starting s
   eq(lastFour([12, 12, 20, 8, 30, 40], [8, 16.9, 24, 25]), [12, 20, 8, 30]);
   eq(lastFour([12], [8, 16.9, 24, 25]), [12, 8, 16.9, 24]);
 });
+test('grip and pumps fill toward your average, then your best', async () => {
+  const { towardBest } = await import('../js/status.js');
+  const past = [5, 7, 8, 0];                 // a day with none is left out: average 7 (6.7), best 8
+  eq(towardBest(3, []), { p: 0, stage: null, label: ' today' });
+  eq(towardBest(5, past).label, ' / 7 avg'); eq(towardBest(5, past).stage, 'avg');
+  eq(towardBest(7, past), { p: 0, stage: 'best', label: ' / 8 best' });
+  eq(towardBest(8, past), { p: 1, stage: 'top', label: ' best' });
+  eq(towardBest(9, past).label, ' new best');
+});
 group('Program');
 test('push tips follow the progression rules and your last session', async () => {
   const { pushTip } = await import('../js/ui/detail.js');

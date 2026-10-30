@@ -53,6 +53,7 @@ async function restoreText(text) {
   const dates = [];
   for (const part of parts) { const parsed = parseHandoff(part); await importDay(parsed); dates.push(parsed.day.date); }
   syncDates(dates).catch(() => {});
+  (await import('./shell.js')).clearPastCounts();
   toast(dates.length === 1 ? 'Day updated' : `${dates.length} days updated`, null, dates.join(', '));
 }
 function restoreSheet() {

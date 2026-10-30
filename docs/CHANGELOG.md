@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.21.5 (2026-10-30)
+Grip and Pumps measure against your own days. Each pill fills toward your daily average first (plain fill, "5 / 7
+avg"), then, once you pass it, fills green toward your best day ("12 / 15 best"), and reads "best" or "new best"
+when you match or beat it. Days with none (weekends without grip breaks) are left out of the average.
+
 ## 0.21.4 (2026-10-30)
 The video timer belongs to the top bar. In landscape it fills the room between the block's name and the Study button
 and never reaches past either, the same height as the bar, leaving the video clear; in portrait it spans the full

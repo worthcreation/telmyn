@@ -40,3 +40,15 @@ export function weightLevel(ageDays) {
 }
 
 export const staleStatus = (ageDays) => (ageDays === 0 ? 'met' : ageDays === null || ageDays >= 1 ? 'behind' : null);
+
+// Grip and pumps measure against your own days: first toward your daily average, then toward your best day.
+// counts: earlier days' totals (days with none are left out, so weekends without grip breaks do not drag it down).
+// Returns the fill (0 to 1), the stage, and the words after today's number.
+export function towardBest(n, counts) {
+  const days = counts.filter(c => c > 0);
+  if (!days.length) return { p: 0, stage: null, label: ' today' };
+  const avg = Math.round(days.reduce((a, c) => a + c, 0) / days.length), best = Math.max(...days);
+  if (n < avg) return { p: n / avg, stage: 'avg', label: ` / ${avg} avg` };
+  if (n < best) return { p: (n - avg) / (best - avg), stage: 'best', label: ` / ${best} best` };
+  return { p: 1, stage: 'top', label: n > best ? ' new best' : ' best' };
+}
