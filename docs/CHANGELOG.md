@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.10 (2026-10-30)
+Project instructions handling. tools/instructions.ps1 takes the newest telmyn-project-instructions-*.md from
+Downloads, keeps a dated private copy in .cfhome\instructions (never in git: the repo is public), and puts it on the
+clipboard to paste into the Telmyn Project. apply.ps1 runs it after every push; with no new file it says the
+instructions are unchanged. Run it alone any time to copy the latest again.
+
 ## 0.17.9 (2026-10-30)
 Gator's daily video: the newest upload that has not been shown in the last 13 days, so the same video never plays
 two days in a row and none repeats until 13 days have passed since its last day (it can return on day 14). If every
