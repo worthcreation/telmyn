@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.21.4 (2026-10-30)
+The video timer belongs to the top bar. In landscape it fills the room between the block's name and the Study button
+and never reaches past either, the same height as the bar, leaving the video clear; in portrait it spans the full
+width under the title bar, the count with a bar that takes the rest.
+
 ## 0.21.3 (2026-10-30)
 Weight floats. The weight card is gone from the bottom of Today; a small Weight button floats in the header's corner,
 level with the date, pulsing as the morning goes on, and disappears once today's weight is logged. Hold it for the
