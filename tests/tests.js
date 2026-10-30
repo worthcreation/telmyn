@@ -172,6 +172,30 @@ test('hourly: imported 3 plus 1 in app', () => {
   if (!out.includes('HOURLY_BLOCKS: 4 | CoC Trainer | block 1 palm not noted, block 2 palms down, block 3 palms up, block 4 palms down')) throw new Error(out.split('\n').find(l => l.startsWith('HOURLY')));
 });
 
+test('every routine exercise prints, with per-set pull-up modes, per-arm rows, warm-up kept apart', () => {
+  const d = '2026-10-29';
+  const S = (exercise, set_no, n, o = {}) => ({ date: d, exercise, set_no, reps: n, block: 'strength_b', ...o });
+  const sets = [
+    S('scap_pullup', 1, 10), S('dead_hang', 1, null, { sec: 15, reps: undefined }), S('dead_hang', 2, null, { sec: 16, reps: undefined }),
+    S('neutral_pullup', 1, 2, { mode: 'negative' }), S('neutral_pullup', 2, 5, { mode: 'full' }), S('neutral_pullup', 3, 5, { mode: 'full' }),
+    S('sl_rdl', 1, 10, { side: 'L' }), S('sl_rdl', 1, 10, { side: 'R' }), S('sl_rdl', 2, 9, { side: 'L' }), S('sl_rdl', 2, 8, { side: 'R' }),
+    S('goblet', 1, 12), S('goblet', 2, 11), S('paused_pushup', 1, 15), S('champagne_curl', 1, 10), S('windmills', 1, 15), S('windmills', 2, 15),
+    { date: d, exercise: 'dead_hang', set_no: 1, sec: 24, block: 'hangs' },
+  ];
+  const events = [{ type: 'block_done', block: 'stretch', done_at: new Date(2026, 9, 29, 6, 41).toISOString() }, { type: 'habit', habit: 'ankle_pumps' }, { type: 'habit', habit: 'ankle_pumps' }];
+  const out = buildHandoff({ day: blankDay(d), sets, events, fluids: [] });
+  for (const line of ['  PULLUPS: 2 / 5 / 5 | neutral | negatives / full range / full range', '  LEGS: Single-leg RDL | 10 / L9 R8 (per leg)',
+    '  SCAP_PULLUPS: 10', '  WARMUP_HANGS_SEC: 15 / 16', '  GOBLET_SQUATS: 12 / 11', '  PAUSED_PUSHUPS: 15', '  CHAMPAGNE_CURLS: 10', '  WINDMILLS: 15 / 15',
+    '  SA_ROWS: ', 'HANGS_SEC: 24', 'PUMPS: 2', 'BLOCK_TIMES: Morning stretch 06:41'])
+    if (!out.includes(line)) throw new Error(`missing "${line}"`);
+  // And back again: the same sets come out of the text.
+  const back = parseHandoff(out).sets;
+  eq(back.filter(x => x.exercise === 'neutral_pullup').map(x => x.mode), ['negative', 'full', 'full']);
+  eq(back.filter(x => x.exercise === 'sl_rdl').map(x => `${x.side}${x.reps}`), ['each10', 'L9', 'R8']);
+  eq(back.filter(x => x.exercise === 'goblet').map(x => x.reps), [12, 11]);
+  eq(back.filter(x => x.exercise === 'dead_hang' && x.block === 'strength_a').map(x => x.sec), [15, 16]);
+  eq(buildHandoff({ day: blankDay(d), sets: back, events: [], fluids: [] }).includes('HANGS_SEC: 24'), true);
+});
 test('transitions: start 5, sides 5, new position 10, after rest 0, row segments 0', () => {
   const R = planFor('2026-10-27').program.data.BLOCKS.row.steps;
   const at = t => R.findIndex(s => s.text === t);

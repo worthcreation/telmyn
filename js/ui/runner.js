@@ -211,9 +211,13 @@ export function runBlock(block, opts = {}) {
     const prev = lastSet(s.exercise);
     const field = { reps: 'reps', sec: 'sec', min: 'min' }[s.log];
     const unit = { reps: 'reps', sec: 'sec', min: 'min' }[s.log];
-    const input = h('input', { class: 'num', type: 'number', inputmode: 'decimal', min: 0, placeholder: prev?.[field] ?? '', 'aria-label': unit,
-      value: entry.value ?? '', oninput: e => { entry.value = e.target.value; } });
-    const bump = d => () => { const cur = Number(input.value || input.placeholder || 0); input.value = Math.max(0, cur + d); entry.value = input.value; };
+    // The box starts at the last set's number as a real value, so what shows is exactly what Save keeps. (It used to be
+    // a grey placeholder: tapping Save on it saved nothing, and those sets were lost.) An empty box cannot be saved;
+    // a set not done is entered as 0.
+    if ((entry.value === undefined || entry.value === '') && prev?.[field] != null) entry.value = String(prev[field]);
+    const input = h('input', { class: 'num', type: 'number', inputmode: 'decimal', min: 0, 'aria-label': unit,
+      value: entry.value ?? '', oninput: e => { entry.value = e.target.value; syncSave(s); } });
+    const bump = d => () => { const cur = Number(input.value || 0); input.value = Math.max(0, cur + d); entry.value = input.value; syncSave(s); };
     const kids = [h('div', { class: 'stepper' },
       h('button', { class: 'round', 'aria-label': 'Less', onclick: bump(-1) }, '−'),
       h('label', {}, input, h('span', {}, unit)),
@@ -224,6 +228,17 @@ export function runBlock(block, opts = {}) {
     }
     if (prev) kids.push(h('p', { class: 'muted small' }, `Last: ${prev[field]} ${unit}`));
     return h('div', { class: 'log' }, kids);
+  }
+
+  // A set step's Save stays off until there is a number, and says what it needs. Updated in place while typing so
+  // the keyboard stays up.
+  function syncSave(s) {
+    const btn = footEl.querySelector('.next-btn');
+    if (!btn || s.kind !== 'set') return;
+    const empty = entry.value === undefined || entry.value === null || entry.value === '';
+    const unit = { reps: 'reps', sec: 'seconds', min: 'minutes' }[s.log];
+    btn.disabled = empty;
+    btn.textContent = empty ? `Enter ${unit}` : (i === steps.length - 1 ? 'Finish block' : 'Save and next');
   }
 
   function render() {
@@ -281,6 +296,7 @@ export function runBlock(block, opts = {}) {
       videoLinks(s),
       ...body);
     fill(footEl, secondary, primary);
+    if (s.kind === 'set' && !counting && !inTransition) syncSave(s);
     const cw = mainEl.querySelector('.clock-wrap');
     if (root.classList.contains('video-mode') && cw) fill(clockEl, cw); else fill(clockEl);
     // Study video starts with the first timer and then keeps playing; only you pause it (tap the video).

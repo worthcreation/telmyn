@@ -13,6 +13,35 @@ const TEMPLATE = /^[a-z ]+(\s\/\s[a-z ]+)+$/i;
 const filled = v => (orNull(v) && !TEMPLATE.test(orNull(v)) ? orNull(v) : null);
 const nums = v => (v ?? '').split('/').map(s => cleanNumber(s.replace(/\(.*\)/, ''))).filter(n => n !== null);
 
+// Exercises beyond the original template lines, one line each, same name every day (blank when not that day's).
+// The order here is the order they print. ex: exercise id in the program; block: only sets from that block
+// (warm-up sets live inside the strength blocks); sides: per leg or per arm, printed like LEGS.
+export const EXTRA = [
+  { key: 'SCAP_PULLUPS', ex: 'scap_pullup', blocks: ['strength_a', 'strength_b'] },
+  { key: 'WARMUP_HANGS_SEC', ex: 'dead_hang', field: 'sec', blocks: ['strength_a', 'strength_b'] },
+  { key: 'PUSHUPS', ex: 'pushup' },
+  { key: 'PAUSED_PUSHUPS', ex: 'paused_pushup' },
+  { key: 'SA_ROWS', ex: 'sa_row', sides: true, unit: 'per arm' },
+  { key: 'GOBLET_SQUATS', ex: 'goblet' },
+  { key: 'MAGNET_CURLS', ex: 'magnet_curl' },
+  { key: 'CHAMPAGNE_CURLS', ex: 'champagne_curl' },
+  { key: 'WINDMILLS', ex: 'windmills' },
+];
+// "L10 R9 / 8 / L7 R" back into rows; a bare number means both sides did it.
+function perLegParse(v) {
+  const out = [];
+  (v ?? '').replace(/\(.*\)/, '').split('/').forEach((part, k) => {
+    const t = part.trim();
+    if (!t) return;
+    const l = t.match(/L\s*(\d+(?:\.\d+)?)/i), r = t.match(/R\s*(\d+(?:\.\d+)?)/i);
+    if (l || r) {
+      if (l) out.push({ set_no: k + 1, side: 'L', n: Number(l[1]) });
+      if (r) out.push({ set_no: k + 1, side: 'R', n: Number(r[1]) });
+    } else if (cleanNumber(t) !== null) out.push({ set_no: k + 1, side: 'each', n: cleanNumber(t) });
+  });
+  return out;
+}
+
 export function parseHandoff(text) {
   const raw = {};
   let last = null;
@@ -49,14 +78,22 @@ export function parseHandoff(text) {
 
   const pu = split(raw.PULLUPS);
   const puEx = /neutral/i.test(pu[1] || '') ? 'neutral_pullup' : 'chin_up';
-  const puMode = /negative/i.test(pu[2] || '') ? 'negative' : 'full';
-  nums(pu[0]).forEach((n, i) => sets.push({ date, exercise: puEx, set_no: i + 1, reps: n, mode: puMode, source: 'import' }));
+  // One mode for every set ("full range"), or one per set ("negatives / full range / full range").
+  const puModes = (pu[2] || '').split('/').map(m => (/negative/i.test(m) ? 'negative' : 'full'));
+  nums(pu[0]).forEach((n, i) => sets.push({ date, exercise: puEx, set_no: i + 1, reps: n, mode: puModes[puModes.length > 1 ? i : 0] || 'full', source: 'import' }));
 
   const legs = split(raw.LEGS);
   const legEx = /rdl/i.test(legs[0] || '') ? 'sl_rdl' : /bulgarian|split/i.test(legs[0] || '') ? 'bss' : null;
-  if (legEx) nums(legs[1]).forEach((n, i) => sets.push({ date, exercise: legEx, set_no: i + 1, reps: n, side: 'each', source: 'import' }));
+  if (legEx) perLegParse(legs[1]).forEach(r => sets.push({ date, exercise: legEx, set_no: r.set_no, reps: r.n, side: r.side, source: 'import' }));
 
-  nums(raw.MAGNET_CURLS).forEach((n, i) => sets.push({ date, exercise: 'magnet_curl', set_no: i + 1, reps: n, source: 'import' }));
+  // Every other logged exercise has its own line (EXTRA below), read back the same way it is written.
+  for (const x of EXTRA) {
+    const val = raw[x.key];
+    if (!val) continue;
+    const field = x.field || 'reps';
+    if (x.sides) perLegParse(val).forEach(r => sets.push({ date, exercise: x.ex, block: x.blocks?.[0], set_no: r.set_no, side: r.side, [field]: r.n, source: 'import' }));
+    else nums(val).forEach((n, i) => sets.push({ date, exercise: x.ex, block: x.blocks?.[0], set_no: i + 1, [field]: n, source: 'import' }));
+  }
   nums(raw.HANGS_SEC).forEach((n, i) => sets.push({ date, exercise: 'dead_hang', set_no: i + 1, sec: n, source: 'import' }));
 
   const hb = split(raw.HOURLY_BLOCKS);
@@ -89,7 +126,7 @@ const joinSets = (rows, field) => rows.sort((a, b) => a.set_no - b.set_no).map(r
 function perLeg(rows, field = 'reps') {
   const bySet = {};
   for (const r of rows) (bySet[r.set_no] ||= {})[r.side || 'each'] = r[field];
-  return Object.keys(bySet).sort().map(k => {
+  return Object.keys(bySet).sort((a, b) => a - b).map(k => {
     const s = bySet[k];
     if (s.each !== undefined) return s.each;
     return s.L === s.R ? s.L : `L${v(s.L)} R${v(s.R)}`;
@@ -105,9 +142,11 @@ export function buildHandoff({ day, sets, events, fluids }) {
   const of = ex => sets.filter(s => s.exercise === ex);
 
   const pullEx = of('chin_up').length ? 'chin_up' : of('neutral_pullup').length ? 'neutral_pullup' : null;
-  const pull = pullEx ? of(pullEx) : [];
+  const pull = pullEx ? [...of(pullEx)].sort((a, b) => a.set_no - b.set_no) : [];
+  const modeWord = m => (m === 'negative' ? 'negatives' : 'full range');
   const modes = new Set(pull.map(s => s.mode || 'full'));
-  const pullMode = !pull.length ? '' : modes.size > 1 ? 'mixed' : modes.has('negative') ? 'negatives' : 'full range';
+  // Mixed sets name the mode of each set in order, so progress shows which sets were negatives.
+  const pullMode = !pull.length ? '' : modes.size > 1 ? pull.map(s => modeWord(s.mode || 'full')).join(' / ') : modeWord([...modes][0]);
   const legEx = of('bss').length ? 'bss' : of('sl_rdl').length ? 'sl_rdl' : null;
   const legName = { bss: 'Bulgarian split squats', sl_rdl: 'Single-leg RDL' }[legEx] || '';
 
@@ -117,6 +156,16 @@ export function buildHandoff({ day, sets, events, fluids }) {
   const appPalms = hourly.map((e, i) => `block ${base + i + 1} palms ${e.palms || 'not noted'}`).join(', ');
   const palmNotes = [day.hourly_palm_notes, appPalms].filter(Boolean).join(', ');
   const rowMin = sets.find(s => s.exercise === 'row')?.min ?? day.row_min;
+  const extraLine = x => {
+    const rows = of(x.ex).filter(r => !x.blocks || x.blocks.includes(r.block));
+    if (!rows.length) return `  ${x.key}: `;
+    return `  ${x.key}: ${x.sides ? `${perLeg(rows, x.field || 'reps')} (${x.unit})` : joinSets(rows, x.field || 'reps')}`;
+  };
+  const pumps = events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps').length;
+  // When each block finished, in the phone's local time, in program order (last finish if done more than once).
+  const hhmm = iso => { const d = new Date(iso); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  const doneAt = id => [...events].reverse().find(e => e.block === id && e.type === 'block_done')?.done_at;
+  const blockTimes = plan.blocks.filter(b => doneAt(b.id)).map(b => `${b.name} ${hhmm(doneAt(b.id))}`).join(' | ');
   const routine = plan.blocks.find(b => !['stretch', 'gates', 'hangs', 'evening_legs'].includes(b.id));
 
   const lines = [
@@ -130,10 +179,12 @@ export function buildHandoff({ day, sets, events, fluids }) {
     `ROUTINE: ${plan.typeLabel} | ${routine ? statusWord(blockStatus(routine.id, events), day.routine_status) || 'pending' : 'none'}`,
     `  PULLUPS: ${pull.length ? `${joinSets(pull, 'reps')} | ${pullEx === 'chin_up' ? 'chin-up' : 'neutral'} | ${pullMode}` : ''}`,
     `  LEGS: ${legEx ? `${legName} | ${perLeg(of(legEx))} (per leg)` : ''}`,
-    `  MAGNET_CURLS: ${joinSets(of('magnet_curl'), 'reps')}`,
+    ...EXTRA.map(extraLine),
     `  ROW_MIN: ${v(rowMin)}`,
     `HANGS_SEC: ${joinSets(of('dead_hang').filter(s => s.block !== 'strength_a' && s.block !== 'strength_b'), 'sec')}`,
     `HOURLY_BLOCKS: ${v(hourlyCount)} | ${v(day.gripper) || 'CoC Trainer'} | ${v(palmNotes)}`,
+    `PUMPS: ${pumps || ''}`,
+    `BLOCK_TIMES: ${blockTimes}`,
     `PROTEIN_G: ${v(day.protein_g)}`,
     `EATING: ${v(day.eating_notes)}`,
     `WATER_OZ: ${v(totals.water_oz)}`,

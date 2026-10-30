@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.18.1 (2026-10-30)
+Every rep and time reaches the cloud copy. Sets saved nothing when Save was tapped on the grey number carried over
+from the last set; that number is now a real value, so what shows is what is kept, and an empty box cannot be saved
+(enter 0 for a set not done). The handoff now prints every exercise in its own line (scapular pull-ups and warm-up
+hangs on strength days, push-ups, paused push-ups, single-arm rows per arm, goblet squats, magnet and champagne
+curls, windmills), pull-up modes set by set, per-side sets in full, ankle pumps, and each block's finish time.
+The Verse journal shows only the verse and the note; the videos watched that day are listed on that day's Study page.
+
 ## 0.18.0 (2026-10-30)
 Day log looks like This week. One day on one screen: a circle per block (filled when done, with its finish time),
 then bars against the targets (the day's routine, Grip with hangs, Fuel, Hydration), Spirit with the verse note,

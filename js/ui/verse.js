@@ -10,7 +10,7 @@ import { verseFor } from '../verses.js';
 import { state, setField } from '../state.js';
 import { journalSheet } from './journal.js';
 import { playVideo } from './media.js';
-import { getVersion, setVersion, fetchVerse, listVersions, originalWords, studyVideos, getFavs } from '../scripture.js';
+import { getVersion, setVersion, fetchVerse, listVersions, originalWords, studyVideos, getFavs, watchedOn } from '../scripture.js';
 import { videoRow } from './study-player.js';
 
 function parseRef(ref) {
@@ -201,21 +201,31 @@ export async function verseSheet(date = null) {
   const card = (x, size = '') => h('button', { class: `vs-video ${size}`, onclick: () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title)) },
     h('span', { class: 'vb-thumb', style: x.thumb ? `background-image:url('${x.thumb}')` : '' }),
     h('span', { class: 'vs-vt' }, h('b', {}, decode(x.title)), h('small', {}, x.channel ? decode(x.channel) : 'BibleProject')));
+  const prettyDay = d => { const [y, m, dd] = d.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
   const watch = h('div', { class: 'vs-watch' }, h('p', { class: 'muted small' }, 'Finding videos on this passage…'));
+  const play = x => () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title));
+  // A past day's Study page lists what was watched that day (30 sec or more), in the order watched. The journal
+  // stays just the verse and the note; this is where the videos live.
+  const seen = past ? (await watchedOn(date)).map(x => ({ ...x, thumb: x.thumb || `https://i.ytimg.com/vi/${x.id}/mqdefault.jpg` })) : [];
   Promise.all([studyVideos(v.ref), getFavs()]).then(([groups, favs]) => {
-    if (!groups.length) return fill(watch, h('p', { class: 'muted small' }, 'No videos on this passage yet.'));
-    const [first, ...rest] = groups;
-    const more = () => {
+    const all = (title, items, grouped) => () => {
       const list = h('div', { class: 'vs-vlist' });
       let last = null;
-      for (const x of groups) { if (x.group !== last) { list.append(h('p', { class: 'lbl' }, x.group)); last = x.group; } list.append(videoRow(x, false, () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title)), favs)); }
-      screen('Videos', list);
+      for (const x of items) { if (grouped && x.group !== last) { list.append(h('p', { class: 'lbl' }, x.group)); last = x.group; } list.append(videoRow(x, false, play(x), favs)); }
+      screen(title, list);
     };
+    if (seen.length) {
+      const shown = h('div', { class: 'vs-vlist' }, h('p', { class: 'lbl' }, `Watched ${prettyDay(date)}`), seen.slice(0, 3).map(x => videoRow(x, false, play(x), favs)));
+      return fill(watch, shown, h('div', { class: 'vs-watch-more' },
+        seen.length > 3 ? h('button', { class: 'btn ghost', onclick: all('Watched', seen, false) }, `All ${seen.length} watched`) : null,
+        groups.length ? h('button', { class: 'btn ghost', onclick: all('Videos', groups, true) }, 'More on this passage') : null));
+    }
+    if (!groups.length) return fill(watch, h('p', { class: 'muted small' }, 'No videos on this passage yet.'));
     // Study page: the first few videos with what each covers, a heart to favorite, and All videos for the rest.
     const shown = h('div', { class: 'vs-vlist' });
     let last = null;
-    for (const x of groups.slice(0, 3)) { if (x.group !== last) { shown.append(h('p', { class: 'lbl' }, x.group)); last = x.group; } shown.append(videoRow(x, false, () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title)), favs)); }
-    fill(watch, shown, rest.length > 2 ? h('button', { class: 'btn ghost', onclick: more }, `All ${groups.length} videos`) : null);
+    for (const x of groups.slice(0, 3)) { if (x.group !== last) { shown.append(h('p', { class: 'lbl' }, x.group)); last = x.group; } shown.append(videoRow(x, false, play(x), favs)); }
+    fill(watch, shown, groups.length > 3 ? h('button', { class: 'btn ghost', onclick: all('Videos', groups, true) }, `All ${groups.length} videos`) : null);
   });
 
   listVersions().then(list => {
@@ -224,7 +234,6 @@ export async function verseSheet(date = null) {
   });
 
   // Where it was applied: today's opens the writing layer; a past day's shows what was written.
-  const prettyDay = d => { const [y, m, dd] = d.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
   const note = noteField(past ? `Applied, ${prettyDay(date)}` : 'Where I applied it today', dayRec.verse_applied_notes ?? null, {
     placeholder: past ? 'Nothing written that day.' : 'Where I applied it today', readOnly: past,
     onSave: v2 => setField('verse_applied_notes', v2) });

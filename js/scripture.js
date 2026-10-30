@@ -150,12 +150,12 @@ export async function toggleFav(v) {
   return !!favs[v.id];
 }
 
-// Videos watched for at least 30 seconds, by day, so the journal can show them: { date: [{ id, title, channel }] }.
+// Videos watched for at least 30 seconds, by day, listed on that day's Study page: { date: [{ id, title, channel, thumb, sec }] }.
 export async function recordWatched(v) {
   const { state } = await import('./state.js');
   const all = await getMeta('watched', {});
   const day = all[state.date] || [];
-  if (!day.some(x => x.id === v.id)) day.push({ id: v.id, title: v.title, channel: v.channel || v.source || 'BibleProject' });
+  if (!day.some(x => x.id === v.id)) day.push({ id: v.id, title: v.title, channel: v.channel || v.source || 'BibleProject', thumb: v.thumb || '', sec: v.sec || null });
   all[state.date] = day;
   await setMeta('watched', all);
 }
