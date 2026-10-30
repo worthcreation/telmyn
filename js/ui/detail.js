@@ -45,36 +45,37 @@ function lastSession(allSets, ex, before) {
   const date = prior.map(s => s.date).sort().pop();
   return { date, rows: prior.filter(s => s.date === date) };
 }
-export function pushTip(ex, rows, prev, EX) {   // rows and prev are reassigned below for per-side work
-  const full = EX[ex]?.name || ex, name = full[0].toLowerCase() + full.slice(1);   // "single-leg RDL", not "rdl"
+// The next step for one exercise, short enough to read at a glance: { name, step, rule }. rule marks steps that come
+// from the progression rules (they sort first); "beat" steps are first sessions with nothing to compare yet.
+export function pushTip(ex, rows, prev, EX) {
+  const name = EX[ex]?.name || ex;
+  const tip = (step, rule = true) => ({ name, step, rule });
   if (ex === 'dead_hang') {
     const best = Math.max(...rows.map(r => r.sec || 0));
-    if (!prev) return `Best hang ${best} sec. That is the hold to beat.`;
+    if (!prev) return tip(`Beat ${best} sec`, false);
     const was = Math.max(...prev.rows.map(r => r.sec || 0));
-    return best > was ? `Best hang up ${best - was} sec from last time. Stay active: shoulders down, ribs down.` : best === was ? `Matched your best of ${best} sec. Add 2-3 sec to the first hang next time.` : `Best hang ${best} sec, ${was - best} under last time. Grip may be tired from grip breaks; keep the form.`;
+    return tip(best > was ? `Up ${best - was} sec. Keep it active` : best === was ? `Add 2-3 sec to the first hang` : `${was - best} sec under. Grip may be tired`);
   }
-  if (ex === 'row') {
-    const min = rows.reduce((a, r) => a + (r.min || 0), 0);
-    return `${min} min rowed. Program step: after 3 weeks of comfortable 15 min sessions, move to 20 min or one interval day.`;
-  }
-  // Per-side exercises count one side (the left, or whichever was logged), so 10 a leg reads as 10, not 20.
+  if (ex === 'row') return tip('20 min after 3 weeks of easy 15s');
+  // Per-side exercises count one side, so 10 a leg reads as 10, not 20.
   const oneSide = list => (list.some(r => r.side === 'L' || r.side === 'R') ? list.filter(r => r.side === (list.some(x => x.side === 'L') ? 'L' : 'R')) : list);
   rows = oneSide(rows); if (prev) prev = { ...prev, rows: oneSide(prev.rows) };
   const reps = rows.map(r => r.reps || 0), best = Math.max(...reps), sum = total(rows);
-  const w = EX[ex]?.weight_lb;
-  if (w && best >= 30) return `${best} clean reps on ${name}: ${w} lb is now too light for this one. Time for the next step up.`;
+  const lb = Math.max(0, ...rows.map(r => r.lb ?? EX[ex]?.weight_lb ?? 0)) || null;
+  const side = rows.some(r => r.side) ? ' a side' : '';
+  if (lb && best >= 30) return tip(`${best} reps at ${lb} lb: go heavier`);
   if (/pullup|chin_up/.test(ex)) {
     const negs = rows.filter(r => r.mode === 'negative').length;
-    if (negs) return `${plural(negs, 'set')} of negatives builds the pull. Next time, turn one of those into a full rep.`;
+    if (negs) return tip(`Turn ${negs === 1 ? 'a negative' : `${negs} negatives`} into full reps`);
     const flat = reps.length === 3 && reps.every(r => r === reps[0]);
     const prevReps = prev?.rows.filter(r => r.mode !== 'negative').map(r => r.reps) || [];
-    if (flat && prevReps.length === 3 && prevReps.every(r => r === reps[0])) return `All 3 sets at ${reps[0]} two sessions running. Add a rep to one set next time.`;
+    if (flat && prevReps.length === 3 && prevReps.every(r => r === reps[0])) return tip('Add a rep to one set');
   }
-  if (!prev) return `First ${name} on record: ${sum} reps${rows.some(r => r.side) ? ' a side' : ''}. That is the number to beat.`;
-  const was = total(prev.rows), diff = sum - was;
-  if (diff > 0) return `Up ${diff} rep${diff === 1 ? '' : 's'} on ${name} from last time.${w ? ` Best set ${best} of the 30 that means a heavier step.` : ''}`;
-  if (diff === 0) return `Same ${sum} reps on ${name} as last time. One more rep in the first set moves it up.`;
-  return `${-diff} under last time on ${name}. Recovery and form first; it still counts.`;
+  if (!prev) return tip(`Beat ${sum}${side}${lb ? ` at ${lb} lb` : ''}`, false);
+  const diff = sum - total(prev.rows);
+  if (diff > 0) return tip(`Up ${diff}${side}. Keep building`);
+  if (diff === 0) return tip('Same as last. +1 on set 1');
+  return tip(`${-diff} under last. Form first`);
 }
 
 // ---------- One day of an area: rows, plus tips where they apply ----------
@@ -109,8 +110,9 @@ function dayArea(area, date, data, tips) {
       const field = fieldOf(rows);
       const sets = new Set(rows.map(r => r.set_no || 1)).size;
       const times = rows.map(r => r.at).filter(Boolean).sort();
-      if (ex !== 'scap_pullup' && !(ex === 'dead_hang' && blockId !== 'hangs')) tips.push({ ex, text: pushTip(ex, rows, lastSession(data.allSets, ex, date), EX) });
-      return row(`${EX[ex]?.name || ex}, ${plural(sets, 'set')}`, [`${setLine(rows, field)} ${UNIT[field]}`, times.length ? (times.length > 1 ? `${t(times[0])} to ${t(times[times.length - 1])}` : t(times[0])) : null]);
+      if (ex !== 'scap_pullup' && !(ex === 'dead_hang' && blockId !== 'hangs')) tips.push({ ex, ...pushTip(ex, rows, lastSession(data.allSets, ex, date), EX) });
+      const lbs = [...new Set(rows.filter(r => r.lb != null).map(r => r.lb))];
+      return row(`${EX[ex]?.name || ex}, ${plural(sets, 'set')}`, [`${setLine(rows, field)} ${UNIT[field]}${lbs.length ? ` at ${lbs.join(' / ')} lb` : ''}`, times.length ? (times.length > 1 ? `${t(times[0])} to ${t(times[times.length - 1])}` : t(times[0])) : null]);
     });
   };
   const routine = plan.program.data.DAY_TYPES[plan.typeKey]?.routine;
@@ -170,16 +172,14 @@ export async function areaSheet(area, from, to = from) {
     list.append(h('button', { class: 'dl-day', onclick: () => daySheet(d) }, `${WEEKDAYS[weekday(d)]}, ${planFor(d).typeLabel}`, h('span', {}, 'Day log ›')), ...rows);
   }
   if (!any) list.append(h('p', { class: 'muted small' }, single ? 'Nothing logged here for this day yet.' : 'Nothing logged here this week yet.'));
-  // Newest session of each exercise only (days were read newest first).
   const seen = new Set();
-  // Rule-based steps first (negatives, add a rep, weight too light, up or down from last time); first records last.
-  const push = tips.filter(x => !seen.has(x.ex) && seen.add(x.ex)).map(x => x.text).sort((a, b) => a.startsWith('First') - b.startsWith('First'));
+  // Newest session of each exercise only (days were read newest first); rule-based steps first.
+  const push = tips.filter(x => !seen.has(x.ex) && seen.add(x.ex)).sort((a, b) => b.rule - a.rule);
   const group = { fuel: 'Fuel', hydration: 'Fuel', recovery: 'Body' }[area] || 'Day';
   fill(body,
-    // One step shows; the rest open from the card, so the list below keeps the room.
-    push.length ? (push.length === 1
-      ? h('div', { class: 'dl-push card' }, h('p', { class: 'lbl' }, single ? 'Next time' : 'Latest sessions'), h('p', {}, push[0]))
-      : h('details', { class: 'dl-push card' }, h('summary', {}, h('span', { class: 'lbl' }, `${single ? 'Next time' : 'Latest sessions'}, ${push.length} steps`), h('p', {}, push[0])), push.slice(1).map(x => h('p', {}, x)))) : null,
+    // Read at a glance: the same name-and-detail rows as This week, one per exercise.
+    push.length ? h('section', { class: 'dl-push card' }, h('p', { class: 'lbl' }, 'Next time'),
+      push.map(x => h('div', { class: 'stat-top' }, h('span', { class: 'dl-ex' }, x.name), h('span', { class: 'stat-d' }, x.step)))) : null,
     list,
     single ? h('button', { class: 'btn ghost', onclick: () => logSheet(from, group) }, 'Edit this day') : null);
 }

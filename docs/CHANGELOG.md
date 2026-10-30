@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.20.0 (2026-10-30)
+Weights. Dumbbell sets log their weight: the step shows it with −5 and +5, starting at your last session's weight
+(to begin: 25 lb for RDLs and squats, 20 lb for rows and curls, Ross's call; step texts no longer name a weight).
+Every set step shows what you did: the set before it today and the same set last time, with reps and weight, and
+starts the count at that number. Weights print in
+the handoff and the breakdowns, and the next-time steps use them. Next time now reads at a glance: one row per
+exercise with a short step, in the same name-and-detail look as This week. A Home button sits on every layer, in
+the block runner and in video blocks: one tap closes everything and goes to Today. No more flash of giant buttons
+when a block opens (each part of the runner now has its own row, so the study bar loading late moves nothing).
+Restore takes several days in one paste, keeps every pasted handoff text for a day, and no longer drops imported
+sets the paste does not mention.
+
 ## 0.19.4 (2026-10-30)
 A past day's sets can be filled in or fixed from a short handoff pasted into Me, Restore. Each exercise line in it
 replaces that exercise's sets for the day (sets logged in the app included, so nothing is counted twice); exercises

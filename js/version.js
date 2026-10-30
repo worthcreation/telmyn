@@ -1,2 +1,2 @@
 // Bump on every release, together with VERSION in sw.js.
-export const APP_VERSION = '0.19.4';
+export const APP_VERSION = '0.20.0';

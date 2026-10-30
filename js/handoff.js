@@ -27,6 +27,19 @@ export const EXTRA = [
   { key: 'CHAMPAGNE_CURLS', ex: 'champagne_curl' },
   { key: 'WINDMILLS', ex: 'windmills' },
 ];
+// Weight on a line: "25 lb" for every set, or "25 / 25 / 20 lb" set by set. Returns set number -> lb (null if none).
+function lbParse(v) {
+  const list = (v ?? '').replace(/lb/i, '').split('/').map(x => cleanNumber(x)).filter(n => n !== null);
+  return k => (list.length > 1 ? list[k - 1] ?? null : list[0] ?? null);
+}
+// The weight part of a line: one number when every set used it, else set by set. Blank when nothing has a weight.
+function lbText(rows) {
+  const bySet = {};
+  for (const r of rows) if (r.lb != null) bySet[r.set_no || 1] = r.lb;
+  const vals = Object.keys(bySet).sort((a, b) => a - b).map(k => bySet[k]);
+  if (!vals.length) return '';
+  return ` | ${vals.every(x => x === vals[0]) ? vals[0] : vals.join(' / ')} lb`;
+}
 // "L10 R9 / 8 / L7 R" back into rows; a bare number means both sides did it.
 function perLegParse(v) {
   const out = [];
@@ -84,15 +97,16 @@ export function parseHandoff(text) {
 
   const legs = split(raw.LEGS);
   const legEx = /rdl/i.test(legs[0] || '') ? 'sl_rdl' : /bulgarian|split/i.test(legs[0] || '') ? 'bss' : null;
-  if (legEx) perLegParse(legs[1]).forEach(r => sets.push({ date, exercise: legEx, set_no: r.set_no, reps: r.n, side: r.side, source: 'import' }));
+  const legLb = lbParse(legs[2]);
+  if (legEx) perLegParse(legs[1]).forEach(r => sets.push({ date, exercise: legEx, set_no: r.set_no, reps: r.n, side: r.side, lb: legLb(r.set_no), source: 'import' }));
 
   // Every other logged exercise has its own line (EXTRA below), read back the same way it is written.
   for (const x of EXTRA) {
-    const val = raw[x.key];
+    const [val, wt] = split(raw[x.key]);
     if (!val) continue;
-    const field = x.field || 'reps';
-    if (x.sides) perLegParse(val).forEach(r => sets.push({ date, exercise: x.ex, block: x.blocks?.[0], set_no: r.set_no, side: r.side, [field]: r.n, source: 'import' }));
-    else nums(val).forEach((n, i) => sets.push({ date, exercise: x.ex, block: x.blocks?.[0], set_no: i + 1, [field]: n, source: 'import' }));
+    const field = x.field || 'reps', lb = lbParse(wt);
+    if (x.sides) perLegParse(val).forEach(r => sets.push({ date, exercise: x.ex, block: x.blocks?.[0], set_no: r.set_no, side: r.side, [field]: r.n, lb: lb(r.set_no), source: 'import' }));
+    else nums(val).forEach((n, i) => sets.push({ date, exercise: x.ex, block: x.blocks?.[0], set_no: i + 1, [field]: n, lb: lb(i + 1), source: 'import' }));
   }
   nums(raw.HANGS_SEC).forEach((n, i) => sets.push({ date, exercise: 'dead_hang', set_no: i + 1, sec: n, source: 'import' }));
 
@@ -159,7 +173,7 @@ export function buildHandoff({ day, sets, events, fluids }) {
   const extraLine = x => {
     const rows = of(x.ex).filter(r => !x.blocks || x.blocks.includes(r.block));
     if (!rows.length) return `  ${x.key}: `;
-    return `  ${x.key}: ${x.sides ? `${perLeg(rows, x.field || 'reps')} (${x.unit})` : joinSets(rows, x.field || 'reps')}`;
+    return `  ${x.key}: ${x.sides ? `${perLeg(rows, x.field || 'reps')} (${x.unit})` : joinSets(rows, x.field || 'reps')}${lbText(rows)}`;
   };
   const pumps = events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps').length;
   // When each block finished, in the phone's local time, in program order (last finish if done more than once).
@@ -178,7 +192,7 @@ export function buildHandoff({ day, sets, events, fluids }) {
     `FAB_FIVE: ${statusWord(blockStatus('gates', events), day.fab_five_status)}`,
     `ROUTINE: ${plan.typeLabel} | ${routine ? statusWord(blockStatus(routine.id, events), day.routine_status) || 'pending' : 'none'}`,
     `  PULLUPS: ${pull.length ? `${joinSets(pull, 'reps')} | ${pullEx === 'chin_up' ? 'chin-up' : 'neutral'} | ${pullMode}` : ''}`,
-    `  LEGS: ${legEx ? `${legName} | ${perLeg(of(legEx))} (per leg)` : ''}`,
+    `  LEGS: ${legEx ? `${legName} | ${perLeg(of(legEx))} (per leg)${lbText(of(legEx))}` : ''}`,
     ...EXTRA.map(extraLine),
     `  ROW_MIN: ${v(rowMin)}`,
     `HANGS_SEC: ${joinSets(of('dead_hang').filter(s => s.block !== 'strength_a' && s.block !== 'strength_b'), 'sec')}`,

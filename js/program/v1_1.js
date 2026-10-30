@@ -17,6 +17,14 @@ export const EXERCISES = {
   doorway_chest: { name: 'Doorway chest stretch' },
   forearm: { name: 'Forearm stretch', video: 'https://www.youtube.com/watch?v=mLVLLGUbyfU&t=36s' }, // approved by Ross 2026-10-27, starts at 0:36
   toe_touch: { name: 'Toe touch' },
+  // Starting weights (Ross, 2026-10-30): 25 lb for RDLs and squats, 20 lb for arm work (rows and curls). The runner
+  // starts each exercise at the weight of your last session and shows it on the step, so step texts name no weight.
+  bss: { ...v1.EXERCISES.bss, weight_lb: 25 },
+  goblet: { ...v1.EXERCISES.goblet, weight_lb: 25 },
+  sl_rdl: { ...v1.EXERCISES.sl_rdl, weight_lb: 25 },
+  sa_row: { ...v1.EXERCISES.sa_row, weight_lb: 20 },
+  magnet_curl: { ...v1.EXERCISES.magnet_curl, weight_lb: 20 },
+  champagne_curl: { ...v1.EXERCISES.champagne_curl, weight_lb: 20 },
 };
 
 const C = {
@@ -101,10 +109,10 @@ export const BLOCKS = {
       step.rest(180, 'Rest 3 min after the Fab Five'),
       ...strengthWarmup,
       ...sets(3, i => step.set('chin_up', `Chin-ups, set ${i}`, { note: PULL_RULE, modes: ['full', 'negative'], set_no: i, cue: 'Dead hang to chin over the bar. Control the way down.' }), 120),
-      ...sides(3, 'bss', 'Bulgarian split squats, 25s, 3 sec down', 30, [90, 'Rest 90 sec'], { cue: 'Front shin near vertical. Push through the front heel.' }),
+      ...sides(3, 'bss', 'Bulgarian split squats, 3 sec down', 30, [90, 'Rest 90 sec'], { cue: 'Front shin near vertical. Push through the front heel.' }),
       ...sets(3, i => step.set('pushup', `Push-ups, set ${i}, 3 sec down, near failure`, { set_no: i, cue: 'Body straight as a plank. Chest close to the floor.' }), 90),
-      ...sides(3, 'sa_row', 'Single-arm rows, 25, 3 sec down', 0, [90, 'Rest 60-90 sec'], { cue: 'Flat back. Pull toward the hip, squeeze, lower slowly.' }, 'arm'),
-      ...sets(3, i => step.set('magnet_curl', `Magnet curls, set ${i}, 20s, 3-4 sec down`, { note: 'Stop 1-2 short of failure.', set_no: i }), 60),
+      ...sides(3, 'sa_row', 'Single-arm rows, 3 sec down', 0, [90, 'Rest 60-90 sec'], { cue: 'Flat back. Pull toward the hip, squeeze, lower slowly.' }, 'arm'),
+      ...sets(3, i => step.set('magnet_curl', `Magnet curls, set ${i}, 3-4 sec down`, { note: 'Stop 1-2 short of failure.', set_no: i }), 60),
       ...windmills,
       ...strengthCooldown,
     ],
@@ -116,8 +124,8 @@ export const BLOCKS = {
       step.rest(180, 'Rest 3 min after the Fab Five'),
       ...strengthWarmup,
       ...sets(3, i => step.set('neutral_pullup', `Neutral-grip pull-ups, set ${i}`, { note: PULL_RULE, modes: ['full', 'negative'], set_no: i, cue: 'Palms facing each other. Dead hang to chin over the bar.' }), 120),
-      ...sides(3, 'sl_rdl', 'Single-leg RDL, 25 in opposite hand', 30, [90, 'Rest 90 sec'], { cue: 'Hips back, flat back, slight knee bend. Keep the hips square.' }),
-      ...sets(3, i => step.set('goblet', `Goblet squats, set ${i}, 25, 2 sec pause at bottom`, { set_no: i, cue: 'Weight close to the chest. Sit between the heels.' }), 90),
+      ...sides(3, 'sl_rdl', 'Single-leg RDL, weight in opposite hand', 30, [90, 'Rest 90 sec'], { cue: 'Hips back, flat back, slight knee bend. Keep the hips square.' }),
+      ...sets(3, i => step.set('goblet', `Goblet squats, set ${i}, 2 sec pause at bottom`, { set_no: i, cue: 'Weight close to the chest. Sit between the heels.' }), 90),
       ...sets(3, i => step.set('paused_pushup', `Paused push-ups, set ${i}, 2 sec at bottom`, { set_no: i, cue: 'Pause just off the floor and stay tight.' }), 90),
       ...sets(2, i => step.set('magnet_curl', `Magnet curls, set ${i}`, { set_no: i }), 60),
       step.rest(60),

@@ -136,6 +136,8 @@ export async function importDay({ day, sets }) {
   const merged = { ...existing };
   for (const [k, val] of Object.entries(day)) if (val !== null && val !== undefined && val !== '') merged[k] = val;
   merged.date = day.date;
+  // Keep every handoff text ever pasted for the day, newest last, so a short fix never erases the original.
+  if (existing.handoff_raw && day.handoff_raw && !existing.handoff_raw.includes(day.handoff_raw)) merged.handoff_raw = `${existing.handoff_raw}\n\n${day.handoff_raw}`;
   // Don't double count: if the app already logged fluids or hourly blocks that day, keep only the app's numbers.
   if ((await db.byDate('fluids', day.date)).length) { merged.water_oz = existing.water_oz ?? null; merged.other_drinks_oz = existing.other_drinks_oz ?? null; }
   if ((await db.byDate('events', day.date)).some(e => e.block === 'hourly')) { merged.hourly_blocks_count = existing.hourly_blocks_count ?? null; merged.hourly_palm_notes = existing.hourly_palm_notes ?? null; }
@@ -146,7 +148,7 @@ export async function importDay({ day, sets }) {
   const warm = r => /^(scap_pullup|dead_hang)$/.test(r.exercise) && /^strength_/.test(r.block || '');
   const part = r => `${r.exercise}|${warm(r) ? 'warmup' : 'main'}`;
   const replaced = new Set(sets.map(part));
-  await db.deleteWhere('sets', day.date, r => r.source === 'import' || replaced.has(part(r)));
+  await db.deleteWhere('sets', day.date, r => replaced.has(part(r)));
   for (const s of sets) await db.put('sets', s);
   if (day.date === state.date) await load(day.date);
 }

@@ -29,9 +29,24 @@ if (typeof addEventListener === 'function') addEventListener('popstate', e => {
 });
 export const layerDepth = () => layers.length;
 
+// Home, one tap from anywhere: closes every open layer and goes to Today.
+export function goHome() {
+  const n = layers.length;
+  while (layers.length) layers[layers.length - 1].dismiss();
+  const toToday = () => { if (location.hash !== '#today') location.hash = '#today'; };
+  if (n && history.state?.telmynLayer) { skipPops++; addEventListener('popstate', toToday, { once: true }); history.go(-n); }
+  else toToday();
+}
+const HOUSE = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5.5 9.5V20h13V9.5"/></svg>';
+export function homeButton(extra, cls = 'icon-btn home-btn') {
+  const b = h('button', { class: cls, 'aria-label': 'Home', onclick: async () => { await extra?.(); goHome(); } });
+  b.innerHTML = HOUSE;
+  return b;
+}
+
 export function layer(title, body, { onClose, full = true, cls = '' } = {}) {
   const panel = h('section', { class: 'layer-panel', role: 'dialog', 'aria-label': title },
-    h('header', { class: 'layer-head' }, h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: () => close() }, '✕'), h('h2', {}, title), h('span', { class: 'icon-btn', 'aria-hidden': 'true' })),
+    h('header', { class: 'layer-head' }, h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: () => close() }, '✕'), h('h2', {}, title), homeButton()),
     h('div', { class: 'layer-body' }, body));
   const wrap = h('div', { class: `layer ${full ? 'full' : 'half'} ${cls}` }, full ? null : h('div', { class: 'layer-scrim', onclick: () => close() }), panel);
   const entry = { dismiss };

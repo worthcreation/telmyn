@@ -48,13 +48,15 @@ async function backUp() {
 async function restoreText(text) {
   const t = text.trim();
   if (t.startsWith('{')) { await db.importAll(JSON.parse(t)); await syncAll().catch(() => {}); toast('Backup restored'); setTimeout(() => location.reload(), 600); return; }
-  const parsed = parseHandoff(t);
-  await importDay(parsed);
-  syncDates([parsed.day.date]).catch(() => {});
-  toast(`Updated ${parsed.day.date}`);
+  // Several days in one paste: each DATE: line starts the next day.
+  const parts = t.split(/\n(?=\s*DATE:)/).map(x => x.trim()).filter(Boolean);
+  const dates = [];
+  for (const part of parts) { const parsed = parseHandoff(part); await importDay(parsed); dates.push(parsed.day.date); }
+  syncDates(dates).catch(() => {});
+  toast(dates.length === 1 ? 'Day updated' : `${dates.length} days updated`, null, dates.join(', '));
 }
 function restoreSheet() {
-  const ta = h('textarea', { rows: 8, placeholder: 'Paste a backup or a handoff (DATE: ...)', 'aria-label': 'Backup or handoff text' });
+  const ta = h('textarea', { rows: 8, placeholder: 'Paste a backup, or one or more days (each starts with DATE: ...)', 'aria-label': 'Backup or handoff text' });
   const s = sheet('Restore', h('div', { class: 'stack' },
     h('label', { class: 'btn ghost file' }, 'Choose a backup file',
       h('input', { type: 'file', accept: 'application/json,.json,text/plain', onchange: async e => {

@@ -212,19 +212,35 @@ test('every routine exercise prints, with per-set pull-up modes, per-arm rows, w
   eq(back.filter(x => x.exercise === 'dead_hang' && x.block === 'strength_a').map(x => x.sec), [15, 16]);
   eq(buildHandoff({ day: blankDay(d), sets: back, events: [], fluids: [] }).includes('HANGS_SEC: 24'), true);
 });
+group('Data');
+test('weights print and read back, one number or set by set', () => {
+  const d = '2026-10-29';
+  const sets = [1, 2, 3].map(k => ({ date: d, exercise: 'goblet', set_no: k, reps: 10, lb: 25, block: 'strength_b' }))
+    .concat([{ date: d, exercise: 'magnet_curl', set_no: 1, reps: 10, lb: 20 }, { date: d, exercise: 'magnet_curl', set_no: 2, reps: 8, lb: 15 }])
+    .concat([1, 2].flatMap(k => ['L', 'R'].map(side => ({ date: d, exercise: 'sl_rdl', set_no: k, reps: 10, side, lb: 20 }))));
+  const out = buildHandoff({ day: blankDay(d), sets, events: [], fluids: [] });
+  for (const line of ['  GOBLET_SQUATS: 10 / 10 / 10 | 25 lb', '  MAGNET_CURLS: 10 / 8 | 20 / 15 lb', '  LEGS: Single-leg RDL | 10 / 10 (per leg) | 20 lb'])
+    if (!out.includes(line)) throw new Error(`missing "${line}"`);
+  const back = parseHandoff(out).sets;
+  eq(back.filter(x => x.exercise === 'magnet_curl').map(x => x.lb), [20, 15]);
+  eq(back.filter(x => x.exercise === 'sl_rdl').map(x => x.lb), [20, 20]);
+  eq(back.filter(x => x.exercise === 'goblet').map(x => `${x.reps}@${x.lb}`), ['10@25', '10@25', '10@25']);
+});
 group('Program');
 test('push tips follow the progression rules and your last session', async () => {
   const { pushTip } = await import('../js/ui/detail.js');
   const EX = planFor('2026-10-29').program.data.EXERCISES;
   const S = (n, o = {}) => ({ reps: n, ...o });
   const prev = rows => ({ date: '2026-10-26', rows });
-  eq(pushTip('neutral_pullup', [S(2), S(2), S(5, { mode: 'negative' })], null, EX).startsWith('1 set of negatives'), true);
-  eq(pushTip('chin_up', [S(5), S(5), S(5)], prev([S(5), S(5), S(5)]), EX).startsWith('All 3 sets at 5 two sessions running'), true);
-  eq(pushTip('goblet', [S(30), S(28)], prev([S(25)]), EX).includes('25 lb is now too light'), true);
-  eq(pushTip('goblet', [S(12), S(12)], prev([S(11), S(11)]), EX).startsWith('Up 2 reps'), true);
-  eq(pushTip('paused_pushup', [S(10)], prev([S(10)]), EX).startsWith('Same 10 reps'), true);
-  eq(pushTip('windmills', [S(15)], null, EX).startsWith('First windmills'), true);
-  eq(pushTip('dead_hang', [{ sec: 25 }], prev([{ sec: 20 }]), EX).startsWith('Best hang up 5 sec'), true);
+  const step = (...a) => pushTip(...a).step;
+  eq(step('neutral_pullup', [S(2), S(2), S(5, { mode: 'negative' })], null, EX), 'Turn a negative into full reps');
+  eq(step('chin_up', [S(5), S(5), S(5)], prev([S(5), S(5), S(5)]), EX), 'Add a rep to one set');
+  eq(step('goblet', [S(30, { lb: 25 }), S(28, { lb: 25 })], prev([S(25)]), EX), '30 reps at 25 lb: go heavier');
+  eq(step('goblet', [S(12), S(12)], prev([S(11), S(11)]), EX), 'Up 2. Keep building');
+  eq(step('paused_pushup', [S(10)], prev([S(10)]), EX), 'Same as last. +1 on set 1');
+  eq(pushTip('windmills', [S(15)], null, EX), { name: 'Windmills (forearm rotation)', step: 'Beat 15', rule: false });
+  eq(step('sl_rdl', [S(10, { side: 'L', lb: 20 }), S(10, { side: 'R', lb: 20 })], null, EX), 'Beat 10 a side at 20 lb');
+  eq(step('dead_hang', [{ sec: 25 }], prev([{ sec: 20 }]), EX), 'Up 5 sec. Keep it active');
 });
 test('transitions: start 5, sides 5, new position 10, after rest 0, row segments 0', () => {
   const R = planFor('2026-10-27').program.data.BLOCKS.row.steps;

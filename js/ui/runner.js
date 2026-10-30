@@ -2,11 +2,11 @@
 // Flow: tap Start once and every timed step chains into the next. Each timed step gets a short
 // transition countdown first (0, 5 or 10 sec), ticks at 3-2-1, a held tone as it starts, and a
 // double beep when it ends. Rests run and advance by themselves. Steps counted in reps wait for Done.
-import { h, chime, sounds, unlockAudio, fill, toast } from './dom.js';
+import { h, chime, sounds, unlockAudio, fill, toast, homeButton } from './dom.js';
 import * as db from '../db.js';
 import { burst } from './fx.js';
 import { state, addEvent, addSet, setField } from '../state.js';
-import { now, fmtSec } from '../clock.js';
+import { now, fmtSec, weekday, WEEKDAYS } from '../clock.js';
 import { transitionSec } from '../flow.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
 import { studyPlayer } from './study-player.js';
@@ -32,6 +32,25 @@ export function runBlock(block, opts = {}) {
   let paused = false;          // when paused, nothing starts by itself
   let entry = {};              // current set input
   const startedAt = now().toISOString();
+  // Your last session of each exercise in this block (an earlier day): what you did and at what weight.
+  let lastTime = {};
+  const blockEx = new Set(steps.filter(s => s.kind === 'set').map(s => s.exercise));
+  db.all('sets').then(all => {
+    for (const ex of blockEx) {
+      const prior = all.filter(r => r.exercise === ex && r.date < state.date && (r.reps != null || r.sec != null || r.min != null));
+      const date = prior.map(r => r.date).sort().pop();
+      if (date) lastTime[ex] = { date, rows: prior.filter(r => r.date === date) };
+    }
+    if (root.isConnected) render();
+  });
+  // The same set (and side) from last time, or that session's last set when it had fewer.
+  const lastFor = s => {
+    const t = lastTime[s.exercise];
+    if (!t) return null;
+    const same = t.rows.filter(r => (r.side || 'each') === (s.side || 'each') || r.side === 'each' || !r.side);
+    const pick = same.find(r => (r.set_no || 1) === (s.set_no || 1)) || same.sort((a, b) => (a.set_no || 1) - (b.set_no || 1)).pop();
+    return pick ? { ...pick, day: WEEKDAYS[weekday(t.date)] } : null;
+  };
   const resumeKey = `resume:${block.id}:${state.date}`;
   const root = h('div', { class: 'runner', role: 'dialog', 'aria-label': block.name });
   const headEl = h('header', { class: 'runner-head' }), lanesEl = h('div', { class: 'lanes', 'aria-hidden': 'true' });
@@ -66,6 +85,7 @@ export function runBlock(block, opts = {}) {
   addEventListener('popstate', onPop);
 
   const lastSet = ex => [...state.sets].reverse().find(s => s.exercise === ex);
+  const weighted = s => s.kind === 'set' && EXERCISES[s.exercise]?.weight_lb != null;
   const suggestPalms = () => nextPalms(hourlyHistory(state.day, state.events));
 
   function clearTimers() { clearInterval(timer?.int); timer = null; clearInterval(stopwatch?.int); stopwatch = null; }
@@ -155,7 +175,7 @@ export function runBlock(block, opts = {}) {
       const field = { reps: 'reps', sec: 'sec', min: 'min' }[s.log];
       const val = entry.value;
       if (val !== undefined && val !== null && val !== '') {
-        await addSet({ block: block.id, exercise: s.exercise, set_no: s.set_no || 1, side: s.side || null, [field]: Number(val), mode: entry.mode || (s.modes ? 'full' : null) });
+        await addSet({ block: block.id, exercise: s.exercise, set_no: s.set_no || 1, side: s.side || null, [field]: Number(val), mode: entry.mode || (s.modes ? 'full' : null), lb: weighted(s) ? entry.lb : undefined });
         if (s.logField) await setField(s.logField, Number(val));
       }
     }
@@ -214,7 +234,8 @@ export function runBlock(block, opts = {}) {
     // The box starts at the last set's number as a real value, so what shows is exactly what Save keeps. (It used to be
     // a grey placeholder: tapping Save on it saved nothing, and those sets were lost.) An empty box cannot be saved;
     // a set not done is entered as 0.
-    if ((entry.value === undefined || entry.value === '') && prev?.[field] != null) entry.value = String(prev[field]);
+    const last = lastFor(s);
+    if ((entry.value === undefined || entry.value === '') && (prev?.[field] ?? last?.[field]) != null) entry.value = String(prev?.[field] ?? last[field]);
     const input = h('input', { class: 'num', type: 'number', inputmode: 'decimal', min: 0, 'aria-label': unit,
       value: entry.value ?? '', oninput: e => { entry.value = e.target.value; syncSave(s); } });
     const bump = d => () => { const cur = Number(input.value || 0); input.value = Math.max(0, cur + d); entry.value = input.value; syncSave(s); };
@@ -226,7 +247,19 @@ export function runBlock(block, opts = {}) {
       entry.mode ||= 'full';
       kids.push(h('div', { class: 'seg' }, s.modes.map(m => h('button', { class: entry.mode === m ? 'on' : '', onclick: () => { entry.mode = m; render(); } }, m === 'full' ? 'Full range' : 'Negatives'))));
     }
-    if (prev) kids.push(h('p', { class: 'muted small' }, `Last: ${prev[field]} ${unit}`));
+    // Dumbbell exercises: the weight, starting where you last left it (today's last set, then your last session,
+    // then the program's starting weight). 5 lb steps for the fixed dumbbells.
+    if (weighted(s)) {
+      entry.lb ??= prev?.lb ?? last?.lb ?? EXERCISES[s.exercise].weight_lb;
+      const wt = h('b', {}, `${entry.lb} lb`);
+      const nudge = d => () => { entry.lb = Math.max(0, entry.lb + d); wt.textContent = `${entry.lb} lb`; };
+      kids.push(h('div', { class: 'weight-row' },
+        h('button', { class: 'chip', 'aria-label': 'Lighter', onclick: nudge(-5) }, '−5'), wt,
+        h('button', { class: 'chip', 'aria-label': 'Heavier', onclick: nudge(5) }, '+5')));
+    }
+    // What you did: the set before this one today, and this set last time.
+    const did = (r, label) => r?.[field] != null ? h('p', { class: 'muted small' }, `${label}: ${r[field]} ${unit}${r.lb != null ? ` at ${r.lb} lb` : ''}${r.mode === 'negative' ? ', negatives' : ''}`) : null;
+    kids.push(h('div', { class: 'did' }, did(prev, 'Last set'), did(last, `Last time, ${last?.day || ''}`)));
     return h('div', { class: 'log' }, kids);
   }
 
@@ -287,7 +320,8 @@ export function runBlock(block, opts = {}) {
     fill(headEl,
       h('button', { class: 'icon-btn', 'aria-label': 'Leave block', onclick: leave }, '✕'),
       h('span', { class: 'runner-title' }, block.name),
-      h('span', { class: 'runner-count' }, `${i + 1} of ${steps.length}`));
+      h('span', { class: 'runner-count' }, `${i + 1} of ${steps.length}`),
+      homeButton(leave));
     fill(mainEl,
       h('p', { class: `step-kind ${inTransition ? 'upnext' : s.kind}` }, inTransition ? 'Next' : (s.phase || { rest: 'Rest', set: 'Set', timed: 'Hold', do: 'Do' }[s.kind])),
       h('h1', { class: `step-text${s.text.length > 26 ? ' long' : ''}` }, s.text),

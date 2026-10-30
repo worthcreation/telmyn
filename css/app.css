@@ -74,6 +74,7 @@ a { color: var(--lane); }
 .chip:active { transform: scale(var(--press)); background: color-mix(in srgb, var(--ink) 8%, var(--surface)); }
 .chip .wc-i { font-size: var(--fs-micro); opacity: .8; }
 .icon-btn { background: none; border: 0; width: var(--h-tap); height: var(--h-tap); font-size: var(--fs-title); color: var(--ink); }
+.home-btn { display: grid; place-items: center; }
 .icon-btn:disabled { opacity: .25; }
 .seg { display: flex; gap: var(--s1); }
 .seg.wrap { flex-wrap: wrap; }
@@ -188,12 +189,11 @@ select { appearance: none; -webkit-appearance: none; width: auto; padding-right:
 /* Breakdown sheets (detail.js): next-time tips on top, then rows that open for sets, reps and times. */
 .layer-body > .dl { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: var(--s3); }
 .dl > * { flex: none; }
-.dl-push { display: grid; gap: var(--s1); }
-.dl-push > summary { display: grid; gap: var(--s1); list-style: none; cursor: pointer; }
-.dl-push > summary::-webkit-details-marker { display: none; }
-.dl-push > summary .lbl::after { content: ' ›'; }
-.dl-push[open] > summary .lbl::after { content: ' ⌄'; }
-.dl-push p { font-size: var(--fs-small); }
+.dl-push { display: grid; gap: var(--s2); }
+.dl-ex { font: 700 var(--fs-body) var(--font-display); }
+.did { display: grid; gap: 2px; text-align: center; }
+.weight-row { display: flex; align-items: center; justify-content: center; gap: var(--s3); }
+.weight-row b { font: 700 var(--fs-lead) var(--font-display); min-width: 4.5em; text-align: center; font-variant-numeric: tabular-nums; }
 .dl-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: var(--s1); }
 .dl-day { display: flex; justify-content: space-between; align-items: baseline; margin-top: var(--s2); padding: var(--s1) 0; background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--ink); font: 700 var(--fs-body) var(--font-display); text-align: left; }
 .dl-day span { font: 600 var(--fs-small) var(--font-body); color: var(--ink-2); }
@@ -362,14 +362,16 @@ details.dl-row[open] > .dl-sum::after { transform: rotate(90deg); }
 .runner { position: fixed; inset: 0; z-index: var(--z-runner); background: var(--paper); display: grid; grid-template-rows: auto auto auto 1fr auto;
   padding: calc(var(--safe-top) + var(--s2)) var(--s4) calc(var(--safe-bottom) + var(--s3)); animation: rise .2s ease-out; }
 .runner.closing { animation: sink .2s ease-in forwards; }
-.runner-head { display: flex; align-items: center; gap: var(--s2); }
+/* Every part has its own row, so a part that is empty for a moment (the study bar while its videos load) never lets
+   the buttons slide into the stretching row. That slide was the flash of giant buttons when a block opened. */
+.runner-head { grid-row: 1; display: flex; align-items: center; gap: var(--s2); }
 .runner-title { flex: 1; font: 700 var(--fs-title) var(--font-display); }
 .runner-count { color: var(--ink-2); font-size: var(--fs-small); }
-.lanes { display: flex; gap: 2px; margin: var(--s2) 0; }
+.lanes { grid-row: 2; display: flex; gap: 2px; margin: var(--s2) 0; }
 .lanes span { flex: 1; height: 6px; background: var(--line); border-radius: 3px; }
 .lanes .done { background: var(--lane); }
 .lanes .now { background: var(--spirit); }
-.runner-main { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: var(--s2); min-height: 0; overflow: hidden; max-width: var(--max-w); width: 100%; margin: 0 auto; }
+.runner-main { grid-row: 4; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: var(--s2); min-height: 0; overflow: hidden; max-width: var(--max-w); width: 100%; margin: 0 auto; }
 .step-kind { font-weight: 600; color: var(--ink-2); }
 .step-kind.rest { color: var(--ok); }
 .step-kind.upnext { color: var(--spirit); }
@@ -391,10 +393,10 @@ details.dl-row[open] > .dl-sum::after { transform: rotate(90deg); }
 .stepper label { flex: 1; display: flex; align-items: baseline; gap: var(--s2); }
 .num { font: 700 var(--fs-hero) var(--font-display); text-align: center; padding: var(--s2); }
 .round { width: 64px; height: 64px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); font-size: var(--fs-display); }
-.runner-foot { display: grid; grid-template-columns: 1fr 2fr; gap: var(--s2); max-width: var(--max-w); width: 100%; margin: 0 auto; }
+.runner-foot { grid-row: 5; display: grid; grid-template-columns: 1fr 2fr; gap: var(--s2); max-width: var(--max-w); width: 100%; margin: 0 auto; }
 .pulse { animation: pulse 1s ease-in-out 3; }
 .study:empty { display: none; }
-.study { margin: 0 0 var(--s2); position: relative; }
+.study { grid-row: 3; margin: 0 0 var(--s2); position: relative; }
 .study-bar { width: 100%; display: flex; align-items: center; gap: var(--s3); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--spirit); border-radius: var(--r-btn); padding: var(--s2) var(--s3); color: var(--ink); text-align: left; }
 .study-bar.daily { border-left-color: var(--ink-2); }
 .sb-i { color: var(--spirit); font-size: var(--fs-lead); }
@@ -467,6 +469,7 @@ details.dl-row[open] > .dl-sum::after { transform: rotate(90deg); }
 .vblock iframe { padding: var(--safe-top) 0 var(--safe-bottom); }
 .vb-btn { position: absolute; z-index: 2; top: calc(var(--safe-top) + 10px); height: var(--h-ctrl-sm); border: 1px solid var(--glass-line); color: var(--glass-ink); font-weight: 600; font-size: var(--fs-small); background: rgb(16 18 21 / .45); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-radius: var(--r-pill); }
 .vb-x { left: 12px; width: var(--h-ctrl-sm); padding: 0; }
+.vb-home { left: calc(20px + var(--h-ctrl-sm)); width: var(--h-ctrl-sm); padding: 0; display: grid; place-items: center; }
 .vb-done { right: 12px; padding: 0 14px; }
 .vblock:has(.vb-done) .vb-title { position: absolute; left: 60px; right: 60px; top: calc(var(--safe-top) + 16px); text-align: center; color: var(--glass-ink-2); font-size: var(--fs-small); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; z-index: 2; }
 .vb-error { position: absolute; left: var(--s5); right: var(--s5); top: 30%; z-index: 3; display: grid; gap: 6px; text-align: center; color: var(--glass-ink); background: var(--glass-strong); border: 1px solid var(--glass-line); border-radius: var(--r-card); padding: var(--s4); }
@@ -587,7 +590,7 @@ details.dl-row[open] > .dl-sum::after { transform: rotate(90deg); }
   .runner-head, .lanes { grid-column: 1 / -1; }
   .study { grid-column: 2; grid-row: 3; }
   .runner-main { grid-column: 1; grid-row: 3; }
-  .runner-foot { grid-column: 1 / -1; }
+  .runner-foot { grid-column: 1 / -1; grid-row: 4; }
   .step-text, .step-text.long { font-size: var(--fs-heading); }
   .clock { font-size: var(--fs-hero); }
   .step-cue { font-size: var(--fs-small); }
