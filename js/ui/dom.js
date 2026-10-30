@@ -118,10 +118,11 @@ export function notices() {
   return document.querySelector('.notices') || document.body.appendChild(h('div', { class: 'notices', 'aria-live': 'polite' }));
 }
 
-export function toast(msg, action = null) {
+// msg is the title (what happened); detail is the smaller line under it; action adds a button such as Undo.
+export function toast(msg, action = null, detail = null) {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const hide = () => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); };
-  const t = h('div', { class: 'toast notice', role: 'status' }, h('b', {}, msg),
+  const t = h('div', { class: 'toast notice', role: 'status' }, h('b', {}, msg), detail ? h('span', {}, detail) : null,
     action ? h('button', { class: 'toast-act', onclick: () => { hide(); action.fn(); } }, action.label) : null);
   notices().append(t);
   requestAnimationFrame(() => t.classList.add('show'));

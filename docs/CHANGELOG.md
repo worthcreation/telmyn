@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.3 (2026-10-30)
+Update Ready now really waits. App files come from the version in charge instead of the network, so new code no
+longer runs before the tap (that is why Me already showed 0.19.2 while the card sat on Loading). If the reload
+signal never arrives after the tap, the app reloads itself after 4 seconds. Grip and pumps toasts say what was
+logged, with the count today underneath and Undo.
+
 ## 0.19.2 (2026-10-30)
 Every notice is centered. Toasts and the update card appear in one stack at the same spot as the video title card,
 so they never cover each other.

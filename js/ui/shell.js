@@ -30,7 +30,7 @@ function gripPill(day, rerender) {
   return holdable(h('button', { class: `pill grip${lvl ? ' behind due' : ''}`, 'data-due': lvl || null, 'aria-label': `Grip break, ${hist.length} today. Tap to log one, palms ${np}.`, onclick: async () => {
     const { e, n, palms } = await logGripBreak();
     rerender();
-    toast(`Grip break ${n}, palms ${palms}`, { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); } });
+    toast('Grip break logged', { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); toast('Grip break removed'); } }, `${n} today, palms ${palms}`);
   } },
     h('span', { class: 'pill-l' }, `Grip ${arrow}`),
     h('span', { class: 'pill-v' }, String(hist.length), h('small', {}, ' today'))), gripList);

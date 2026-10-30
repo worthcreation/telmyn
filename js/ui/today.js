@@ -110,7 +110,7 @@ export function renderToday(root, rerender) {
     nextCard,
     h('section', { class: 'day', 'aria-label': 'Rest of today' }, dayList),
     h('section', { class: 'quick', 'aria-label': 'Quick add' },
-      holdable(h('button', { class: `${chipClass(st.pumps)}${pumpsLvl ? ' due' : ''}`, 'data-due': pumpsLvl || null, 'aria-label': `Ankle pumps, ${pumps} today. Hold for the list.`, onclick: async () => { await addEvent('habit', { habit: 'ankle_pumps' }); toast('Ankle pumps logged'); rerender(); } }, `Pumps ${pumps}`), pumpsList),
+      holdable(h('button', { class: `${chipClass(st.pumps)}${pumpsLvl ? ' due' : ''}`, 'data-due': pumpsLvl || null, 'aria-label': `Ankle pumps, ${pumps} today. Hold for the list.`, onclick: async () => { const e = await addEvent('habit', { habit: 'ankle_pumps' }); rerender(); toast('Ankle pumps logged', { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); toast('Ankle pumps removed'); } }, `${pumps + 1} today, 20 per foot`); } }, `Pumps ${pumps}`), pumpsList),
       h('button', { class: chipClass(st.fluid), onclick: fluidSheet }, 'Fluid'),
       h('button', { class: chipClass(st.protein), onclick: proteinSheet }, 'Protein'),
       FOODS.map(f => h('button', { class: chipClass(f.key === 'huel' ? st.huel : null), onclick: async () => {

@@ -1,5 +1,5 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.19.2';
+const VERSION = '0.19.3';
 const CACHE = `telmyn-${VERSION}`;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/app.css',
@@ -9,9 +9,9 @@ const SHELL = [
   'data/original.json', 'icons/star-192.png', 'icons/star-512.png', 'icons/badge-96.png', 'icons/apple-touch-icon.png',
 ];
 
-// Install and take over right away, so a new release never waits behind an old cached copy.
-// No skipWaiting here: a new version waits until you tap Update (main.js), so it never reloads the app on its own.
-self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))));
+// A new version downloads its whole copy fresh (past the browser's own cache) and then waits. No skipWaiting here:
+// it takes over only when you tap Update Ready (main.js), so the app never changes under you.
+self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))))));
 
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('telmyn-') && k !== CACHE).map(k => caches.delete(k))))
@@ -19,15 +19,16 @@ self.addEventListener('activate', e => e.waitUntil(
 
 self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipWaiting(); });
 
-// App files: network first, so every release shows up as soon as it is published; the cache is the offline fallback.
-// Fonts: cache after the first load. Everything else (the verse service): straight to the network.
+// App files come from this version's own copy, so the app you see is always the version that is in charge: a new
+// release waits in its own copy until you tap Update Ready. (It used to fetch app files from the network first,
+// which ran new code before the tap and left the update card with nothing to do.) Anything not in the copy is
+// fetched and kept. Fonts: cache after the first load. Everything else (the verse service): straight to the network.
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
   if (url.origin === location.origin) {
-    e.respondWith(fetch(e.request, { cache: 'no-cache' })
-      .then(r => { if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); } return r; })
-      .catch(() => caches.match(e.request, { ignoreSearch: true })));
+    e.respondWith(caches.open(CACHE).then(async c => (await c.match(e.request, { ignoreSearch: true }))
+      || fetch(e.request).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; })));
   } else if (/fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) {
     e.respondWith(caches.open(CACHE).then(async c => (await c.match(e.request)) || fetch(e.request).then(r => { c.put(e.request, r.clone()); return r; })));
   }
