@@ -10,8 +10,7 @@ const MODEL = 'data/models/speech-commands/model.json', META = 'data/models/spee
 import * as db from './db.js';
 export const DEFAULT_THRESHOLD = 0.85;
 let threshold = DEFAULT_THRESHOLD;
-db.getMeta('voice_threshold', DEFAULT_THRESHOLD).then(v => { threshold = v ?? DEFAULT_THRESHOLD; });
-export const getThreshold = () => threshold;
+export const getThreshold = async () => { if (!recognizer) threshold = (await db.getMeta('voice_threshold', DEFAULT_THRESHOLD)) ?? DEFAULT_THRESHOLD; return threshold; };
 export async function setThreshold(v) { threshold = v; await db.setMeta('voice_threshold', v); }
 
 export const voiceSupported = () => !!(navigator.mediaDevices?.getUserMedia && (globalThis.AudioContext || globalThis.webkitAudioContext));
@@ -30,6 +29,7 @@ const script = src => new Promise((ok, fail) => {
 export function ready() {
   if (recognizer) return Promise.resolve(recognizer);
   loading ??= (async () => {
+    threshold = (await db.getMeta('voice_threshold', DEFAULT_THRESHOLD)) ?? DEFAULT_THRESHOLD;
     for (const src of ENGINE) await script(src);
     const r = globalThis.speechCommands.create('BROWSER_FFT', undefined, new URL(MODEL, location.href).href, new URL(META, location.href).href);
     await r.ensureModelLoaded();
@@ -40,20 +40,30 @@ export function ready() {
   return loading;
 }
 
-// hit: called once when "stop" is heard. score (optional): called with every reading of how sure the model is that
-// it is hearing "stop" (0 to 1), for the dial's live meter.
-let onScore = null;
+// When it counts as "stop": the model's best guess for the sound must be "stop" (not background noise or another
+// word), above the dial's mark, on two readings in a row (about a quarter second apart). A single spike, which is
+// what quiet room noise produces, never counts. hit: called once when "stop" is heard. score (optional): called with
+// every reading, (how sure it is of "stop" from 0 to 1, whether this reading completed a "stop"), for the dial's meter.
+let onScore = null, streak = 0;
+export function judge(scores, index, mark) {
+  const s = scores[index];
+  const top = scores.every((x, k) => k === index || x < s);
+  streak = top && s >= mark ? streak + 1 : 0;
+  return streak >= 2;
+}
 export async function listen(hit, score = null) {
-  onHit = hit; onScore = score; fired = false; wanted = true;
+  onHit = hit; onScore = score; fired = false; wanted = true; streak = 0;
   const r = await ready();
   if (!wanted || r.isListening()) return;
   try {
     await r.listen(async result => {
       if (stopIndex < 0) return;
       const s = result.scores[stopIndex];
-      onScore?.(s);
-      if (fired || !onHit) return;
-      if (s >= threshold) { fired = true; const f = onHit; f(); }
+      const heard = judge(result.scores, stopIndex, threshold);
+      onScore?.(s, heard);
+      if (heard) streak = 0;
+      if (fired || !onHit || !heard) return;
+      fired = true; const f = onHit; f();
     }, { probabilityThreshold: 0, overlapFactor: 0.75, includeSpectrogram: false, invokeCallbackOnNoiseAndUnknown: true });
     if (!wanted) quiet();   // the timer ended while the mic was opening
   } catch (e) {

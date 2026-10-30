@@ -248,6 +248,14 @@ test('grip and pumps fill toward your average, then your best', async () => {
   eq(towardBest(8, past), { p: 1, stage: 'top', label: ' best' });
   eq(towardBest(9, past).label, ' new best');
 });
+test('voice stop counts only "stop" as the best guess, past the mark, twice in a row', async () => {
+  const { judge } = await import('../js/listen.js');
+  const S = (stop, noise = 0.1) => [noise, 0.05, 0.05, stop];   // background, unknown, go, stop
+  eq([S(0.9), S(0.1)].map(x => judge(x, 3, 0.6)), [false, false]);          // a lone spike never counts
+  eq([S(0.55, 0.4), S(0.58, 0.3), S(0.6, 0.2)].map(x => judge(x, 3, 0.6)), [false, false, false]);
+  eq([S(0.7, 0.8), S(0.7, 0.8)].map(x => judge(x, 3, 0.6)), [false, false]); // noise is the best guess
+  eq([S(0.7), S(0.75)].map(x => judge(x, 3, 0.6)), [false, true]);          // two in a row: stop
+});
 group('Program');
 test('push tips follow the progression rules and your last session', async () => {
   const { pushTip } = await import('../js/ui/detail.js');

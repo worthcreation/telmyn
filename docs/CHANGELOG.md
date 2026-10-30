@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.3 (2026-10-30)
+Voice stop no longer fires on room noise. A reading counted whenever "stop" scored past the mark, even when the
+model's best guess was background noise, so quiet spikes stopped timers. Now "stop" must be the best guess, past the
+mark, on two readings in a row (about a quarter second apart). The dial's meter uses the same rule.
+
 ## 0.22.2 (2026-10-30)
 Voice stop dial (Me, Voice stop). A live meter shows how sure the model is that it hears "stop", with a mark at the
 setting; slide toward Softer stop until your normal "stop" passes the mark. The setting is saved (85% to start,

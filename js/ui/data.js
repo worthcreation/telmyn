@@ -90,7 +90,7 @@ async function voiceSheet() {
 async function voiceStopSheet() {
   const { ready, listen, quiet, getThreshold, setThreshold, DEFAULT_THRESHOLD, voiceSupported } = await import('../listen.js');
   if (!voiceSupported()) return toast('This phone cannot use voice stop.');
-  let t = getThreshold();
+  let t = await getThreshold();
   const fillEl = h('span', { class: 'vm-fill' }), mark = h('span', { class: 'vm-mark' });
   const said = h('p', { class: 'vm-said' }, 'Getting the speech model ready');
   const value = h('b', {}, `${Math.round(t * 100)}%`);
@@ -99,7 +99,7 @@ async function voiceStopSheet() {
     oninput: e => { t = Number(e.target.value) / 100; place(); }, onchange: () => setThreshold(t) });
   let lastHit = 0;
   const body = h('div', { class: 'stack vstop' },
-    h('p', { class: 'muted small' }, 'Say “stop” the way you would mid-set. The bar shows how sure it is; it stops a timer when the bar passes the mark.'),
+    h('p', { class: 'muted small' }, 'Say “stop” the way you would mid-set. The bar shows how sure it is. A timer stops when “stop” is its best guess, past the mark, twice in a row; a lone flicker past the mark does not count.'),
     h('div', { class: 'vm' }, fillEl, mark), said,
     h('div', { class: 'vm-dial' }, h('span', { class: 'muted small' }, 'Softer stop'), slider, h('span', { class: 'muted small' }, 'Clearer stop')),
     h('p', { class: 'center' }, 'Acts at ', value, ' sure'),
@@ -109,9 +109,9 @@ async function voiceStopSheet() {
   try {
     await ready();
     said.textContent = 'Listening. Say “stop”.';
-    await listen(null, s => {
+    await listen(null, (s, heard) => {
       fillEl.style.transform = `scaleX(${s})`;
-      if (s >= t && Date.now() - lastHit > 1200) { lastHit = Date.now(); said.textContent = `Heard it (${Math.round(s * 100)}% sure)`; said.classList.add('ok'); setTimeout(() => { said.textContent = 'Listening. Say “stop”.'; said.classList.remove('ok'); }, 1200); }
+      if (heard && Date.now() - lastHit > 1200) { lastHit = Date.now(); said.textContent = `Heard it (${Math.round(s * 100)}% sure)`; said.classList.add('ok'); setTimeout(() => { said.textContent = 'Listening. Say “stop”.'; said.classList.remove('ok'); }, 1200); }
     });
   } catch { said.textContent = 'The speech model did not load, or the microphone is not allowed.'; }
 }
