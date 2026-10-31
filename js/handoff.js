@@ -81,7 +81,7 @@ export function parseHandoff(text) {
   day.bed_time = orNull((sleep.match(/bed\s*([^|]*)/i) || [])[1]);
   day.wake_time = orNull((sleep.match(/wake\s*(.*)$/i) || [])[1]);
 
-  for (const k of ['WEIGHT_LB', 'PROTEIN_G', 'WATER_OZ', 'OTHER_DRINKS_OZ', 'ROW_MIN']) day[k.toLowerCase()] = cleanNumber(raw[k]);
+  for (const k of ['WEIGHT_LB', 'PROTEIN_G', 'WATER_OZ', 'OTHER_DRINKS_OZ', 'ROW_MIN', 'ROW_M']) day[k.toLowerCase()] = cleanNumber(raw[k]);
 
   const st = split(raw.STRETCH);
   day.stretch_status = filled(st[0]);
@@ -197,6 +197,7 @@ export function buildHandoff({ day, sets, events, fluids }) {
     `  LEGS: ${legEx ? `${legName} | ${perLeg(of(legEx))} (per leg)${lbText(of(legEx))}` : ''}`,
     ...EXTRA.map(extraLine),
     `  ROW_MIN: ${v(rowMin)}`,
+    `  ROW_M: ${v(sets.find(s => s.exercise === 'row_dist')?.m ?? day.row_m)}`,
     `HANGS_SEC: ${joinSets(of('dead_hang').filter(s => s.block !== 'strength_a' && s.block !== 'strength_b'), 'sec')}`,
     `HOURLY_BLOCKS: ${v(hourlyCount)} | ${v(day.gripper) || 'CoC Trainer'} | ${v(palmNotes)}`,
     `PUMPS: ${pumps || ''}`,

@@ -96,8 +96,8 @@ const setLine = (rows, field = 'reps') => {
   for (const r of rows) (bySet[r.set_no || 1] ||= []).push(r);
   return Object.keys(bySet).sort((a, b) => a - b).map(k => bySet[k].map(r => `${r.side && r.side !== 'each' ? r.side : ''}${r[field]}${r.mode === 'negative' ? ' neg' : ''}`).join(' ')).join(' / ');
 };
-const UNIT = { reps: 'reps', sec: 'sec', min: 'min' };
-const fieldOf = rows => (rows.some(r => r.sec) ? 'sec' : rows.some(r => r.min) ? 'min' : 'reps');
+const UNIT = { reps: 'reps', sec: 'sec', min: 'min', m: 'm' };
+const fieldOf = rows => (rows.some(r => r.sec) ? 'sec' : rows.some(r => r.min) ? 'min' : rows.some(r => r.m) ? 'm' : 'reps');
 
 function dayArea(area, date, data, tips) {
   const plan = planFor(date), EX = plan.program.data.EXERCISES, rec = data.days[date] || {};
@@ -148,7 +148,7 @@ function dayArea(area, date, data, tips) {
     out.push(blockRow('gates', 'Fab Five'));
     if (/strength/.test(routine || '')) { out.push(blockRow(routine, plan.blocks.find(b => b.id === routine)?.name)); out.push(...exerciseRows(routine)); }
   } else if (area === 'endurance') {
-    if (routine === 'row') { out.push(blockRow('row', 'Row')); out.push(...exerciseRows('row')); if (!st.some(s => s.exercise === 'row') && rec.row_min) out.push(row(`Rowed ${rec.row_min} min`, [])); }
+    if (routine === 'row') { out.push(blockRow('row', 'Row')); out.push(...exerciseRows('row')); if (!st.some(s => s.exercise === 'row') && rec.row_min) out.push(row(`Rowed ${rec.row_min} min${rec.row_m ? `, ${rec.row_m} m` : ''}`, [])); }
     out.push(blockRow('walk', 'Walk'));
   } else if (area === 'grip') {
     const breaks = ev.filter(e => e.type === 'block_done' && e.block === 'hourly');

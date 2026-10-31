@@ -187,10 +187,13 @@ export function runBlock(block, opts = {}) {
     if (s.kind === 'rest') runRest(s); else if (s.kind === 'timed' || isTimedSet(s)) startStep(s);
   }
 
+  // What a set step logs: the record's field, its unit on screen, its unit in words, and the +/- step size.
+  const LOG = { reps: ['reps', 'reps', 'reps', 1], sec: ['sec', 'sec', 'seconds', 1], min: ['min', 'min', 'minutes', 1], m: ['m', 'm', 'meters', 10] };
+
   async function saveCurrent() {
     const s = steps[i];
     if (s.kind === 'set') {
-      const field = { reps: 'reps', sec: 'sec', min: 'min' }[s.log];
+      const field = LOG[s.log][0];
       const val = entry.value;
       if (val !== undefined && val !== null && val !== '') {
         await addSet({ block: block.id, exercise: s.exercise, set_no: s.set_no || 1, side: s.side || null, [field]: Number(val), mode: entry.mode || (s.modes ? 'full' : null), lb: weighted(s) ? entry.lb : undefined });
@@ -258,8 +261,7 @@ export function runBlock(block, opts = {}) {
 
   function stepper(s) {
     const prev = lastSet(s.exercise);
-    const field = { reps: 'reps', sec: 'sec', min: 'min' }[s.log];
-    const unit = { reps: 'reps', sec: 'sec', min: 'min' }[s.log];
+    const [field, unit, , stepBy] = LOG[s.log];
     // The box starts at the last set's number as a real value, so what shows is exactly what Save keeps. (It used to be
     // a grey placeholder: tapping Save on it saved nothing, and those sets were lost.) An empty box cannot be saved;
     // a set not done is entered as 0.
@@ -269,9 +271,9 @@ export function runBlock(block, opts = {}) {
       value: entry.value ?? '', oninput: e => { entry.value = e.target.value; syncSave(s); } });
     const bump = d => () => { const cur = Number(input.value || 0); input.value = Math.max(0, cur + d); entry.value = input.value; syncSave(s); };
     const kids = [h('div', { class: 'stepper' },
-      h('button', { class: 'round', 'aria-label': 'Less', onclick: bump(-1) }, '−'),
+      h('button', { class: 'round', 'aria-label': 'Less', onclick: bump(-stepBy) }, '−'),
       h('label', {}, input, h('span', {}, unit)),
-      h('button', { class: 'round', 'aria-label': 'More', onclick: bump(1) }, '+'))];
+      h('button', { class: 'round', 'aria-label': 'More', onclick: bump(stepBy) }, '+'))];
     if (s.modes) {
       entry.mode ||= 'full';
       kids.push(h('div', { class: 'seg' }, s.modes.map(m => h('button', { class: entry.mode === m ? 'on' : '', onclick: () => { entry.mode = m; render(); } }, m === 'full' ? 'Full range' : 'Negatives'))));
@@ -298,7 +300,7 @@ export function runBlock(block, opts = {}) {
     const btn = footEl.querySelector('.next-btn');
     if (!btn || s.kind !== 'set') return;
     const empty = entry.value === undefined || entry.value === null || entry.value === '';
-    const unit = { reps: 'reps', sec: 'seconds', min: 'minutes' }[s.log];
+    const unit = LOG[s.log][2];
     btn.disabled = empty;
     btn.textContent = empty ? `Enter ${unit}` : (i === steps.length - 1 ? 'Finish block' : 'Save and next');
   }

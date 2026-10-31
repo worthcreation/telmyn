@@ -26,6 +26,7 @@ export const EXERCISES = {
   magnet_curl: { ...v1.EXERCISES.magnet_curl, weight_lb: 20 },
   champagne_curl: { ...v1.EXERCISES.champagne_curl, weight_lb: 20 },
   windmills: { ...v1.EXERCISES.windmills, weight_lb: 20 },
+  row_dist: { name: 'Row distance' },   // meters from the monitor (Ross, 2026-10-30)
 };
 
 const C = {
@@ -150,6 +151,7 @@ export const BLOCKS = {
       step.timed('Row steady, 15 min', 900, { exercise: 'row', setup: 0, cue: 'Easy enough to talk in full sentences. Legs, body, arms.' }),
       step.timed('Row easy, 1-2 min', 120, { exercise: 'row', setup: 0, cue: 'Let your breathing settle. Stop at 1 min if you like.' }),
       step.set('row', 'Minutes rowed', { log: 'min', logField: 'row_min', cue: 'Enter the total time from the monitor.' }),
+      step.set('row_dist', 'Meters rowed', { log: 'm', logField: 'row_m', cue: 'Enter the total distance from the monitor.' }),
       ...phase('Cooldown', [
         ...eachSide('Calf stretch', 30, { exercise: 'calf_wall', cue: C.calf }, 'leg'),
         step.timed('Hamstring stretch', 30, { exercise: 'hamstring', cue: C.hamstring }),

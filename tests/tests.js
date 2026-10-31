@@ -256,6 +256,14 @@ test('voice stop counts only "stop" as the best guess, past the mark, twice in a
   eq([S(0.7, 0.8), S(0.7, 0.8)].map(x => judge(x, 3, 0.6)), [false, false]); // noise is the best guess
   eq([S(0.7), S(0.75)].map(x => judge(x, 3, 0.6)), [false, true]);          // two in a row: stop
 });
+test('meters rowed: logged in the row block, printed and read back', () => {
+  const plan = planFor('2026-10-30');
+  const steps = plan.program.data.BLOCKS.row.steps.filter(s => s.kind === 'set').map(s => `${s.exercise}:${s.log}`);
+  eq(steps, ['row:min', 'row_dist:m']);
+  const out = buildHandoff({ day: blankDay('2026-10-30'), sets: [{ date: '2026-10-30', exercise: 'row', min: 18, block: 'row' }, { date: '2026-10-30', exercise: 'row_dist', m: 3747, block: 'row' }], events: [], fluids: [] });
+  if (!out.includes('  ROW_M: 3747')) throw new Error('ROW_M missing');
+  eq(parseHandoff('DATE: 2026-10-30\n  ROW_M: 3747').day.row_m, 3747);
+});
 group('Program');
 test('push tips follow the progression rules and your last session', async () => {
   const { pushTip } = await import('../js/ui/detail.js');

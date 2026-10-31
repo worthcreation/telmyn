@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.23.3 (2026-10-30)
+Meters rowed. The row block ends with Minutes rowed, then Meters rowed (from the monitor, +/- in steps of 10). The
+distance shows in the Endurance breakdown and goes in the handoff as ROW_M, and a pasted ROW_M line fills it in for
+a past day.
+
 ## 0.23.2 (2026-10-30)
 Voice stop is shelved. One switch (VOICE_STOP in js/config.js) hides the mic button and the Voice stop screen and
 keeps anything from listening, even if voice stop was left on. The code, the model and any recordings stay for
