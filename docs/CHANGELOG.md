@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.24.1 (2026-10-31)
+Meters rowed show at a glance. This Week's Endurance bar reads rows, minutes and meters, and the Endurance breakdown
+says the amounts on each row ("Rowing 19 min", "Row distance 3,747 m") instead of "1 set" behind a tap. The meters
+were always saved at the end of the row block; they were only hidden.
+
 ## 0.24.0 (2026-10-31)
 Weekend calf raises, follow-up reminders, a badge per reminder, and study videos that keep going. Includes 0.23.4.
 On Saturday and Sunday the Pumps pill becomes Calf (30 reps a set, Ross's change): tap logs a set, hold for the

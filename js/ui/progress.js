@@ -6,7 +6,7 @@ import { journalSheet } from './journal.js';
 import { daySheet } from './day.js';
 import { areaSheet } from './detail.js';
 import { weightList } from './history.js';
-import { fluidTotals } from '../schema.js';
+import { fluidTotals, rowTotals } from '../schema.js';
 import { state } from '../state.js';
 import { planFor, blockStatus, PROGRAMS } from '../program/index.js';
 import { addDays, weekday, WEEKDAYS } from '../clock.js';
@@ -53,7 +53,9 @@ export async function renderProgress(root) {
   const strengthDone = past.filter(d => done(d, typeOn(d))).filter(d => /strength/.test(typeOn(d))).length;
   const rowPlanned = past.filter(d => typeOn(d) === 'row').length;
   const rowDone = past.filter(d => typeOn(d) === 'row' && done(d, 'row')).length;
-  const rowMin = st.filter(s => s.exercise === 'row').reduce((a, s) => a + (s.min || 0), 0) || past.reduce((a, d) => a + (dayRec[d]?.row_min || 0), 0);
+  // Minutes and meters rowed this week, each day from its row block or its imported numbers (one rule: rowTotals).
+  const rowed = past.map(d => rowTotals(dayRec[d] || {}, st.filter(s => s.date === d)));
+  const rowMin = rowed.reduce((a, r) => a + (r.min || 0), 0), rowM = rowed.reduce((a, r) => a + (r.m || 0), 0);
   const pulls = st.filter(s => /chin_up|neutral_pullup/.test(s.exercise) && s.reps).map(s => s.reps);
   const hangs = st.filter(s => s.exercise === 'dead_hang' && s.sec).map(s => s.sec);
   const hourly = ev.filter(e => e.block === 'hourly' && e.type === 'block_done').length + past.reduce((a, d) => a + (dayRec[d]?.hourly_blocks_count || 0), 0);
@@ -74,7 +76,7 @@ export async function renderProgress(root) {
     strip,
     h('section', { class: 'stats' },
       bar('Strength', strengthDone, strengthPlanned || null, `${strengthDone}/${strengthPlanned} sessions${pulls.length ? `, best pull set ${Math.max(...pulls)}` : ''}`, week('strength')),
-      bar('Endurance', rowDone, rowPlanned || null, `${rowDone}/${rowPlanned} rows, ${Math.round(rowMin)} min`, week('endurance')),
+      bar('Endurance', rowDone, rowPlanned || null, `${rowDone}/${rowPlanned} rows, ${Math.round(rowMin)} min${rowM ? `, ${rowM.toLocaleString('en-US')} m` : ''}`, week('endurance')),
       bar('Grip', hangs.length ? Math.max(...hangs) : 0, 20, `${hourly} grip breaks${hangs.length ? `, best hang ${Math.max(...hangs)} sec` : ''}`, week('grip')),
       bar('Mobility', stretchDays, elapsed, `${stretchDays}/${elapsed} morning stretches`, week('mobility')),
       bar('Fuel', proteinDays, elapsed, `${proteinDays}/${elapsed} days at ${TARGETS.protein_g[0]} g protein`, week('fuel')),

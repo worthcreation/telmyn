@@ -1,5 +1,5 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.24.0';
+const VERSION = '0.24.1';
 const CACHE = `telmyn-${VERSION}`;
 // Fonts keep their own cache across versions: dropping them with each update made every update load with the
 // stand-in font first and then jump when the real one arrived.

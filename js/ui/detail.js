@@ -145,7 +145,9 @@ function dayArea(area, date, data, tips) {
       const one = list => (list.some(r => r.side === 'L') ? list.filter(r => r.side === 'L') : list);
       const amount = list => one(list).reduce((a, r) => a + (r[field] || 0), 0);
       const gain = last ? amount(rows) - amount(last.rows) : 0;
-      return row(`${EX[ex]?.name || ex}, ${plural(sets, 'set')}`, [`${setLine(rows, field)} ${UNIT[field]}${lbs.length ? ` at ${lbs.join(' / ')} lb` : ''}`, times.length ? (times.length > 1 ? `${t(times[0])} to ${t(times[times.length - 1])}` : t(times[0])) : null],
+      // Minutes and meters are totals, not sets: the summary says the amount ("Row distance 3,747 m").
+      const head = field === 'min' || field === 'm' ? `${EX[ex]?.name || ex} ${amount(rows).toLocaleString('en-US')} ${UNIT[field]}` : `${EX[ex]?.name || ex}, ${plural(sets, 'set')}`;
+      return row(head, [`${setLine(rows, field)} ${UNIT[field]}${lbs.length ? ` at ${lbs.join(' / ')} lb` : ''}`, times.length ? (times.length > 1 ? `${t(times[0])} to ${t(times[times.length - 1])}` : t(times[0])) : null],
         { tag: gain > 0 ? `up ${gain}` : null });
     });
   };
