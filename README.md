@@ -25,20 +25,11 @@ test-site/ on a temporary copy. Fake clock there: ?date=2026-11-02&time=06:25&sp
 ```
 node tests/tests.js
 ```
-Before every release Claude also runs tests/layout_sweep.py: every page and sheet at eight phone heights (640 to 915 px).
-Or open /tests/ in a browser.
+Before every release Claude also runs `python3 tests/sweep.py` (layout at seven phone heights, button room, landscape;
+one browser, about a minute). Or open /tests/ in a browser for tests.js alone.
 
-## Release (how updates ship)
-1. Claude starts every build from this GitHub repo, makes the change, sets the version with `node tools/bump.mjs X.Y.Z`
-   (updates js/version.js and sw.js together), runs the tests, and delivers one git patch file named
-   `telmyn-X.Y.Z-YYYYMMDD-HHMM.patch`.
-2. Ross downloads the patch and runs:
-```
-powershell -ExecutionPolicy Bypass -File "$HOME\telmyn\tools\apply.ps1"
-```
-   Each patch is cumulative (everything since what is live), one file per update. The script syncs with GitHub,
-   applies the newest telmyn patch in Downloads, runs the tests, pushes only if they pass, and deletes all telmyn
-   patches and zips from Downloads. If anything fails, nothing is pushed and the files are put back.
+## Release
+See docs/MAP.md (where everything lives) and docs/ARCHITECTURE.md (rules and the release steps).
 
 ## Cloudflare (verse service and test app)
 The Worker answers only requests from Telmyn's own addresses. Telmyn has its own Cloudflare sign-in in `.cfhome` (git-ignored), separate from NFC's. Run Wrangler through
@@ -46,5 +37,3 @@ The Worker answers only requests from Telmyn's own addresses. Telmyn has its own
 
 ## Credits
 Greek and Hebrew word data (data/original.json): STEPBible.org TAGNT and TAHOT, from Tyndale House Cambridge, CC BY 4.0.
-Voice stop: TensorFlow.js 3.21.0 and speech-commands 0.5.4 (js/vendor), and the speech-commands 18w model
-(data/models/speech-commands, fetched by tools/model.ps1), all from Google, Apache License 2.0.

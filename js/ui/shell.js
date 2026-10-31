@@ -2,7 +2,7 @@
 import { h, fill, toast, holdable, TABS as TAB_LIST, tabBar } from './dom.js';
 import { gripList, legList } from './history.js';
 import { state, logGripBreak, removeEvent, addEvent, legToday } from '../state.js';
-import { fluidTotals } from '../schema.js';
+import { fluidOz, gripBreaks, habitSets, isDone } from '../log.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
 import { overdueLevel, towardBest } from '../status.js';
 import * as db from '../db.js';
@@ -32,7 +32,7 @@ async function pastCounts() {
   for (const d of days) if (d.date >= start && d.date < state.date && d.hourly_blocks_count) grip[d.date] = d.hourly_blocks_count;
   for (const e of events) {
     if (!(e.date >= start && e.date < state.date)) continue;
-    if (e.type === 'block_done' && e.block === 'hourly') grip[e.date] = (grip[e.date] || 0) + 1;
+    if (isDone(e, 'hourly')) grip[e.date] = (grip[e.date] || 0) + 1;
     if (e.type === 'habit' && legs[e.habit]) legs[e.habit][e.date] = (legs[e.habit][e.date] || 0) + 1;
   }
   pastCache = { date: state.date, counts: { grip: Object.values(grip), ...Object.fromEntries(Object.entries(legs).map(([k, v]) => [k, Object.values(v)])) } };
@@ -48,7 +48,7 @@ function gripPill(day, rerender, past) {
   const hist = hourlyHistory(day, state.events);
   const np = nextPalms(hist) || 'down';
   const arrow = np === 'up' ? '↑' : '↓';
-  const lvl = overdueLevel('grip', state.events.filter(e => e.type === 'block_done' && e.block === 'hourly').pop()?.at);
+  const lvl = overdueLevel('grip', gripBreaks(state.events).pop()?.at);
   const a = paceAttrs(hist.length, past.grip, lvl);
   return holdable(h('button', { class: a.cls, style: a.style, 'data-due': lvl || null, 'aria-label': `Grip break, ${hist.length} today${a.label}. Tap to log one, palms ${np}.`, onclick: async () => {
     const { e, n, palms } = await logGripBreak();
@@ -64,7 +64,7 @@ function gripPill(day, rerender, past) {
 function legPill(rerender, past) {
   const leg = legToday();
   if (!leg) return null;
-  const list = state.events.filter(e => e.type === 'habit' && e.habit === leg.key);
+  const list = habitSets(state.events, leg.key);
   const lvl = overdueLevel(leg.remind, list[list.length - 1]?.at);
   const a = paceAttrs(list.length, past[leg.key] || [], lvl);
   return holdable(h('button', { class: a.cls, style: a.style, 'data-due': lvl || null, 'aria-label': `${leg.name}, ${list.length} today${a.label}. Tap to log a set.`, onclick: async () => {
@@ -91,8 +91,7 @@ export async function renderShell(root) {
   const seq = ++renderSeq;
   const { plan, day } = state;
   const { TARGETS } = plan.program.data;
-  const t = fluidTotals(day, state.fluids);
-  const fluids = Math.round(((t.water_oz || 0) + (t.other_drinks_oz || 0)) * 10) / 10;
+  const fluids = fluidOz(day, state.fluids) || 0;
   const tab = current();
   const view = h('main', { class: `view view-${tab.id}` });
   const rerender = () => renderShell(root);

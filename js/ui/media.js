@@ -1,6 +1,6 @@
 // In-app video: every Watch button plays here, never on another site.
 // Also the landscape switch used by any full-screen video (fullscreen + orientation lock, Android Chrome).
-import { h } from './dom.js';
+import { h, decode } from './dom.js';
 import { loadApi, ytHost, ytVars } from './study-player.js';
 import { getMeta, setMeta } from '../db.js';
 import { API_BASE } from '../config.js';
@@ -50,7 +50,6 @@ export const watchButton = (label, url, hooks = {}, title = label, pick = null) 
     h('span', { class: 'wc-i', 'aria-hidden': 'true' }, '▶'), label);
 };
 
-const decode = t => { const e = document.createElement('textarea'); e.innerHTML = t; return e.value; };
 
 // Full-screen player over whatever is open. Only ✕, the title and the landscape switch sit on top of the video.
 export async function playVideo(url, title = 'Video', { onOpen, onClose, pick = null } = {}) {

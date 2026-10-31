@@ -1,7 +1,8 @@
 // Converts between the chat handoff text and app records, both directions.
 // Import keeps the full original text in handoff_raw so nothing is ever lost, then parses what is clean.
-import { isoDate } from './clock.js';
-import { cleanNumber, blankDay, fluidTotals, rowTotals } from './schema.js';
+import { isoDate, atTime } from './clock.js';
+import { cleanNumber, blankDay } from './schema.js';
+import { fluidTotals, rowTotals, gripBreaks, habitSets, doneEvent } from './log.js';
 import { planFor, blockStatus } from './program/index.js';
 import { verseFor } from './verses.js';
 
@@ -164,7 +165,7 @@ export function buildHandoff({ day, sets, events, fluids }) {
   const legEx = of('bss').length ? 'bss' : of('sl_rdl').length ? 'sl_rdl' : null;
   const legName = { bss: 'Bulgarian split squats', sl_rdl: 'Single-leg RDL' }[legEx] || '';
 
-  const hourly = events.filter(e => e.type === 'block_done' && e.block === 'hourly');
+  const hourly = gripBreaks(events);
   const base = day.hourly_blocks_count || 0;
   const hourlyCount = hourly.length ? base + hourly.length : day.hourly_blocks_count;
   const appPalms = hourly.map((e, i) => `block ${base + i + 1} palms ${e.palms || 'not noted'}`).join(', ');
@@ -175,13 +176,12 @@ export function buildHandoff({ day, sets, events, fluids }) {
     if (!rows.length) return `  ${x.key}: `;
     return `  ${x.key}: ${x.sides ? `${perLeg(rows, x.field || 'reps')} (${x.unit})` : joinSets(rows, x.field || 'reps')}${lbText(rows)}`;
   };
-  const habitCount = key => events.filter(e => e.type === 'habit' && e.habit === key).length;
+  const habitCount = key => habitSets(events, key).length;
   // What was eaten: your own notes, then each logged food's line (skipping any already in the notes from before).
   const eating = [day.eating_notes, ...events.filter(e => e.type === 'food' && e.line && !(day.eating_notes || '').includes(e.line)).map(e => e.line)].filter(Boolean).join(' ');
   // When each block finished, in the phone's local time, in program order (last finish if done more than once).
-  const hhmm = iso => { const d = new Date(iso); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
-  const doneAt = id => [...events].reverse().find(e => e.block === id && e.type === 'block_done')?.done_at;
-  const blockTimes = plan.blocks.filter(b => doneAt(b.id)).map(b => `${b.name} ${hhmm(doneAt(b.id))}`).join(' | ');
+  const doneAt = id => doneEvent(events, id)?.done_at;
+  const blockTimes = plan.blocks.filter(b => doneAt(b.id)).map(b => `${b.name} ${atTime(doneAt(b.id))}`).join(' | ');
   const routine = plan.blocks.find(b => !['stretch', 'gates', 'hangs', 'evening_legs'].includes(b.id));
 
   const lines = [

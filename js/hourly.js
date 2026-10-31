@@ -1,5 +1,6 @@
 // Hourly block history: blocks imported from a chat handoff (palms parsed from the notes) plus blocks logged in the app.
 // Shared by Today and the runner so both suggest the same next palms.
+import { gripBreaks } from './log.js';
 
 export function hourlyHistory(day, events) {
   const out = [];
@@ -9,7 +10,7 @@ export function hourlyHistory(day, events) {
   }
   const imported = Math.max(day?.hourly_blocks_count || 0, out.length);
   while (out.length < imported) out.push({ n: out.length + 1, palms: null, at: null, source: 'import' });
-  events.filter(e => e.type === 'block_done' && e.block === 'hourly')
+  gripBreaks(events)
     .forEach((e, k) => out.push({ n: imported + k + 1, palms: e.palms || null, at: e.at, source: 'app' }));
   return out;
 }

@@ -9,6 +9,7 @@ import * as db from './db.js';
 import { state, onChange } from './state.js';
 import { planFor } from './program/index.js';
 import { due } from './reminder-rules.js';
+import { gripBreaks, habitSets } from './log.js';
 import { API_BASE } from './config.js';
 import { SITE } from './site.js';
 import { now } from './clock.js';
@@ -39,13 +40,12 @@ async function post(path, body) {
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Push service unavailable.');
 }
 function lastTimes() {
-  const at = pred => state.events.filter(pred).pop()?.at;
   const ms = v => (v ? new Date(v).getTime() : undefined);
   const H = planFor(state.date).program.data.HABITS || {};
   return {
-    grip: ms(at(e => e.type === 'block_done' && e.block === 'hourly')),
-    pumps: ms(at(e => e.type === 'habit' && e.habit === 'ankle_pumps')),
-    calf: ms(at(e => e.type === 'habit' && e.habit === 'calf_raises')),
+    grip: ms(gripBreaks(state.events).pop()?.at),
+    pumps: ms(habitSets(state.events, 'ankle_pumps').pop()?.at),
+    calf: ms(habitSets(state.events, 'calf_raises').pop()?.at),
     weight: state.day.weight_lb !== null && state.day.weight_lb !== undefined ? state.date : undefined,
     say: { pumps: H.ankle_pumps?.amount, calf: H.calf_raises?.amount },
   };

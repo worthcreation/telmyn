@@ -7,13 +7,16 @@
    - Time: `js/clock.js` (fake clock only in the test app)
    - Which copy: `js/site.js` ('live'; the test app ships 'test')
    - Daily fields: `js/schema.js` (form, import and export all read it)
-   - Program content: `js/program/vN.js`, chosen by date in `js/program/index.js`
+   - Program content: `js/program/vN.js`, chosen by date in `js/program/index.js` (v1.1 is the one in effect; v1 was folded into it)
+   - Facts from the log (counts, totals, last times): `js/log.js`. Screens never filter events or sets themselves.
    - Version: `js/version.js`
    - Reminder rules (days, hours, intervals, follow-ups): `js/reminder-rules.js`, bundled into the Worker too
    - Look: `css/tokens.css` holds every color, text size, line height, space, radius, control height and layer order.
      `css/app.css` is one rule per component in reading order and uses only token names; nothing is appended as an
      override. Shared components: btn, chip, tile, card, lbl, note-field, layer. Text that must fit a box is sized
-     only by `fitText` in `js/ui/dom.js`. tests/tests.js fails a release that breaks any of this.
+     only by `fitText` in `js/ui/dom.js`. Shared pieces (bar, tile, date labels, decode, plural) live in `js/ui/dom.js`
+     and `js/clock.js`, never redefined in a screen. tests/tests.js fails a release that breaks any of this.
+   - Where things live: `docs/MAP.md` (read first in every build).
 4. Record facts, derive everything else. Totals, statuses, handoff text and XP are computed from events, sets and fluids.
 5. Screens fit one phone screen: no page scrolling and no visible scrollbars. Spare space gets useful content, not padding.
 6. Blank means not recorded. 0 means recorded as zero. Non-numbers never become numbers.
@@ -53,13 +56,18 @@ send reminders by the rules in js/reminder-rules.js. The YouTube Data API key is
 Phase 2 adds alarm pushes here. The app finds it through js/config.js (API_BASE).
 
 ## Delivery
-Every build starts from the GitHub repo (the single source of truth). Each release is one git patch,
-telmyn-X.Y.Z-YYYYMMDD-HHMM.patch, applied with tools/apply.ps1, which tests before pushing. See README.
+Every build starts from the GitHub repo (the single source of truth). Claude sets the version with `node tools/bump.mjs
+X.Y.Z` (js/version.js and sw.js together), runs `node tests/tests.js` and `python3 tests/sweep.py`, and delivers one
+cumulative git patch, telmyn-X.Y.Z-YYYYMMDD-HHMM.patch. Ross runs tools/apply.ps1: it syncs with GitHub, applies the
+newest telmyn patch in Downloads, runs the tests, pushes only if they pass, redeploys the Worker when worker/ or
+js/reminder-rules.js changed, deploys the test app, and cleans Downloads. If anything fails, nothing is pushed.
+Voice stop (on-device "stop" word, 0.21.8 to 0.23.2) was removed in 0.25.0; its code, engine and model are in the
+git history at tag voice-stop.
 
 ## Roadmap
 - Phase 2: tight-mode alarms via a Cloudflare Worker (cron + Web Push). Worker stores only block names and times.
 - Phase 3: XP and levels once 3-4 weeks of real data exist. Physical skills from real accomplishments only; Discipline gives bonuses.
-- Later: history and charts, settings for block mode and times, wearables.
+- Later: history and charts, settings for block mode and times, wearables. Voice stop can return from tag voice-stop.
 
 ## Verse rules (carried from the Bible study series)
 Verse text in its own block, never italic, added only after checking it word for word against the NKJV.

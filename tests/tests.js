@@ -2,7 +2,8 @@
 import { parseHandoff, buildHandoff } from '../js/handoff.js';
 import { verseFor } from '../js/verses.js';
 import { planFor, weekAndDay, nextBlock } from '../js/program/index.js';
-import { cleanNumber, fluidTotals, blankDay } from '../js/schema.js';
+import { cleanNumber, blankDay } from '../js/schema.js';
+import { fluidTotals, rowTotals } from '../js/log.js';
 import { transitionSec } from '../js/flow.js';
 import { hourlyHistory, nextPalms } from '../js/hourly.js';
 import { FOODS, foodByKey, foodLine, addLine, removeLine } from '../js/foods.js';
@@ -208,7 +209,6 @@ group('Data');
 test('toe touch reach from older handoffs still reads in (no longer exported)', () => eq(parseHandoff(SAMPLE).day.toe_touch_notes, 'nearly palms flat, legs nearly straight'));
 test('no data stays blank', () => eq(fluidTotals(blankDay('2026-10-27'), []), { water_oz: null, other_drinks_oz: null }));
 test('rowed minutes and meters: from the row block, else the imported numbers, blank when neither', async () => {
-  const { rowTotals } = await import('../js/schema.js');
   eq([rowTotals({}, [{ exercise: 'row', min: 19 }, { exercise: 'row_dist', m: 3747 }]), rowTotals({ row_min: 20, row_m: null }, []), rowTotals({}, [])],
     [{ min: 19, m: 3747 }, { min: 20, m: null }, { min: null, m: null }]);
 });
@@ -282,14 +282,6 @@ test('grip and pumps fill toward your average, then your best', async () => {
   eq(towardBest(7, past), { p: 0, stage: 'best', label: ' / 8 best' });
   eq(towardBest(8, past), { p: 1, stage: 'top', label: ' best' });
   eq(towardBest(9, past).label, ' new best');
-});
-test('voice stop counts only "stop" as the best guess, past the mark, twice in a row', async () => {
-  const { judge } = await import('../js/listen.js');
-  const S = (stop, noise = 0.1) => [noise, 0.05, 0.05, stop];   // background, unknown, go, stop
-  eq([S(0.9), S(0.1)].map(x => judge(x, 3, 0.6)), [false, false]);          // a lone spike never counts
-  eq([S(0.55, 0.4), S(0.58, 0.3), S(0.6, 0.2)].map(x => judge(x, 3, 0.6)), [false, false, false]);
-  eq([S(0.7, 0.8), S(0.7, 0.8)].map(x => judge(x, 3, 0.6)), [false, false]); // noise is the best guess
-  eq([S(0.7), S(0.75)].map(x => judge(x, 3, 0.6)), [false, true]);          // two in a row: stop
 });
 test('meters rowed: logged in the row block, printed and read back', () => {
   const plan = planFor('2026-10-30');

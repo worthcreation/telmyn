@@ -1,12 +1,13 @@
 // Breakdowns: tap any part of This week or a Day log and it opens here, at the level you were on. A week shows each
 // day of that area; a day shows that area's parts. Rows say only what was done; tap a row for its sets, reps and
 // times. Strength, Endurance and Grip end with how to push next time, worked out from your own last session.
-import { h, fill, sheet } from './dom.js';
+import { h, fill, sheet, plural } from './dom.js';
 import * as db from '../db.js';
 import { state } from '../state.js';
 import { planFor, blockStatus, PROGRAMS, LEG_HABITS } from '../program/index.js';
-import { fluidTotals, FLUID_KINDS, rowTotals } from '../schema.js';
-import { addDays, hhmm, weekday, WEEKDAYS } from '../clock.js';
+import { FLUID_KINDS } from '../schema.js';
+import { fluidOz, rowTotals, rowText, gripBreaks, habitSets, doneEvent } from '../log.js';
+import { addDays, atTime as t, weekday, WEEKDAYS, dayLabel } from '../clock.js';
 import { foodByKey } from '../foods.js';
 
 export const AREAS = {
@@ -16,11 +17,7 @@ export const AREAS = {
 // Which area a block belongs to, so a block's circle opens the right breakdown.
 export const BLOCK_AREA = { stretch: 'mobility', gates: 'strength', strength_a: 'strength', strength_b: 'strength', row: 'endurance', hangs: 'grip', hourly: 'grip', evening_legs: 'recovery', walk: 'endurance' };
 
-const t = iso => (iso ? hhmm(new Date(iso)) : '');
 const span = (a, b) => (a && b ? `${t(a)} to ${t(b)}, ${Math.max(1, Math.round((new Date(b) - new Date(a)) / 60000))} min` : b ? `finished ${t(b)}` : '');
-const dayName = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }); };
-const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
-const round = n => Math.round(n * 10) / 10;
 
 // One expandable row, the same everywhere. The summary says what was done; a green check marks a target met or a
 // block done, a thin meter shows progress toward a target, and a green "up" tag marks a session that beat the last.
@@ -110,7 +107,7 @@ function dayArea(area, date, data, tips) {
   const plan = planFor(date), EX = plan.program.data.EXERCISES, rec = data.days[date] || {};
   const ev = data.events.filter(e => e.date === date), st = data.sets.filter(s => s.date === date), fl = data.fluids.filter(f => f.date === date);
   const status = id => blockStatus(id, ev, rec, plan);
-  const doneEv = id => [...ev].reverse().find(e => e.block === id && e.type === 'block_done');
+  const doneEv = id => doneEvent(ev, id);
   // A block's timeline: every logged step and set in the order done, each with its time.
   const timeline = (id, pick = () => true) => {
     const steps = ev.filter(e => e.type === 'step' && e.block === id && pick(e))
@@ -157,10 +154,15 @@ function dayArea(area, date, data, tips) {
     out.push(blockRow('gates', 'Fab Five'));
     if (/strength/.test(routine || '')) { out.push(blockRow(routine, plan.blocks.find(b => b.id === routine)?.name)); out.push(...exerciseRows(routine)); }
   } else if (area === 'endurance') {
-    if (routine === 'row') { out.push(blockRow('row', 'Row')); out.push(...exerciseRows('row')); if (!st.some(s => s.exercise === 'row')) { const r = rowTotals(rec, st); if (r.min != null || r.m != null) out.push(row(`Rowed ${[r.min != null ? `${r.min} min` : '', r.m != null ? `${r.m} m` : ''].filter(Boolean).join(', ')}`, [])); } }
+    if (routine === 'row') { out.push(blockRow('row', 'Row')); out.push(...exerciseRows('row')); 
+      // Numbers carried in from a chat handoff without a logged set (a ROW_MIN or ROW_M line pasted in).
+      const r = rowTotals(rec, st);
+      if (!st.some(s => s.exercise === 'row') && r.min != null) out.push(row(`Rowing ${r.min} min`, []));
+      if (!st.some(s => s.exercise === 'row_dist') && r.m != null) out.push(row(`Row distance ${rowText({ m: r.m })}`, []));
+    }
     out.push(blockRow('walk', 'Walk'));
   } else if (area === 'grip') {
-    const breaks = ev.filter(e => e.type === 'block_done' && e.block === 'hourly');
+    const breaks = gripBreaks(ev);
     const n = breaks.length + (rec.hourly_blocks_count || 0);
     if (n) out.push(row(plural(n, 'grip break'), breaks.map(e => ({ at: e.done_at || e.at, what: 'Grip break', amt: `palms ${e.palms || '?'}` })), { notes: rec.hourly_palm_notes }));
     out.push(blockRow('hangs', 'Dead hangs'));
@@ -184,8 +186,7 @@ function dayArea(area, date, data, tips) {
     out.push(row(`Protein ${Math.round(g)} of ${target} g`, timed.map(e => ({ at: e.at, what: e.type === 'food' ? (foodByKey(e.food)?.label || 'Food') : 'Added', amt: `${Math.round(e.protein_g)} g` })),
       { ok: g >= target, meter: [g, target], notes: notes || null }));
   } else if (area === 'hydration') {
-    const target = plan.program.data.TARGETS.fluids_oz[0], ft = fluidTotals(rec, fl);
-    const oz = round((ft.water_oz || 0) + (ft.other_drinks_oz || 0));
+    const target = plan.program.data.TARGETS.fluids_oz[0], oz = fluidOz(rec, fl) || 0;
     out.push(row(`Fluids ${oz} of ${target} oz`, [...fl].sort((a, b) => (a.at || '').localeCompare(b.at || '')).map(f => ({ at: f.at, what: FLUID_KINDS.find(k => k.key === f.kind)?.label || f.kind, amt: `${f.oz} oz` })),
       { ok: oz >= target, meter: [oz, target], notes: rec.drinks_notes }));
   } else if (area === 'recovery') {
@@ -193,7 +194,7 @@ function dayArea(area, date, data, tips) {
     // Ankle pumps and calf raises (weekends), each with its own row and amount.
     const H = plan.program.data.HABITS || {};
     for (const key of LEG_HABITS) {
-      const list = ev.filter(e => e.type === 'habit' && e.habit === key);
+      const list = habitSets(ev, key);
       if (list.length) out.push(row(`${H[key]?.name || key}, ${plural(list.length, 'set')}`, list.map(e => ({ at: e.at, what: H[key]?.name || key, amt: H[key]?.amount || '' }))));
     }
     if (rec.bed_time || rec.wake_time) out.push(row(`Sleep ${rec.bed_time || '?'} to ${rec.wake_time || '?'}`, []));
@@ -207,7 +208,7 @@ function dayArea(area, date, data, tips) {
 export async function areaSheet(area, from, to = from) {
   const body = h('div', { class: 'dl' }, h('p', { class: 'muted small' }, 'Loading…'));
   const single = from === to;
-  sheet(single ? `${AREAS[area]}, ${dayName(from).split(',')[0]}` : `${AREAS[area]} this week`, body, { full: true });
+  sheet(single ? `${AREAS[area]}, ${dayLabel(from, { long: true }).split(',')[0]}` : `${AREAS[area]} this week`, body, { full: true });
   const start = PROGRAMS[0].effective, end = to > state.date ? state.date : to;
   const data = await load(from, end);
   const dates = [];

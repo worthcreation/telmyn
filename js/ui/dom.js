@@ -15,6 +15,22 @@ export function h(tag, attrs = {}, ...kids) {
 // Like replaceChildren, but skips null/false so conditional children never print as text.
 export const fill = (el, ...kids) => el.replaceChildren(...kids.flat().filter(k => k !== null && k !== undefined && k !== false));
 
+// Text helpers used across screens.
+export const decode = t => { const e = document.createElement('textarea'); e.innerHTML = t || ''; return e.value; };
+export const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+// The shared kit (one shape each, used by This week, the Day log and the forms): a stat bar with a label, a detail
+// and a fill toward a target (green when met; no bar when there is no target), and a tile with a label, a big value
+// and a small line. Pass onclick to make either open something.
+export function bar(label, value, target, detail, onclick) {
+  const p = target ? Math.min(1, (value || 0) / target) : null;
+  return h(onclick ? 'button' : 'div', { class: 'stat', onclick, 'aria-label': onclick ? `${label}: ${detail}. Open its breakdown.` : null },
+    h('div', { class: 'stat-top' }, h('span', { class: 'stat-l' }, label), h('span', { class: 'stat-d' }, detail)),
+    p === null ? null : h('div', { class: `stat-bar${p >= 1 ? ' met' : ''}` }, h('span', { style: `--p:${p}` })));
+}
+export const tile = (label, v, sub, onclick) => h(onclick ? 'button' : 'div', { class: 'tile', onclick },
+  h('span', { class: 'tile-l' }, label), h('b', {}, v === null || v === undefined ? '–' : String(v)), sub ? h('small', {}, sub) : null);
+
 export const $ = (sel, root = document) => root.querySelector(sel);
 
 // Layers: every sheet and full-screen view in the app shares one look (frosted glass over the app, so you keep your

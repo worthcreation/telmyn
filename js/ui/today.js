@@ -6,13 +6,12 @@ import { state, addEvent } from '../state.js';
 import * as db from '../db.js';
 import { weightLevel } from '../status.js';
 import { nextBlock, blockStatus } from '../program/index.js';
-import { hhmm, daysBetween } from '../clock.js';
+import { hhmm, daysBetween, dayLabel } from '../clock.js';
 import { runBlock } from './runner.js';
 import { weightSheet, lastWeight } from './forms.js';
 import { verseSheet } from './verse.js';
 import { getVersion, fetchVerse } from '../scripture.js';
 
-const prettyDate = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
 
 // Day ring: blocks closed out of the day's blocks, drawn around the count.
 // A due reminder pulses like a slow heartbeat on the item it is about, stronger the longer it waits (styles: .due).
@@ -105,7 +104,7 @@ export async function renderToday(root, rerender) {
 
   fill(root,
     h('header', { class: 'top' },
-      h('p', { class: 'date' }, prettyDate(plan.date), h('span', { class: 'wkday' }, `Week ${plan.week}, Day ${plan.day}`)),
+      h('p', { class: 'date' }, dayLabel(plan.date), h('span', { class: 'wkday' }, `Week ${plan.week}, Day ${plan.day}`)),
       h('h1', { class: 'daytype' }, `${plan.typeLabel} Day`),
       weigh),
     versePanel,

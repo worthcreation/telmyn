@@ -1,11 +1,12 @@
-import { h, sheet, toast, fill, noteField } from './dom.js';
+import { h, sheet, toast, fill, noteField, tile } from './dom.js';
 import { state, setField, addFluid, removeFluid, restoreFluid, addProtein, removeProtein, addFood, undoFood, addEvent, load } from '../state.js';
 import { FOODS, foodByKey } from '../foods.js';
 import * as db from '../db.js';
 import { planFor, blockStatus } from '../program/index.js';
 import { hourlyHistory } from '../hourly.js';
-import { now, hhmm, addDays, daysBetween } from '../clock.js';
-import { DAY_FIELDS, FLUID_KINDS, ozFromMl, cleanNumber, fluidTotals, blankDay } from '../schema.js';
+import { now, hhmm, addDays, daysBetween, dayLabel } from '../clock.js';
+import { DAY_FIELDS, FLUID_KINDS, ozFromMl, cleanNumber, blankDay } from '../schema.js';
+import { fluidTotals } from '../log.js';
 
 // Quick amounts learn from you: the last 4 different amounts you logged (newest first), topped up from a starting
 // set until you have 4 of your own.
@@ -131,7 +132,6 @@ export function proteinSheet() {
   sheet('Protein', body, { full: true });
 }
 
-const prettyDay = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
 const STATUS_WORD = { done: 'done', skip: 'skipped', partial: 'partial' };
 
 // Log for any day. Today edits live state; a past day is read from storage and saved straight back.
@@ -196,7 +196,6 @@ export async function logSheet(date = state.date, group = null) {
     const fluids = (t.water_oz ?? null) === null && (t.other_drinks_oz ?? null) === null ? null : Math.round(((t.water_oz || 0) + (t.other_drinks_oz || 0)) * 10) / 10;
     const rowMin = ctx.sets.filter(x => x.exercise === 'row').reduce((a, x) => a + (x.min || 0), 0) || ctx.rec.row_min || null;
     const hourly = plan.hourly ? hourlyHistory(ctx.rec, ctx.events).length : null;
-    const tile = (label, v, unit) => h('div', { class: 'tile' }, h('span', { class: 'tile-l' }, label), h('b', {}, v === null || v === undefined ? '–' : `${v}`), unit ? h('small', {}, ` ${unit}`) : null);
     return [
       h('ol', { class: 'ds-list', 'aria-label': 'Blocks' }, rows),
       h('div', { class: 'ds-tiles' }, tile('Fluids', fluids, 'oz'), tile('Protein', ctx.rec.protein_g, 'g'),
@@ -210,7 +209,7 @@ export async function logSheet(date = state.date, group = null) {
     fill(body,
       h('div', { class: 'day-nav' },
         h('button', { class: 'icon-btn', 'aria-label': 'Previous day', onclick: () => go(addDays(ctx.date, -1)) }, '‹'),
-        h('span', { class: 'day-nav-d' }, today ? `Today, ${prettyDay(ctx.date)}` : prettyDay(ctx.date)),
+        h('span', { class: 'day-nav-d' }, today ? `Today, ${dayLabel(ctx.date)}` : dayLabel(ctx.date)),
         h('button', { class: 'icon-btn', 'aria-label': 'Next day', disabled: ctx.date >= state.date, onclick: () => go(addDays(ctx.date, 1)) }, '›')),
       h('div', { class: 'seg wrap tabs' }, groups.map(g => h('button', { class: g === current ? 'on' : '', onclick: () => { current = g; draw(); } }, g))),
       h('div', { class: 'fields' }, DAY_FIELDS.filter(f => f.group === current).map(field), current === 'Day' ? daySummary() : null),

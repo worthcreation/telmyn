@@ -1,18 +1,15 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.24.1';
+const VERSION = '0.25.0';
 const CACHE = `telmyn-${VERSION}`;
 // Fonts keep their own cache across versions: dropping them with each update made every update load with the
 // stand-in font first and then jump when the real one arrived.
 const FONTS = 'fonts-telmyn';
-// The voice-stop engine and speech model (several MB, unchanged between versions) keep their own cache too, so an
-// update does not download them again.
-const ENGINE = 'engine-telmyn';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/app.css',
-  'js/main.js', 'js/version.js', 'js/clock.js', 'js/db.js', 'js/schema.js', 'js/state.js', 'js/handoff.js', 'js/verses.js', 'js/xp.js', 'js/flow.js', 'js/hourly.js', 'js/foods.js', 'js/site.js', 'js/remind.js', 'js/sync.js', 'js/voice.js', 'js/status.js', 'js/config.js', 'js/scripture.js',
-  'js/program/index.js', 'js/program/v1.js', 'js/program/v1_1.js', 'js/program/steps.js',
-  'js/ui/dom.js', 'js/ui/shell.js', 'js/ui/progress.js', 'js/ui/gear.js', 'js/ui/me.js', 'js/ui/journal.js', 'js/ui/study-player.js', 'js/ui/fx.js', 'js/ui/today.js', 'js/ui/runner.js', 'js/ui/forms.js', 'js/ui/verse.js', 'js/ui/data.js', 'js/ui/video-block.js', 'js/ui/media.js', 'js/ui/history.js', 'js/ui/day.js', 'js/ui/detail.js', 'js/listen.js', 'js/reminder-rules.js',
-  'data/original.json', 'icons/star-192.png', 'icons/star-512.png', 'icons/badge-96.png', 'icons/badge-grip.png', 'icons/badge-pumps.png', 'icons/badge-calf.png', 'icons/badge-weight.png', 'icons/apple-touch-icon.png',
+  'js/main.js', 'js/version.js', 'js/clock.js', 'js/db.js', 'js/log.js', 'js/schema.js', 'js/state.js', 'js/handoff.js', 'js/verses.js', 'js/xp.js', 'js/flow.js', 'js/hourly.js', 'js/foods.js', 'js/site.js', 'js/remind.js', 'js/sync.js', 'js/voice.js', 'js/status.js', 'js/config.js', 'js/scripture.js',
+  'js/program/index.js', 'js/program/v1_1.js', 'js/program/steps.js',
+  'js/ui/dom.js', 'js/ui/shell.js', 'js/ui/progress.js', 'js/ui/gear.js', 'js/ui/me.js', 'js/ui/journal.js', 'js/ui/study-player.js', 'js/ui/fx.js', 'js/ui/today.js', 'js/ui/runner.js', 'js/ui/forms.js', 'js/ui/verse.js', 'js/ui/data.js', 'js/ui/video-block.js', 'js/ui/media.js', 'js/ui/history.js', 'js/ui/day.js', 'js/ui/detail.js', 'js/reminder-rules.js',
+  'data/original.json', 'icons/star-192.png', 'icons/star-512.png', 'icons/badge-96.png', 'icons/badge-grip.png', 'icons/badge-pumps.png', 'icons/badge-calf.png', 'icons/badge-weight.png', 'icons/icon-grip.png', 'icons/icon-pumps.png', 'icons/icon-calf.png', 'icons/icon-weight.png', 'icons/apple-touch-icon.png',
 ];
 
 // A new version downloads its whole copy fresh (past the browser's own cache) and then waits. No skipWaiting here:
@@ -20,7 +17,7 @@ const SHELL = [
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))))));
 
 self.addEventListener('activate', e => e.waitUntil(
-  caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('telmyn-') && k !== CACHE).map(k => caches.delete(k))))
+  caches.keys().then(keys => Promise.all(keys.filter(k => (k.startsWith('telmyn-') && k !== CACHE) || k === 'engine-telmyn').map(k => caches.delete(k))))
     .then(() => self.clients.claim())));
 
 self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipWaiting(); });
@@ -32,10 +29,6 @@ self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipW
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
-  if (url.origin === location.origin && /\/(js\/vendor|data\/models)\//.test(url.pathname)) {
-    e.respondWith(caches.open(ENGINE).then(async c => (await c.match(e.request)) || fetch(e.request).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; })));
-    return;
-  }
   if (url.origin === location.origin) {
     e.respondWith(caches.open(CACHE).then(async c => (await c.match(e.request, { ignoreSearch: true }))
       || fetch(e.request).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; })));
@@ -55,11 +48,12 @@ self.addEventListener('push', e => {
   })());
 });
 // The one place a Telmyn notification is shaped. The page asks for its own (in-app checks) through postMessage, so
-// every alert looks the same: the app icon, sound and vibration, and a small badge (drawn by Android as a white
-// silhouette in the status bar and header) whose glyph says the kind: gripper, foot, rising arrow (calf raises),
-// scale. Anything else gets the star.
-const BADGES = { grip: 'icons/badge-grip.png', pumps: 'icons/badge-pumps.png', calf: 'icons/badge-calf.png', weight: 'icons/badge-weight.png' };
-const show = (kind, title, body) => self.registration.showNotification(title, { body, tag: kind, icon: 'icons/star-192.png', badge: BADGES[kind] || 'icons/badge-96.png',
+// every alert looks the same: the app icon stays on the left (Android's own), the picture on the right is a glyph for
+// the kind in the app's gold on graphite (gripper, foot, rising arrow for calf raises, scale), the status-bar badge is
+// the same glyph as a white silhouette, plus sound and vibration. Anything else gets the star.
+const KINDS = ['grip', 'pumps', 'calf', 'weight'];
+const pic = (kind, what, fallback) => (KINDS.includes(kind) ? `icons/${what}-${kind}.png` : fallback);
+const show = (kind, title, body) => self.registration.showNotification(title, { body, tag: kind, icon: pic(kind, 'icon', 'icons/star-192.png'), badge: pic(kind, 'badge', 'icons/badge-96.png'),
   renotify: true, requireInteraction: true, silent: false, vibrate: [300, 150, 300, 150, 300], data: { kind } });
 self.addEventListener('message', e => { if (e.data?.type === 'notify') e.waitUntil(show(e.data.kind, e.data.title, e.data.body)); });
 self.addEventListener('notificationclick', e => {

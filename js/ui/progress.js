@@ -1,23 +1,15 @@
 // Progress tab: this week from real logs only. Bars appear only where the program sets a target.
 // Spirit is shown as history, never as a score.
-import { h, fill } from './dom.js';
+import { h, fill, bar, tile, plural } from './dom.js';
 import * as db from '../db.js';
 import { journalSheet } from './journal.js';
 import { daySheet } from './day.js';
 import { areaSheet } from './detail.js';
 import { weightList } from './history.js';
-import { fluidTotals, rowTotals } from '../schema.js';
+import { fluidOz, rowTotals, pullReps, hangSecs, gripCount } from '../log.js';
 import { state } from '../state.js';
 import { planFor, blockStatus, PROGRAMS } from '../program/index.js';
 import { addDays, weekday, WEEKDAYS } from '../clock.js';
-
-// Every bar opens its breakdown for the week.
-function bar(label, value, target, detail, onclick) {
-  const p = target ? Math.min(1, value / target) : null;
-  return h('button', { class: 'stat', onclick, 'aria-label': `${label}: ${detail}. Open this week's breakdown.` },
-    h('div', { class: 'stat-top' }, h('span', { class: 'stat-l' }, label), h('span', { class: 'stat-d' }, detail)),
-    p === null ? null : h('div', { class: `stat-bar${p >= 1 ? ' met' : ''}` }, h('span', { style: `--p:${p}` })));
-}
 
 export async function renderProgress(root) {
   const today = state.date;
@@ -56,18 +48,17 @@ export async function renderProgress(root) {
   // Minutes and meters rowed this week, each day from its row block or its imported numbers (one rule: rowTotals).
   const rowed = past.map(d => rowTotals(dayRec[d] || {}, st.filter(s => s.date === d)));
   const rowMin = rowed.reduce((a, r) => a + (r.min || 0), 0), rowM = rowed.reduce((a, r) => a + (r.m || 0), 0);
-  const pulls = st.filter(s => /chin_up|neutral_pullup/.test(s.exercise) && s.reps).map(s => s.reps);
-  const hangs = st.filter(s => s.exercise === 'dead_hang' && s.sec).map(s => s.sec);
-  const hourly = ev.filter(e => e.block === 'hourly' && e.type === 'block_done').length + past.reduce((a, d) => a + (dayRec[d]?.hourly_blocks_count || 0), 0);
+  const pulls = pullReps(st), hangs = hangSecs(st);
+  const hourly = past.reduce((a, d) => a + gripCount(dayRec[d], ev.filter(e => e.date === d)), 0);
   const stretchDays = past.filter(d => done(d, 'stretch')).length;
   const legsDays = past.filter(d => done(d, 'evening_legs')).length;
   const proteinDays = past.filter(d => (dayRec[d]?.protein_g || 0) >= TARGETS.protein_g[0]).length;
   const versesApplied = past.filter(d => dayRec[d]?.verse_applied_notes).length;
   // Fluids per day: imported total plus app entries. Blank days stay out of averages.
-  const fluidOn = d => { const t = fluidTotals(dayRec[d] || {}, fluids.filter(f => f.date === d)); return t.water_oz === null && t.other_drinks_oz === null ? null : (t.water_oz || 0) + (t.other_drinks_oz || 0); };
+  const fluidOn = d => fluidOz(dayRec[d], fluids.filter(f => f.date === d));
   const fluidDays = past.filter(d => (fluidOn(d) || 0) >= TARGETS.fluids_oz[0]).length;
   const avg = vals => { const v = vals.filter(x => x !== null && x !== undefined); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null; };
-  const avgTile = (label, v, unit, n, onclick) => h('button', { class: 'tile', onclick }, h('span', { class: 'tile-l' }, label), h('b', {}, v === null ? '–' : `${Math.round(v)}`), h('small', {}, v === null ? 'not logged' : `${unit} avg, ${n} day${n === 1 ? '' : 's'}`));
+  const avgTile = (label, v, unit, n, onclick) => tile(label, v === null ? null : Math.round(v), v === null ? 'not logged' : `${unit} avg, ${plural(n, 'day')}`, onclick);
   const proteinVals = past.map(d => dayRec[d]?.protein_g ?? null), fluidVals = past.map(fluidOn), weightVals = past.map(d => dayRec[d]?.weight_lb ?? null);
   const nOf = v => v.filter(x => x !== null && x !== undefined).length;
 

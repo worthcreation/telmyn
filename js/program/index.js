@@ -1,12 +1,10 @@
 // Picks the program version in effect for a date and builds that day's plan.
-import * as v1 from './v1.js';
 import * as v1_1 from './v1_1.js';
 import { weekday, daysBetween } from '../clock.js';
 import { RULES, onDay } from '../reminder-rules.js';
 
 export const PROGRAMS = [
-  { version: 'v1', effective: '2026-10-27', weekOneMonday: '2026-10-26', data: v1 },
-  { version: 'v1.1', effective: '2026-10-27', weekOneMonday: '2026-10-26', data: v1_1 }, // same day: v1.1 wins
+  { version: 'v1.1', effective: '2026-10-27', weekOneMonday: '2026-10-26', data: v1_1 },
 ];
 
 export function programFor(iso) {

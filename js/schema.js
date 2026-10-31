@@ -45,21 +45,3 @@ export function cleanNumber(v) {
   if (s === '') return null;
   return /^-?\d+(\.\d+)?$/.test(s) ? Number(s) : null;
 }
-
-// Totals = number carried in from an imported handoff (if any) + fluid entries logged in the app.
-// Blank stays blank when there is neither.
-export function fluidTotals(day, fluids) {
-  const t = { water_oz: day.water_oz ?? null, other_drinks_oz: day.other_drinks_oz ?? null };
-  for (const f of fluids) {
-    const k = FLUID_KINDS.find(k => k.key === f.kind)?.bucket || 'other_drinks_oz';
-    t[k] = Math.round(((t[k] || 0) + f.oz) * 10) / 10;
-  }
-  return t;
-}
-
-// Minutes and meters rowed: the row block's logged sets, or the numbers carried in from an imported handoff.
-// Blank stays blank. One answer for the Day log, the breakdowns and the handoff.
-export function rowTotals(day, sets) {
-  const sum = (ex, f) => { const r = sets.filter(s => s.exercise === ex && s[f] != null); return r.length ? r.reduce((a, s) => a + s[f], 0) : null; };
-  return { min: sum('row', 'min') ?? day?.row_min ?? null, m: sum('row_dist', 'm') ?? day?.row_m ?? null };
-}

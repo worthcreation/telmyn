@@ -1,6 +1,5 @@
 import { h, sheet, toast, fill } from './dom.js';
 import * as db from '../db.js';
-import { VOICE_STOP } from '../config.js';
 import { importDay } from '../state.js';
 import { parseHandoff } from '../handoff.js';
 import { APP_VERSION } from '../version.js';
@@ -85,71 +84,6 @@ async function voiceSheet() {
   sheet('Reading speed', body, { onClose: () => speechSynthesis.cancel() });
 }
 
-// Voice stop: teach it your "stop", then test it. Train records about 20 of your "stop"s (one every second and a half,
-// as prompted), 10 seconds of your room with no one talking, and 10 seconds of normal talking, then learns your
-// "stop" on the phone in a few seconds. Test listens and shows how sure it is, with the dial's mark. Nothing is
-// sent anywhere; the recordings stay on the phone so more can be added later, and Start over removes them.
-async function voiceStopSheet() {
-  const V = await import('../listen.js');
-  if (!V.voiceSupported()) return toast('This phone cannot use voice stop.');
-  let t = await V.getThreshold(), busy = false, closed = false, lastHit = 0;
-  const body = h('div', { class: 'stack vstop' });
-  const prompt = h('p', { class: 'vm-said' }, 'Getting the speech model ready');
-  const fillEl = h('span', { class: 'vm-fill' }), mark = h('span', { class: 'vm-mark' });
-  const value = h('b', {}, '');
-  const place = () => { mark.style.left = `${t * 100}%`; value.textContent = `${Math.round(t * 100)}%`; };
-  const wait = ms => new Promise(r => setTimeout(r, ms));
-  const run = async job => { if (busy) return; busy = true; V.quiet(); try { await job(); } catch { prompt.textContent = 'That did not work. Check the microphone is allowed for Telmyn.'; } busy = false; if (!closed) { await draw(); test(); } };
-
-  const recordStops = () => run(async () => {
-    for (let k = 1; k <= 20 && !closed; k++) {
-      prompt.textContent = `Say “stop”  (${k} of 20)`; prompt.classList.add('now');
-      await V.recordStop(); prompt.classList.remove('now'); await wait(500);
-    }
-    prompt.textContent = 'Stops recorded';
-  });
-  const recordRoom = () => run(async () => {
-    prompt.textContent = 'Room sound: stay quiet for 10 seconds'; await V.recordRoom('_background_noise_', 10);
-    if (closed) return;
-    prompt.textContent = 'Now talk normally for 10 seconds (no “stop”)'; await V.recordRoom('talk', 10);
-    prompt.textContent = 'Room recorded';
-  });
-  const teach = () => run(async () => { await V.train(p => { prompt.textContent = `Learning your “stop”: ${Math.round(p * 100)}%`; }); prompt.textContent = 'Trained. Test it below.'; });
-  const restart = () => run(async () => { await V.forget(); prompt.textContent = 'Cleared. Using the general model.'; });
-
-  // Test: listen and show the meter until something else starts.
-  const test = async () => {
-    if (closed || busy) return;
-    prompt.textContent = 'Listening. Say “stop” once.';
-    try {
-      await V.listen(null, (sc, heard) => {
-        fillEl.style.transform = `scaleX(${sc})`;
-        if (heard && Date.now() - lastHit > 1200) { lastHit = Date.now(); prompt.textContent = `Heard it (${Math.round(sc * 100)}% sure)`; prompt.classList.add('ok'); setTimeout(() => { if (!busy) { prompt.textContent = 'Listening. Say “stop” once.'; prompt.classList.remove('ok'); } }, 1200); }
-      });
-    } catch { prompt.textContent = 'The microphone is not allowed for Telmyn.'; }
-  };
-
-  const draw = async () => {
-    const n = await V.counts();
-    const stops = n.stop || 0, room = (n._background_noise_ || 0) > 0 && (n.talk || 0) > 0;
-    const slider = h('input', { type: 'range', min: 50, max: 95, step: 5, value: Math.round(t * 100), 'aria-label': 'How sure it must be',
-      oninput: e => { t = Number(e.target.value) / 100; place(); }, onchange: () => V.setThreshold(t) });
-    fill(body,
-      h('p', { class: 'muted small' }, V.isTrained() ? `Trained on your voice (${stops} stops and your room).` : 'Using the general model. Train it on your voice for a steadier stop.'),
-      h('div', { class: 'vt-steps' },
-        h('button', { class: `btn ghost${stops >= 20 ? ' done' : ''}`, onclick: recordStops }, stops ? `Stops: ${stops}. Add 20` : '1. Record 20 stops'),
-        h('button', { class: `btn ghost${room ? ' done' : ''}`, onclick: recordRoom }, room ? 'Room recorded. Again' : '2. Record your room (20 sec)'),
-        h('button', { class: 'btn', disabled: stops < 8 || !room, onclick: teach }, '3. Train')),
-      prompt,
-      h('div', { class: 'vm' }, fillEl, mark),
-      h('div', { class: 'vm-dial' }, h('span', { class: 'muted small' }, 'Softer stop'), slider, h('span', { class: 'muted small' }, 'Clearer stop')),
-      h('p', { class: 'center small' }, 'Acts at ', value, ' sure. Say “stop” once; it counts when the bar holds past the mark for a moment.'),
-      stops || V.isTrained() ? h('button', { class: 'btn ghost small', onclick: restart }, 'Start over') : null);
-    place();
-  };
-  sheet('Voice stop', body, { full: true, onClose: () => { closed = true; V.quiet(); } });
-  try { await V.ready(); await draw(); test(); } catch { prompt.textContent = 'The speech model did not load.'; fill(body, prompt); }
-}
 
 export async function dataActions() {
   const persisted = await navigator.storage?.persisted?.();
@@ -165,10 +99,7 @@ export async function dataActions() {
     h('div', { class: 'bar' },
       h('button', { class: 'btn ghost', onclick: backUp }, 'Back up'),
       h('button', { class: 'btn ghost', onclick: restoreSheet }, 'Restore')),
-    VOICE_STOP ? h('div', { class: 'bar' },
-      h('button', { class: 'btn ghost', onclick: voiceSheet }, 'Reading speed'),
-      h('button', { class: 'btn ghost', onclick: voiceStopSheet }, 'Voice stop'))
-      : h('button', { class: 'btn ghost', onclick: voiceSheet }, 'Reading speed'),
+    h('button', { class: 'btn ghost', onclick: voiceSheet }, 'Reading speed'),
     h('div', { class: 'bar' },
       h('button', { class: `btn ghost reminders${on ? ' on' : ''}`, onclick: async () => { const v = await setReminders(!on); if (v !== !on && !on) return; location.reload(); } }, on ? 'Reminders on' : 'Reminders off'),
       TEST ? h('button', { class: 'btn ghost', onclick: testSheet }, 'Test controls')

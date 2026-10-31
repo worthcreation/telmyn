@@ -1,12 +1,31 @@
-// Program v1.1, effective 2026-10-27 (Ross's request): a warm-up before and a cooldown after every round,
-// a short cue on every step, hangs placed before the row on non-strength days.
+// Program v1.1, effective 2026-10-27, the one program in effect (v1 took effect the same day and was folded in here,
+// 0.25.0): a warm-up before and a cooldown after every round, a short cue on every step, hangs before the row on
+// non-strength days. Content only, no logic. A new program is a new file (v2.js) registered in program/index.js with
+// its effective date; never edit this file after v2 exists.
 // Warm-ups are moving stretches; cooldowns are static holds of about 30 sec (Ross is already very flexible,
 // so holds stay short; the goal is warming up and settling down, not adding range).
 import { step, sets, sides, eachSide, phase } from './steps.js';
-import * as v1 from './v1.js';
 
+// Exercises: the video library and starting weights (25 lb for RDLs and squats, 20 lb for arm work; Ross, 2026-10-30).
+// The runner starts each at the weight of your last session, so step texts name no weight.
 export const EXERCISES = {
-  ...v1.EXERCISES,
+  morning_stretch: { name: 'Morning stretch follow-along', video: 'https://www.youtube.com/watch?v=Ptj-NEb5oB4' },
+  fab_five: { name: 'Fab Five', weight_lb: 20, video: 'https://www.facebook.com/david.gates.158794/videos/the-best-five-minute-routine-on-the-internet/886741237091022/' },
+  scap_pullup: { name: 'Scapular pull-ups', video: 'https://www.youtube.com/shorts/r80W32kushY' },
+  dead_hang: { name: 'Active hang', video: 'https://www.youtube.com/watch?v=OT-wTpxP9uo' },
+  chin_up: { name: 'Chin-ups', video: 'https://www.youtube.com/shorts/ykPUIEj4-W0', alt: { label: 'Negatives', video: 'https://www.youtube.com/shorts/R8xhOUg8BlU' } },
+  neutral_pullup: { name: 'Neutral-grip pull-ups', video: 'https://www.youtube.com/shorts/ykPUIEj4-W0', cue: 'Same as chin-ups with palms facing each other.', alt: { label: 'Negatives', video: 'https://www.youtube.com/shorts/R8xhOUg8BlU' } },
+  bss: { name: 'Bulgarian split squats', video: 'https://www.youtube.com/shorts/or1frhkjBDc', weight_lb: 25 },
+  pushup: { name: 'Push-ups' },
+  paused_pushup: { name: 'Paused push-ups' },
+  sa_row: { name: 'Single-arm rows', video: 'https://www.youtube.com/shorts/H8jf3DwlIlo', weight_lb: 20 },
+  sl_rdl: { name: 'Single-leg RDL', video: 'https://www.youtube.com/shorts/3Remzb_h59I', weight_lb: 25 },
+  goblet: { name: 'Goblet squats', video: 'https://www.youtube.com/shorts/0Qb98XYiuho', weight_lb: 25 },
+  magnet_curl: { name: 'Magnet curls', weight_lb: 20 },     // no standard video (Ross, 2026-10-31: no cues wanted)
+  champagne_curl: { name: 'Champagne curls', weight_lb: 20 },
+  windmills: { name: 'Windmills (forearm rotation)', video: 'https://www.youtube.com/watch?v=VV7zsl6LafM', weight_lb: 20 },
+  row: { name: 'Rowing', video: 'https://www.youtube.com/watch?v=JunqWhTXTJs', alt: { label: 'Common errors', video: 'https://www.youtube.com/watch?v=ura2mFCdvVs' } },
+  // Warm-up and cooldown moves (v1.1).
   arm_circles: { name: 'Arm circles' },
   wrist_circles: { name: 'Wrist circles' },
   cat_cow: { name: 'Cat-cow' },
@@ -17,15 +36,6 @@ export const EXERCISES = {
   doorway_chest: { name: 'Doorway chest stretch' },
   forearm: { name: 'Forearm stretch', video: 'https://www.youtube.com/watch?v=mLVLLGUbyfU&t=36s' }, // approved by Ross 2026-10-27, starts at 0:36
   toe_touch: { name: 'Toe touch' },
-  // Starting weights (Ross, 2026-10-30): 25 lb for RDLs and squats, 20 lb for arm work (rows, curls, windmills). The runner
-  // starts each exercise at the weight of your last session and shows it on the step, so step texts name no weight.
-  bss: { ...v1.EXERCISES.bss, weight_lb: 25 },
-  goblet: { ...v1.EXERCISES.goblet, weight_lb: 25 },
-  sl_rdl: { ...v1.EXERCISES.sl_rdl, weight_lb: 25 },
-  sa_row: { ...v1.EXERCISES.sa_row, weight_lb: 20 },
-  magnet_curl: { ...v1.EXERCISES.magnet_curl, weight_lb: 20 },
-  champagne_curl: { ...v1.EXERCISES.champagne_curl, weight_lb: 20 },
-  windmills: { ...v1.EXERCISES.windmills, weight_lb: 20 },
   row_dist: { name: 'Row distance' },   // meters from the monitor (Ross, 2026-10-30)
 };
 
@@ -197,18 +207,31 @@ export const BLOCKS = {
   },
 };
 
-export const DAY_TYPES = v1.DAY_TYPES;
-export const SCHEDULE = v1.SCHEDULE;
-export const DEFAULT_TIMING = v1.DEFAULT_TIMING;
-// Ankle pumps: 30 per foot (Ross, 2026-10-30; was 20). On weekends they become calf raises, 30 a set, hourly
-// (Ross, 2026-10-31). remind names the reminder rule (js/reminder-rules.js), which also says which days each runs.
-// amount is the one text every screen, list and reminder shows.
+export const DAY_TYPES = {
+  strength_a: { label: 'Strength A', routine: 'strength_a' },
+  strength_b: { label: 'Strength B', routine: 'strength_b' },
+  row: { label: 'Row', routine: 'row' },
+  off: { label: 'Off', routine: null },
+  off_walk: { label: 'Off', routine: 'walk' },
+};
+
+// 0 Sun .. 6 Sat
+export const SCHEDULE = ['off_walk', 'strength_a', 'row', 'off', 'strength_b', 'row', 'row'];
+
+// Tight blocks have a time and will get alarms (phase 2). Open blocks appear when the previous one is done.
+export const DEFAULT_TIMING = {
+  workday: { stretch: { mode: 'tight', time: '06:30' } },
+  weekend: {},
+};
+
+// Habits beside the blocks. Ankle pumps: 30 per foot (Ross, 2026-10-30; was 20). On weekends they become calf raises,
+// 30 a set, hourly (Ross, 2026-10-31). remind names the reminder rule (js/reminder-rules.js), which also says which
+// days each runs. amount is the one text every screen, list and reminder shows.
 export const HABITS = {
-  ...v1.HABITS,
-  ankle_pumps: { ...v1.HABITS.ankle_pumps, short: 'Pumps', perFoot: 30, amount: '30 per foot', remind: 'pumps', note: '30 per foot, every 20-30 min while sitting.' },
+  ankle_pumps: { name: 'Ankle pumps', short: 'Pumps', perFoot: 30, amount: '30 per foot', remind: 'pumps', note: '30 per foot, every 20-30 min while sitting.' },
   calf_raises: { name: 'Calf raises', short: 'Calf', reps: 30, amount: '30 reps', remind: 'calf', note: '30 reps, hourly on weekends.' },
 };
-export const TARGETS = v1.TARGETS;
+export const TARGETS = { fluids_oz: [100, 120], protein_g: [160, 200] };
 
 // Hangs go before the routine, except on strength days, where they would tire the grip before pull-ups.
 export function dayOrder(routine) {

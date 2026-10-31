@@ -5,6 +5,7 @@ import { planFor, legHabit } from './program/index.js';
 import { verseFor } from './verses.js';
 import { now, hhmm } from './clock.js';
 import { foodLine, addLine, removeLine } from './foods.js';
+import { gripBreaks } from './log.js';
 
 export const state = { date: null, plan: null, verse: null, day: null, events: [], sets: [], fluids: [] };
 
@@ -141,7 +142,7 @@ export async function importDay({ day, sets }) {
   if (existing.handoff_raw && day.handoff_raw && !existing.handoff_raw.includes(day.handoff_raw)) merged.handoff_raw = `${existing.handoff_raw}\n\n${day.handoff_raw}`;
   // Don't double count: if the app already logged fluids or hourly blocks that day, keep only the app's numbers.
   if ((await db.byDate('fluids', day.date)).length) { merged.water_oz = existing.water_oz ?? null; merged.other_drinks_oz = existing.other_drinks_oz ?? null; }
-  if ((await db.byDate('events', day.date)).some(e => e.block === 'hourly')) { merged.hourly_blocks_count = existing.hourly_blocks_count ?? null; merged.hourly_palm_notes = existing.hourly_palm_notes ?? null; }
+  if (gripBreaks(await db.byDate('events', day.date)).length) { merged.hourly_blocks_count = existing.hourly_blocks_count ?? null; merged.hourly_palm_notes = existing.hourly_palm_notes ?? null; }
   await db.put('days', merged);
   // A handoff line is the whole record of that exercise for the day, so it replaces every set of that exercise
   // (imported or logged in the app); exercises the handoff leaves blank keep what the app logged. Warm-up sets

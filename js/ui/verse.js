@@ -4,7 +4,7 @@
 // and where it was applied today.
 // Rules carried over: verse text never italic; original-language notes show word, transliteration and meaning only.
 // Everything shows inside the app; nothing opens another site.
-import { h, fill, layer, noteField, fitText } from './dom.js';
+import { h, fill, layer, noteField, fitText, decode } from './dom.js';
 import * as db from '../db.js';
 import { verseFor } from '../verses.js';
 import { state, setField } from '../state.js';
@@ -12,13 +12,13 @@ import { journalSheet } from './journal.js';
 import { playVideo } from './media.js';
 import { getVersion, setVersion, fetchVerse, listVersions, originalWords, studyVideos, getFavs, watchedOn } from '../scripture.js';
 import { videoRow } from './study-player.js';
+import { dayLabel } from '../clock.js';
 
 function parseRef(ref) {
   const m = ref.match(/^(.+?)\s(\d+):(\d+)(?:-(\d+))?$/);
   return { book: m[1], ch: Number(m[2]), from: Number(m[3]), to: Number(m[4] || m[3]) };
 }
 const verseNo = id => Number((id.match(/-(\d+)$/) || [])[1]);
-const decode = t => { const e = document.createElement('textarea'); e.innerHTML = t; return e.value; };
 
 const original = originalWords;
 
@@ -201,7 +201,6 @@ export async function verseSheet(date = null) {
   const card = (x, size = '') => h('button', { class: `vs-video ${size}`, onclick: () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title)) },
     h('span', { class: 'vb-thumb', style: x.thumb ? `background-image:url('${x.thumb}')` : '' }),
     h('span', { class: 'vs-vt' }, h('b', {}, decode(x.title)), h('small', {}, x.channel ? decode(x.channel) : 'BibleProject')));
-  const prettyDay = d => { const [y, m, dd] = d.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
   const watch = h('div', { class: 'vs-watch' }, h('p', { class: 'muted small' }, 'Finding videos on this passage…'));
   const play = x => () => playVideo(`https://www.youtube.com/watch?v=${x.id}`, decode(x.title));
   // A past day's Study page lists what was watched that day (30 sec or more), in the order watched. The journal
@@ -215,7 +214,7 @@ export async function verseSheet(date = null) {
       screen(title, list);
     };
     if (seen.length) {
-      const shown = h('div', { class: 'vs-vlist' }, h('p', { class: 'lbl' }, `Watched ${prettyDay(date)}`), seen.slice(0, 3).map(x => videoRow(x, false, play(x), favs)));
+      const shown = h('div', { class: 'vs-vlist' }, h('p', { class: 'lbl' }, `Watched ${dayLabel(date)}`), seen.slice(0, 3).map(x => videoRow(x, false, play(x), favs)));
       return fill(watch, shown, h('div', { class: 'vs-watch-more' },
         seen.length > 3 ? h('button', { class: 'btn ghost', onclick: all('Watched', seen, false) }, `All ${seen.length} watched`) : null,
         groups.length ? h('button', { class: 'btn ghost', onclick: all('Videos', groups, true) }, 'More on this passage') : null));
@@ -234,7 +233,7 @@ export async function verseSheet(date = null) {
   });
 
   // Where it was applied: today's opens the writing layer; a past day's shows what was written.
-  const note = noteField(past ? `Applied, ${prettyDay(date)}` : 'Where I applied it today', dayRec.verse_applied_notes ?? null, {
+  const note = noteField(past ? `Applied, ${dayLabel(date)}` : 'Where I applied it today', dayRec.verse_applied_notes ?? null, {
     placeholder: past ? 'Nothing written that day.' : 'Where I applied it today', readOnly: past,
     onSave: v2 => setField('verse_applied_notes', v2) });
 
@@ -245,7 +244,7 @@ export async function verseSheet(date = null) {
     .filter(d => d.date < when && d.verse_applied_notes && verseFor(d.date).ref === v.ref)
     .sort((a, b) => b.date.localeCompare(a.date))[0];
   const lastTime = !past && before
-    ? h('div', { class: 'vs-last' }, h('p', { class: 'lbl' }, `Last time, ${prettyDay(before.date)}`), h('p', { class: 'vs-last-t' }, before.verse_applied_notes))
+    ? h('div', { class: 'vs-last' }, h('p', { class: 'lbl' }, `Last time, ${dayLabel(before.date)}`), h('p', { class: 'vs-last-t' }, before.verse_applied_notes))
     : null;
 
   // Two pages, so a long passage never fights the study tools for room: Verse (the text and its words) and Study
@@ -258,7 +257,7 @@ export async function verseSheet(date = null) {
   };
   const body = h('div', { class: 'vs' },
     h('div', { class: 'vs-top' },
-      h('span', { class: 'vs-theme' }, past ? `${v.theme} · ${prettyDay(date)}` : v.theme),
+      h('span', { class: 'vs-theme' }, past ? `${v.theme} · ${dayLabel(date)}` : v.theme),
       h('span', { class: 'vs-top-r' }, select)),
     pageTabs,
     h('blockquote', { class: 'vs-verse card spirit vs-p-verse' }, text, cite),

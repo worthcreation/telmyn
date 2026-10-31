@@ -5,7 +5,7 @@
 // study_resume): the next block picks up there, starting by itself with the first timer if it was playing, or
 // waiting on the bar ("Resume ... at m:ss") if it was paused (Ross, 2026-10-31).
 import { utterance } from '../voice.js';
-import { h, fill, layer, toast } from './dom.js';
+import { h, fill, layer, toast, decode } from './dom.js';
 import { getMeta, setMeta } from '../db.js';
 import { state } from '../state.js';
 import { fetchDaily, studyVideos, fetchVerse, getVersion, getFavs, toggleFav, recordWatched, fmtDuration } from '../scripture.js';
@@ -26,7 +26,6 @@ export function loadApi() {
   return apiReady;
 }
 
-const decode = t => { const e = document.createElement('textarea'); e.innerHTML = t; return e.value; };
 
 // Study while you train: watch a video on today's verse, read its chapter, or listen to it read aloud.
 // Started by the first timer, then left alone: your own pause or play is the only thing that stops or starts it,
