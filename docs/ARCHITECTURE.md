@@ -9,6 +9,7 @@
    - Daily fields: `js/schema.js` (form, import and export all read it)
    - Program content: `js/program/vN.js`, chosen by date in `js/program/index.js`
    - Version: `js/version.js`
+   - Reminder rules (days, hours, intervals, follow-ups): `js/reminder-rules.js`, bundled into the Worker too
    - Look: `css/tokens.css` holds every color, text size, line height, space, radius, control height and layer order.
      `css/app.css` is one rule per component in reading order and uses only token names; nothing is appended as an
      override. Shared components: btn, chip, tile, card, lbl, note-field, layer. Text that must fit a box is sized
@@ -28,6 +29,7 @@
 | meta | key | setting or cache | settings (verse_version, study_creator, last_export, video_errors, video_picks) and caches (verse:, videos:, daily:), which backups leave out |
 
 Schema changes: bump DB_VERSION in db.js and add a migration. Never edit an old migration.
+Version 2 (0.24.0) moved weekend ankle_pumps events to calf_raises.
 
 ## Program versions
 v1 effective 2026-10-27; v1.1 (warm-ups and cooldowns) effective the same day. A change to the program is a new file (v2.js) with its own effective date,
@@ -46,7 +48,8 @@ registered in program/index.js. Past days keep showing the program that was in e
 ## Server (worker/)
 telmyn-api, a Cloudflare Worker. Answers only Telmyn's own addresses. /verse and /versions relay Bible Gateway text
 for personal use (cached 7 days); /videos finds study videos by creator (30 days); /daily returns a channel's newest
-upload (1 hour); /search finds embeddable, non-Short instructional videos (30 days). The YouTube Data API key is the Worker secret YOUTUBE_KEY.
+upload (1 hour); /search finds embeddable, non-Short instructional videos (30 days). /push and a cron every minute
+send reminders by the rules in js/reminder-rules.js. The YouTube Data API key is the Worker secret YOUTUBE_KEY.
 Phase 2 adds alarm pushes here. The app finds it through js/config.js (API_BASE).
 
 ## Delivery

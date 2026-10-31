@@ -3,9 +3,9 @@
 // times. Strength, Endurance and Grip end with how to push next time, worked out from your own last session.
 import { h, fill, sheet } from './dom.js';
 import * as db from '../db.js';
-import { state, pumpsPerFoot } from '../state.js';
-import { planFor, blockStatus, PROGRAMS } from '../program/index.js';
-import { fluidTotals, FLUID_KINDS } from '../schema.js';
+import { state } from '../state.js';
+import { planFor, blockStatus, PROGRAMS, LEG_HABITS } from '../program/index.js';
+import { fluidTotals, FLUID_KINDS, rowTotals } from '../schema.js';
 import { addDays, hhmm, weekday, WEEKDAYS } from '../clock.js';
 import { foodByKey } from '../foods.js';
 
@@ -51,7 +51,7 @@ async function load(from, to) {
 
 const total = rows => rows.reduce((a, r) => a + (r.reps || 0), 0);
 function lastSession(allSets, ex, before) {
-  const prior = allSets.filter(s => s.exercise === ex && s.date < before && (s.reps || s.sec || s.min));
+  const prior = allSets.filter(s => s.exercise === ex && s.date < before && (s.reps || s.sec || s.min || s.m));
   if (!prior.length) return null;
   const date = prior.map(s => s.date).sort().pop();
   return { date, rows: prior.filter(s => s.date === date) };
@@ -68,6 +68,13 @@ export function pushTip(ex, rows, prev, EX) {
     return tip(best > was ? `Up ${best - was} sec. Keep it active` : best === was ? `Add 2-3 sec to the first hang` : `${was - best} sec under. Grip may be tired`);
   }
   if (ex === 'row') return tip('20 min after 3 weeks of easy 15s');
+  // Meters rowed: compared with the last row, never as reps (it read "Beat 0" before).
+  if (ex === 'row_dist') {
+    const m = rows.reduce((a, r) => a + (r.m || 0), 0);
+    if (!prev) return tip(`Beat ${m} m at an easy pace`, false);
+    const was = prev.rows.reduce((a, r) => a + (r.m || 0), 0);
+    return tip(m > was ? `Up ${m - was} m. Keep it conversational` : m === was ? 'Same distance. Smooth, steady strokes' : `${was - m} m under. Check damper and stroke length`, false);
+  }
   // Per-side exercises count one side, so 10 a leg reads as 10, not 20.
   const oneSide = list => (list.some(r => r.side === 'L' || r.side === 'R') ? list.filter(r => r.side === (list.some(x => x.side === 'L') ? 'L' : 'R')) : list);
   rows = oneSide(rows); if (prev) prev = { ...prev, rows: oneSide(prev.rows) };
@@ -148,7 +155,7 @@ function dayArea(area, date, data, tips) {
     out.push(blockRow('gates', 'Fab Five'));
     if (/strength/.test(routine || '')) { out.push(blockRow(routine, plan.blocks.find(b => b.id === routine)?.name)); out.push(...exerciseRows(routine)); }
   } else if (area === 'endurance') {
-    if (routine === 'row') { out.push(blockRow('row', 'Row')); out.push(...exerciseRows('row')); if (!st.some(s => s.exercise === 'row') && rec.row_min) out.push(row(`Rowed ${rec.row_min} min${rec.row_m ? `, ${rec.row_m} m` : ''}`, [])); }
+    if (routine === 'row') { out.push(blockRow('row', 'Row')); out.push(...exerciseRows('row')); if (!st.some(s => s.exercise === 'row')) { const r = rowTotals(rec, st); if (r.min != null || r.m != null) out.push(row(`Rowed ${[r.min != null ? `${r.min} min` : '', r.m != null ? `${r.m} m` : ''].filter(Boolean).join(', ')}`, [])); } }
     out.push(blockRow('walk', 'Walk'));
   } else if (area === 'grip') {
     const breaks = ev.filter(e => e.type === 'block_done' && e.block === 'hourly');
@@ -181,8 +188,12 @@ function dayArea(area, date, data, tips) {
       { ok: oz >= target, meter: [oz, target], notes: rec.drinks_notes }));
   } else if (area === 'recovery') {
     out.push(blockRow('evening_legs', 'Legs up'));
-    const pumps = ev.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps');
-    if (pumps.length) out.push(row(`Ankle pumps, ${plural(pumps.length, 'set')}`, pumps.map(e => ({ at: e.at, what: 'Ankle pumps', amt: `${pumpsPerFoot()} a foot` }))));
+    // Ankle pumps and calf raises (weekends), each with its own row and amount.
+    const H = plan.program.data.HABITS || {};
+    for (const key of LEG_HABITS) {
+      const list = ev.filter(e => e.type === 'habit' && e.habit === key);
+      if (list.length) out.push(row(`${H[key]?.name || key}, ${plural(list.length, 'set')}`, list.map(e => ({ at: e.at, what: H[key]?.name || key, amt: H[key]?.amount || '' }))));
+    }
     if (rec.bed_time || rec.wake_time) out.push(row(`Sleep ${rec.bed_time || '?'} to ${rec.wake_time || '?'}`, []));
   }
   return out.filter(Boolean);

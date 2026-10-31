@@ -2,6 +2,7 @@
 import * as v1 from './v1.js';
 import * as v1_1 from './v1_1.js';
 import { weekday, daysBetween } from '../clock.js';
+import { RULES, onDay } from '../reminder-rules.js';
 
 export const PROGRAMS = [
   { version: 'v1', effective: '2026-10-27', weekOneMonday: '2026-10-26', data: v1 },
@@ -74,3 +75,13 @@ export function blockStatus(blockId, events, day = null, plan = null) {
 export function nextBlock(plan, events, day = null) {
   return plan.blocks.find(b => !blockStatus(b.id, events, day, plan)) || null;
 }
+
+// The day's leg habit while sitting: the program habit whose reminder rule runs that weekday (ankle pumps on
+// weekdays, calf raises on weekends from v1.1). Returns { key, name, short, amount, remind } or null.
+export function legHabit(iso) {
+  const H = programFor(iso).data.HABITS || {}, wd = weekday(iso);
+  const key = Object.keys(H).find(k => H[k].remind && onDay(RULES[H[k].remind].days, wd));
+  return key ? { key, ...H[key] } : null;
+}
+// Every leg habit in any program version (for views that read past days of either kind).
+export const LEG_HABITS = [...new Set(PROGRAMS.flatMap(p => Object.entries(p.data.HABITS || {}).filter(([, v]) => v.remind).map(([k]) => k)))];

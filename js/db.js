@@ -1,7 +1,7 @@
 // On-device storage. Nothing here ever leaves the phone except through Export.
 // To change the shape of stored data: bump DB_VERSION and add MIGRATIONS[n]. Never edit an old migration.
 
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 export const STORES = ['days', 'events', 'sets', 'fluids', 'xp', 'meta'];
 
 const MIGRATIONS = {
@@ -12,6 +12,18 @@ const MIGRATIONS = {
       os.createIndex('date', 'date');
     }
     db.createObjectStore('meta', { keyPath: 'key' });           // settings and app state
+  },
+  // 0.24.0: on weekends ankle pumps became calf raises (Ross, 2026-10-31). Sets logged with the Pumps button on a
+  // Saturday or Sunday before then were calf raises, so they move to calf_raises with their times unchanged.
+  2(db, tx) {
+    const weekend = iso => { const [y, m, d] = iso.split('-').map(Number); const w = new Date(y, m - 1, d).getDay(); return w === 0 || w === 6; };
+    tx.objectStore('events').openCursor().onsuccess = e => {
+      const c = e.target.result;
+      if (!c) return;
+      const v = c.value;
+      if (v.type === 'habit' && v.habit === 'ankle_pumps' && v.date && weekend(v.date)) c.update({ ...v, habit: 'calf_raises' });
+      c.continue();
+    };
   },
 };
 

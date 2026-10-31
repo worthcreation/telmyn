@@ -1,18 +1,20 @@
-// Reminders: a nudge only when something is overdue, nothing when you are on track.
-// Grip break: more than an hour since the last one, during work hours on a workday. Ankle pumps: more than 30 min.
-// Weight: nothing logged today and the last one is a day or more old, once a day from 6 am.
+// Reminders: a nudge only when something is overdue, nothing when you are on track. The rules (grip hourly and ankle
+// pumps every 30 min on weekdays, calf raises hourly on weekends, weight from 6 am, and a follow-up every 15 min
+// while one goes unanswered) live in js/reminder-rules.js, shared with the Worker.
 // Push (0.15): the Worker checks every minute and pushes when something is due, so alerts arrive with the app closed.
-// The phone only tells the Worker its push address, its time zone offset, and when the last grip break, pumps and
-// weight happened. Without push (not set up, or a phone that cannot), the in-app checks below still run while open.
+// The phone only tells the Worker its push address, its time zone offset, when the last grip break, pumps, calf
+// raises and weight happened, and the amounts to show. Without push (not set up, or a phone that cannot), the same
+// rules run in the app while it is open.
 import * as db from './db.js';
-import { state, onChange, pumpsPerFoot } from './state.js';
+import { state, onChange } from './state.js';
+import { planFor } from './program/index.js';
+import { due } from './reminder-rules.js';
 import { API_BASE } from './config.js';
 import { SITE } from './site.js';
-import { now, hhmm } from './clock.js';
+import { now } from './clock.js';
 import { toast, chime } from './ui/dom.js';
-import { overdueStatus } from './status.js';
 
-const sent = {};   // tag -> last time we nudged (ms)
+const sent = {};   // kind -> last time we nudged (ms), for the in-app checks
 
 export const remindersOn = () => db.getMeta('reminders', false);
 export async function setReminders(on) {
@@ -39,10 +41,13 @@ async function post(path, body) {
 function lastTimes() {
   const at = pred => state.events.filter(pred).pop()?.at;
   const ms = v => (v ? new Date(v).getTime() : undefined);
+  const H = planFor(state.date).program.data.HABITS || {};
   return {
     grip: ms(at(e => e.type === 'block_done' && e.block === 'hourly')),
     pumps: ms(at(e => e.type === 'habit' && e.habit === 'ankle_pumps')),
+    calf: ms(at(e => e.type === 'habit' && e.habit === 'calf_raises')),
     weight: state.day.weight_lb !== null && state.day.weight_lb !== undefined ? state.date : undefined,
+    say: { pumps: H.ankle_pumps?.amount, calf: H.calf_raises?.amount },
   };
 }
 export async function syncPush(on) {
@@ -59,7 +64,7 @@ export async function syncPush(on) {
   toast('Reminders will arrive even with Telmyn closed.');
   return true;
 }
-// Tell the Worker whenever a grip break, pumps or weight is logged (only those three times are sent).
+// Tell the Worker whenever a grip break, pumps, calf raises or weight is logged (only those times are sent).
 let lastSent = '';
 function reportState() {
   if (!pushActive) return;
@@ -69,34 +74,20 @@ function reportState() {
   post('/push/state', { offset: new Date().getTimezoneOffset(), state: lastTimes() }).catch(() => { lastSent = ''; });
 }
 
-async function notify(tag, title, body) {
-  const last = sent[tag] || 0;
-  if (now().getTime() - last < 55 * 60000) return;      // never nag faster than hourly per kind
-  sent[tag] = now().getTime();
+async function notify(kind, title, body) {
   try {
     const reg = await navigator.serviceWorker?.getRegistration();
     if (document.visibilityState === 'visible') { chime(3); toast(`${title}: ${body}`); }
-    if (reg?.active) reg.active.postMessage({ type: 'notify', kind: tag, title, body });   // sw.js shapes every notification
-    else new Notification(title, { body, tag });
+    if (reg?.active) reg.active.postMessage({ type: 'notify', kind, title, body });   // sw.js shapes every notification
+    else new Notification(title, { body, tag: kind });
   } catch { /* notifications unavailable here */ }
 }
 
 async function check() {
   if (!(await remindersOn()) || Notification.permission !== 'granted') return;
   if (pushActive) return;                                        // the Worker is sending them; no duplicates
-  const t = now(), clock = hhmm(t), ms = t.getTime();
-  const lastAt = pred => state.events.filter(pred).pop()?.at || null;
-  if (state.plan.hourly) {
-    const grip = lastAt(e => e.type === 'block_done' && e.block === 'hourly');
-    if (overdueStatus(grip, 60) === 'behind') notify('grip', 'Grip break', grip ? 'It has been an hour since the last one.' : 'First grip break of the day.');
-    if (overdueStatus(lastAt(e => e.type === 'habit' && e.habit === 'ankle_pumps'), 30) === 'behind') notify('pumps', 'Ankle pumps', `${pumpsPerFoot()} per foot. It has been over 30 minutes.`);
-  }
-  if (clock >= '06:00' && (state.day.weight_lb === null || state.day.weight_lb === undefined)) {
-    const days = (await db.all('days')).filter(d => d.weight_lb !== null && d.weight_lb !== undefined && d.date < state.date);
-    if (!days.length || days.sort((a, b) => b.date.localeCompare(a.date))[0].date < state.date) {
-      if (!sent.weightDay || sent.weightDay !== state.date) { sent.weightDay = state.date; notify('weight', 'Weight', 'Nothing logged today. Tap Weight on Today.'); }
-    }
-  }
+  const t = now().getTime();
+  for (const d of due({ offset: now().getTimezoneOffset(), state: lastTimes(), sent }, t)) { sent[d.kind] = t; notify(d.kind, d.title, d.body); }
 }
 
 export async function startReminders() {

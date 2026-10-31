@@ -1,9 +1,9 @@
 // Push reminders: the Worker checks every minute and, when something is overdue, sends an urgent push that carries
 // the reminders themselves, encrypted for the phone (Web Push, RFC 8291). One subscription per copy of the app
 // (live, test), kept in KV under push:<site>. Only what the rules need is stored: the phone's push address, its UTC
-// offset, and the last times of a grip break, ankle pumps and a weight.
-// Rules (owner's choice, Oct 2026): grip break after 60 min, ankle pumps after 30 min, weekdays 08:00-17:00 local;
-// weight once from 06:00 local when nothing is logged that day.
+// offset, the last times of a grip break, ankle pumps, calf raises and a weight, and the habit amounts to show.
+// Rules: js/reminder-rules.js (one copy for the Worker and the app).
+import { due } from '../../js/reminder-rules.js';
 
 const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const enc = s => new TextEncoder().encode(s);
@@ -49,28 +49,8 @@ async function send(sub, env, list) {
   return r.status;
 }
 
-// Local clock for the phone's time zone, from the offset it reports (minutes, as Date.getTimezoneOffset gives them).
-function local(now, offsetMin) {
-  const d = new Date(now - offsetMin * 60000);
-  return { day: d.getUTCDay(), hm: d.toISOString().slice(11, 16), date: d.toISOString().slice(0, 10),
-    at: hm => Date.parse(`${d.toISOString().slice(0, 10)}T${hm}:00Z`) + offsetMin * 60000 };
-}
-
-// What is due right now, given the stored state. Each kind is sent at most once per its interval.
-export function due(rec, now = Date.now()) {
-  const out = [];
-  const L = local(now, rec.offset || 0);
-  const s = rec.state || {}, sent = rec.sent || {};
-  const workday = L.day >= 1 && L.day <= 5 && L.hm >= '08:00' && L.hm < '17:00';
-  if (workday) {
-    const start = L.at('08:00');
-    const lastGrip = Math.max(s.grip || 0, start), lastPumps = Math.max(s.pumps || 0, start);
-    if (now - lastGrip >= 60 * 60000 && now - (sent.grip || 0) >= 60 * 60000) out.push({ kind: 'grip', title: 'Grip break', body: s.grip && s.grip > start ? 'It has been an hour since the last one.' : 'First grip break of the day.' });
-    if (now - lastPumps >= 30 * 60000 && now - (sent.pumps || 0) >= 30 * 60000) out.push({ kind: 'pumps', title: 'Ankle pumps', body: 'Time for a set. It has been over 30 minutes.' });
-  }
-  if (L.hm >= '06:00' && s.weight !== L.date && sent.weight !== L.date) out.push({ kind: 'weight', title: 'Weight', body: 'Nothing logged today. Tap Weight on Today.' });
-  return out;
-}
+// The rules (what is due, when, and the 15 min follow-ups) live in js/reminder-rules.js, shared with the app.
+export { due };
 
 export async function pushRoute(req, url, env, json) {
   const site = url.searchParams.get('site') === 'test' ? 'test' : 'live';
@@ -101,7 +81,7 @@ export async function pushTick(env) {
     const list = due(rec, now);
     if (!list.length) continue;
     rec.sent ||= {};
-    for (const d of list) rec.sent[d.kind] = d.kind === 'weight' ? local(now, rec.offset || 0).date : now;
+    for (const d of list) rec.sent[d.kind] = now;   // follow-ups count from here
     delete rec.pending;
     await env.PUSH.put(key, JSON.stringify(rec));
     const status = await send(rec.sub, env, list);

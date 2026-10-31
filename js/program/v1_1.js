@@ -80,7 +80,7 @@ export const BLOCKS = {
   stretch: {
     name: 'Morning stretch', summary: 'Toe touches, cat-cow, lunges, calf and chest stretches', minutes: 6, video: 'morning_stretch', verseOpens: true,
     steps: [
-      step.timed('Standing toe touch, slow, knees soft', 30, { exercise: 'toe_touch', note: 'Note your fingertip reach.', logField: 'toe_touch_notes', cue: 'Let the head hang. No bouncing.' }),
+      step.timed('Standing toe touch, slow, knees soft', 30, { exercise: 'toe_touch', cue: 'Let the head hang. No bouncing.' }),   // reach no longer noted (Ross, 2026-10-31)
       step.rest(10),
       step.timed('Toe touch again', 30, { exercise: 'toe_touch', cue: 'Let the head hang. No bouncing.' }),
       step.do('Cat-cow, 8 slow reps', { exercise: 'cat_cow', cue: C.catCow }),
@@ -200,8 +200,14 @@ export const BLOCKS = {
 export const DAY_TYPES = v1.DAY_TYPES;
 export const SCHEDULE = v1.SCHEDULE;
 export const DEFAULT_TIMING = v1.DEFAULT_TIMING;
-// Ankle pumps: 30 per foot (Ross, 2026-10-30; was 20). perFoot is the one number every screen and reminder uses.
-export const HABITS = { ...v1.HABITS, ankle_pumps: { ...v1.HABITS.ankle_pumps, perFoot: 30, note: '30 per foot, every 20-30 min while sitting.' } };
+// Ankle pumps: 30 per foot (Ross, 2026-10-30; was 20). On weekends they become calf raises, 30 a set, hourly
+// (Ross, 2026-10-31). remind names the reminder rule (js/reminder-rules.js), which also says which days each runs.
+// amount is the one text every screen, list and reminder shows.
+export const HABITS = {
+  ...v1.HABITS,
+  ankle_pumps: { ...v1.HABITS.ankle_pumps, short: 'Pumps', perFoot: 30, amount: '30 per foot', remind: 'pumps', note: '30 per foot, every 20-30 min while sitting.' },
+  calf_raises: { name: 'Calf raises', short: 'Calf', reps: 30, amount: '30 reps', remind: 'calf', note: '30 reps, hourly on weekends.' },
+};
 export const TARGETS = v1.TARGETS;
 
 // Hangs go before the routine, except on strength days, where they would tire the grip before pull-ups.

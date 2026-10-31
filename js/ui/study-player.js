@@ -1,8 +1,12 @@
 // Study while you train: a video on today's verse, its chapter to read, or the chapter read aloud, inside a block.
 // It starts with the first timer and keeps playing through reps, logging and pauses; only you pause it.
 // Beeps duck the video volume for a moment so alerts are always heard. Your own pause or play always wins.
+// When a video ends, the next one in the list plays. When a block ends, where the video stopped is kept (meta
+// study_resume): the next block picks up there, starting by itself with the first timer if it was playing, or
+// waiting on the bar ("Resume ... at m:ss") if it was paused (Ross, 2026-10-31).
 import { utterance } from '../voice.js';
 import { h, fill, layer, toast } from './dom.js';
+import { getMeta, setMeta } from '../db.js';
 import { state } from '../state.js';
 import { fetchDaily, studyVideos, fetchVerse, getVersion, getFavs, toggleFav, recordWatched, fmtDuration } from '../scripture.js';
 import { exitLandscape } from './media.js';
@@ -31,9 +35,18 @@ const decode = t => { const e = document.createElement('textarea'); e.innerHTML 
 export function studyPlayer(container, { daily = null } = {}) {
   let mode = null, player = null, video = null, list = [], index = 0, armed = false, ours = false, playing = false, duckTimer = null;
   let speech = null, readText = null, watchedTimer = null;
+  let resumeAt = 0, autoResume = false;   // where the last block left the video, and whether it was playing
+
+  // Keep where the video is (or clear it once the last video in the list has ended).
+  function remember(wasPlaying) {
+    if (daily || mode !== 'video' || !video || !player?.getCurrentTime) return;
+    const ended = player.getPlayerState?.() === 0 && index >= list.length - 1;
+    setMeta('study_resume', ended ? null : { ref: state.verse.ref, id: video.id, sec: Math.floor(player.getCurrentTime() || 0), playing: wasPlaying }).catch(() => {});
+  }
 
   const runner = () => container.closest('.runner');
   const stop = () => {
+    remember(false);
     exitLandscape(); clearTimeout(watchedTimer);
     player?.destroy?.(); player = null;
     if (speech) { speechSynthesis.cancel(); speech = null; }
@@ -45,8 +58,9 @@ export function studyPlayer(container, { daily = null } = {}) {
   function drawBar() {
     if (!video && !daily) return fill(container);
     container.className = 'study collapsed';
-    const sub = daily ? decode(video?.title || '') : list.length ? `Watch ${list.length} video${list.length === 1 ? '' : 's'}, read or listen` : 'Read or listen';
-    fill(container, h('button', { class: `study-bar${daily ? ' daily' : ''}`, onclick: () => (daily ? watch() : choose()) },
+    const sub = daily ? decode(video?.title || '') : resumeAt ? `Resume ${decode(video.title)} at ${fmtDuration(resumeAt)}`
+      : list.length ? `Watch ${list.length} video${list.length === 1 ? '' : 's'}, read or listen` : 'Read or listen';
+    fill(container, h('button', { class: `study-bar${daily ? ' daily' : ''}`, onclick: () => (daily || resumeAt ? watch() : choose()) },
       h('span', { class: 'sb-i', 'aria-hidden': 'true' }, '▶'),
       h('span', { class: 'sb-t' }, h('b', {}, daily ? `Today’s video, ${video?.source || ''}` : 'Study while you train'), h('small', {}, sub))));
   }
@@ -62,7 +76,7 @@ export function studyPlayer(container, { daily = null } = {}) {
     let last = null;
     list.forEach((x, i) => {
       if (x.group !== last) { body.append(h('p', { class: 'lbl' }, x.group)); last = x.group; }
-      body.append(videoRow(x, i === index && mode === 'video', () => { index = i; video = list[i]; l.close(); watch(); }, favs));
+      body.append(videoRow(x, i === index && mode === 'video', () => { if (i !== index) resumeAt = 0; index = i; video = list[i]; l.close(); watch(); }, favs));
     });
     if (list.length > 1) body.append(h('p', { class: 'fine center' }, 'While a video plays, swipe across the middle of the screen for the next or previous one.'));
     const l = layer('Study while you train', body);
@@ -119,13 +133,16 @@ export function studyPlayer(container, { daily = null } = {}) {
       daily ? null : h('button', { class: 'study-btn', onclick: choose }, 'Study'));
     titleCard();
     await loadApi();
+    const start = resumeAt; resumeAt = 0; autoResume = false;
     player = new window.YT.Player(slot, {
       videoId: video.id, host: ytHost,
-      playerVars: ytVars(),
+      playerVars: ytVars(start ? { start } : {}),
       events: {
         onReady: e => { e.target.playVideo(); noteWatched(); },
         onStateChange: e => {
           playing = e.data === 1;
+          // Ended: the next video in the list plays (the last one just ends).
+          if (e.data === 0) { ours = false; if (!daily && index < list.length - 1) go(1); return; }
           if (ours) { ours = false; return; }          // a change we made; leave the user's choice alone
           if (e.data === 1) armed = true;              // they pressed play: follow the timers from here
           if (e.data === 2) armed = false;             // they paused: stay paused until they play again
@@ -181,12 +198,18 @@ export function studyPlayer(container, { daily = null } = {}) {
       if (daily) { video = await fetchDaily(daily, state.date); return drawBar(); }
       list = await studyVideos(state.verse.ref);
       video = list[0] || null;
+      // Where the last block left off, if it was this verse's video list.
+      const r = await getMeta('study_resume', null);
+      const at = r && r.ref === state.verse.ref ? list.findIndex(x => x.id === r.id) : -1;
+      if (at >= 0) { index = at; video = list[at]; resumeAt = r.sec || 0; autoResume = !!r.playing; }
     } catch { video = null; }
     drawBar();
   })();
 
   return {
     play() {
+      // The video was playing when the last block ended: it picks up there with this block's first timer.
+      if (!mode && autoResume && video) { autoResume = false; watch(); return; }
       if (mode === 'video' && player && armed && !playing) { ours = true; player.playVideo(); }
       if (mode === 'listen' && speech && speechSynthesis.paused) { speechSynthesis.resume(); playing = true; }
     },
@@ -200,7 +223,7 @@ export function studyPlayer(container, { daily = null } = {}) {
       clearTimeout(duckTimer);
       duckTimer = setTimeout(() => player?.setVolume?.(100), ms);
     },
-    destroy() { clearTimeout(duckTimer); clearTimeout(watchedTimer); player?.destroy?.(); player = null; if (speech) speechSynthesis.cancel(); },
+    destroy() { remember(playing); clearTimeout(duckTimer); clearTimeout(watchedTimer); player?.destroy?.(); player = null; if (speech) speechSynthesis.cancel(); },
   };
 }
 

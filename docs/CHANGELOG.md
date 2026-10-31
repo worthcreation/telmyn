@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.24.0 (2026-10-31)
+Weekend calf raises, follow-up reminders, a badge per reminder, and study videos that keep going. Includes 0.23.4.
+On Saturday and Sunday the Pumps pill becomes Calf (30 reps a set, Ross's change): tap logs a set, hold for the
+list, and it has its own Day log tile, breakdown row and CALF_RAISES line in the handoff. Sets logged with Pumps on
+a weekend before this update move to calf raises with their times (database version 2). Reminders: calf raises
+hourly on weekends 08:00-17:00; any grip, pumps or calf reminder you leave unlogged comes again every 15 min, and
+weight follows up every 15 min from 07:00 to noon. The rules live in one file (js/reminder-rules.js) that the app
+and the Worker both use. Notifications keep the app icon; the small badge is now a gripper, a foot, a rising arrow or
+a scale for the kind. Study videos: when one ends the next plays; when a block ends, where the video stopped is kept
+and the next block picks up there (by itself if it was playing). The toe touch no longer asks for your reach, and the
+STRETCH line drops it (older handoffs still read in). 0.23.4: minutes and meters rowed show in the Day log, and the
+row distance's next-time step compares meters (it read "Beat 0").
+
 ## 0.23.3 (2026-10-30)
 Meters rowed. The row block ends with Minutes rowed, then Meters rowed (from the monitor, +/- in steps of 10). The
 distance shows in the Endurance breakdown and goes in the handoff as ROW_M, and a pasted ROW_M line fills it in for

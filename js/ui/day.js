@@ -3,8 +3,8 @@
 import { h, fill, sheet } from './dom.js';
 import { state } from '../state.js';
 import { dayRecord } from '../sync.js';
-import { planFor, blockStatus, PROGRAMS } from '../program/index.js';
-import { fluidTotals } from '../schema.js';
+import { planFor, blockStatus, PROGRAMS, legHabit } from '../program/index.js';
+import { fluidTotals, rowTotals } from '../schema.js';
 import { addDays, hhmm } from '../clock.js';
 import { logSheet } from './forms.js';
 import { areaSheet, BLOCK_AREA } from './detail.js';
@@ -42,7 +42,9 @@ export function daySheet(date = state.date) {
     const pulls = sets.filter(s => /chin_up|neutral_pullup/.test(s.exercise) && s.reps).map(s => s.reps);
     const hangs = sets.filter(s => s.exercise === 'dead_hang' && s.sec).map(s => s.sec);
     const grips = events.filter(e => e.type === 'block_done' && e.block === 'hourly').length || day.hourly_blocks_count || 0;
-    const pumps = events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps').length;
+    const leg = legHabit(d), legN = leg ? events.filter(e => e.type === 'habit' && e.habit === leg.key).length : 0;
+    const rowed = rowTotals(day, sets);
+    const rowText = [rowed.min != null ? `${rowed.min} min` : '', rowed.m != null ? `${rowed.m} m` : ''].filter(Boolean).join(', ');
     const ft = fluidTotals(day, fluids), oz = Math.round(((ft.water_oz || 0) + (ft.other_drinks_oz || 0)) * 10) / 10;
     const protein = day.protein_g || 0;
     const open = area => () => areaSheet(area, d);
@@ -53,7 +55,7 @@ export function daySheet(date = state.date) {
         h('button', { class: 'icon-btn', 'aria-label': 'Next day', disabled: d >= state.date, onclick: () => { d = addDays(d, 1); draw(); } }, '›')),
       circles,
       h('section', { class: 'stats' },
-        routine ? bar(routine.name, STATUS[routineSt] ?? 0, 1, `${routineSt === 'done' ? 'done' : routineSt || 'not yet'}${pulls.length ? `, pull sets ${pulls.join(' / ')}` : ''}${day.row_min ? `, ${day.row_min} min` : ''}`, open(BLOCK_AREA[routine.id] || 'strength')) : null,
+        routine ? bar(routine.name, STATUS[routineSt] ?? 0, 1, `${routineSt === 'done' ? 'done' : routineSt || 'not yet'}${pulls.length ? `, pull sets ${pulls.join(' / ')}` : ''}${rowText ? `, ${rowText}` : ''}`, open(BLOCK_AREA[routine.id] || 'strength')) : null,
         bar('Grip', hangs.length ? Math.max(...hangs) : 0, 20, `${grips} grip break${grips === 1 ? '' : 's'}${hangs.length ? `, hangs ${hangs.join(' / ')} sec` : ''}`, open('grip')),
         bar('Fuel', protein, TARGETS.protein_g[0], `${Math.round(protein * 10) / 10} of ${TARGETS.protein_g[0]} g protein`, open('fuel')),
         bar('Hydration', oz, TARGETS.fluids_oz[0], `${oz} of ${TARGETS.fluids_oz[0]} oz`, open('hydration')),
@@ -61,7 +63,7 @@ export function daySheet(date = state.date) {
           h('span', { class: 'stat-d dv-note' }, day.verse_applied_notes || 'No note yet. Tap for your journal.')))),
       h('section', { class: 'avg' },
         tile('Weight', day.weight_lb ?? null, 'lb', weightList),
-        tile('Pumps', String(pumps), 'times', open('recovery')),
+        tile(leg?.short || 'Pumps', String(legN), 'sets', open('recovery')),
         tile('Sleep', day.bed_time || null, day.wake_time ? `to ${day.wake_time}` : 'not logged', open('recovery'))),
       h('button', { class: 'btn ghost', onclick: () => logSheet(d) }, 'Edit this day'));
   };

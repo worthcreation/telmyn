@@ -1,8 +1,8 @@
-// Press and hold on Grip, Pumps or Weight: today's entries with their times (or the recent weights), full screen.
+// Press and hold on Grip, Pumps (Calf on weekends) or Weight: today's entries with their times (or the recent weights), full screen.
 // Same list as Fluids and Protein. Removing an entry offers Undo, which puts it back with its original time.
 import { h, sheet, toast, fill } from './dom.js';
 import * as db from '../db.js';
-import { state, removeEvent, restoreEvent, pumpsPerFoot } from '../state.js';
+import { state, removeEvent, restoreEvent } from '../state.js';
 import { entryList } from './forms.js';
 import { addDays } from '../clock.js';
 
@@ -22,8 +22,9 @@ function eventList(title, pick, what, empty) {
 export const gripList = () => eventList('Grip breaks', e => e.type === 'block_done' && e.block === 'hourly',
   e => (e.palms ? `Palms ${e.palms}` : 'Grip break'), 'No grip breaks yet today.');
 
-export const pumpsList = () => eventList('Ankle pumps', e => e.type === 'habit' && e.habit === 'ankle_pumps',
-  () => `${pumpsPerFoot()} per foot`, 'No pumps yet today.');
+// leg: the day's leg habit (legToday in state.js).
+export const legList = leg => eventList(leg.name, e => e.type === 'habit' && e.habit === leg.key,
+  () => leg.amount, `No ${leg.name.toLowerCase()} yet today.`);
 
 // Weight: the last 7 readings with dates, and the average of the last 7 days (the number to judge by).
 export async function weightList() {

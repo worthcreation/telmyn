@@ -1,5 +1,5 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.23.3';
+const VERSION = '0.24.0';
 const CACHE = `telmyn-${VERSION}`;
 // Fonts keep their own cache across versions: dropping them with each update made every update load with the
 // stand-in font first and then jump when the real one arrived.
@@ -11,8 +11,8 @@ const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/app.css',
   'js/main.js', 'js/version.js', 'js/clock.js', 'js/db.js', 'js/schema.js', 'js/state.js', 'js/handoff.js', 'js/verses.js', 'js/xp.js', 'js/flow.js', 'js/hourly.js', 'js/foods.js', 'js/site.js', 'js/remind.js', 'js/sync.js', 'js/voice.js', 'js/status.js', 'js/config.js', 'js/scripture.js',
   'js/program/index.js', 'js/program/v1.js', 'js/program/v1_1.js', 'js/program/steps.js',
-  'js/ui/dom.js', 'js/ui/shell.js', 'js/ui/progress.js', 'js/ui/gear.js', 'js/ui/me.js', 'js/ui/journal.js', 'js/ui/study-player.js', 'js/ui/fx.js', 'js/ui/today.js', 'js/ui/runner.js', 'js/ui/forms.js', 'js/ui/verse.js', 'js/ui/data.js', 'js/ui/video-block.js', 'js/ui/media.js', 'js/ui/history.js', 'js/ui/day.js', 'js/ui/detail.js', 'js/listen.js',
-  'data/original.json', 'icons/star-192.png', 'icons/star-512.png', 'icons/badge-96.png', 'icons/apple-touch-icon.png',
+  'js/ui/dom.js', 'js/ui/shell.js', 'js/ui/progress.js', 'js/ui/gear.js', 'js/ui/me.js', 'js/ui/journal.js', 'js/ui/study-player.js', 'js/ui/fx.js', 'js/ui/today.js', 'js/ui/runner.js', 'js/ui/forms.js', 'js/ui/verse.js', 'js/ui/data.js', 'js/ui/video-block.js', 'js/ui/media.js', 'js/ui/history.js', 'js/ui/day.js', 'js/ui/detail.js', 'js/listen.js', 'js/reminder-rules.js',
+  'data/original.json', 'icons/star-192.png', 'icons/star-512.png', 'icons/badge-96.png', 'icons/badge-grip.png', 'icons/badge-pumps.png', 'icons/badge-calf.png', 'icons/badge-weight.png', 'icons/apple-touch-icon.png',
 ];
 
 // A new version downloads its whole copy fresh (past the browser's own cache) and then waits. No skipWaiting here:
@@ -55,8 +55,11 @@ self.addEventListener('push', e => {
   })());
 });
 // The one place a Telmyn notification is shaped. The page asks for its own (in-app checks) through postMessage, so
-// every alert looks the same: star icon, a star badge that Android can draw as a silhouette, sound and vibration.
-const show = (kind, title, body) => self.registration.showNotification(title, { body, tag: kind, icon: 'icons/star-192.png', badge: 'icons/badge-96.png',
+// every alert looks the same: the app icon, sound and vibration, and a small badge (drawn by Android as a white
+// silhouette in the status bar and header) whose glyph says the kind: gripper, foot, rising arrow (calf raises),
+// scale. Anything else gets the star.
+const BADGES = { grip: 'icons/badge-grip.png', pumps: 'icons/badge-pumps.png', calf: 'icons/badge-calf.png', weight: 'icons/badge-weight.png' };
+const show = (kind, title, body) => self.registration.showNotification(title, { body, tag: kind, icon: 'icons/star-192.png', badge: BADGES[kind] || 'icons/badge-96.png',
   renotify: true, requireInteraction: true, silent: false, vibrate: [300, 150, 300, 150, 300], data: { kind } });
 self.addEventListener('message', e => { if (e.data?.type === 'notify') e.waitUntil(show(e.data.kind, e.data.title, e.data.body)); });
 self.addEventListener('notificationclick', e => {

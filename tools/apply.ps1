@@ -36,8 +36,8 @@ if ($LASTEXITCODE -ne 0) {
 git push -q
 if ($LASTEXITCODE -ne 0) { Write-Host 'Push failed. The patch is applied locally; run "git push" after fixing the connection.' -ForegroundColor Red; exit 1 }
 
-# If the update touched the verse service, deploy it too.
-if ((git diff --name-only $before HEAD) -match '^worker/') {
+# If the update touched the Worker (its folder, or the reminder rules it shares with the app), deploy it too.
+if ((git diff --name-only $before HEAD) -match '^(worker/|js/reminder-rules\.js$)') {
   Write-Host 'Deploying the verse service' -ForegroundColor Cyan
   & (Join-Path $repo 'tools\cf.ps1') deploy
 }

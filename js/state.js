@@ -1,7 +1,7 @@
 // Holds the day on screen. UI reads state.*, writes through these functions, then calls render().
 import * as db from './db.js';
 import { blankDay } from './schema.js';
-import { planFor } from './program/index.js';
+import { planFor, legHabit } from './program/index.js';
 import { verseFor } from './verses.js';
 import { now, hhmm } from './clock.js';
 import { foodLine, addLine, removeLine } from './foods.js';
@@ -154,5 +154,5 @@ export async function importDay({ day, sets }) {
   if (day.date === state.date) await load(day.date);
 }
 
-// Ankle pumps per foot for today's program (one number for every screen and reminder).
-export const pumpsPerFoot = () => state.plan?.program.data.HABITS?.ankle_pumps?.perFoot ?? 20;
+// Today's leg habit (ankle pumps on weekdays, calf raises on weekends): name, short label, amount, reminder kind.
+export const legToday = () => legHabit(state.date);

@@ -1,7 +1,7 @@
 // Converts between the chat handoff text and app records, both directions.
 // Import keeps the full original text in handoff_raw so nothing is ever lost, then parses what is clean.
 import { isoDate } from './clock.js';
-import { cleanNumber, blankDay, fluidTotals } from './schema.js';
+import { cleanNumber, blankDay, fluidTotals, rowTotals } from './schema.js';
 import { planFor, blockStatus } from './program/index.js';
 import { verseFor } from './verses.js';
 
@@ -169,13 +169,13 @@ export function buildHandoff({ day, sets, events, fluids }) {
   const hourlyCount = hourly.length ? base + hourly.length : day.hourly_blocks_count;
   const appPalms = hourly.map((e, i) => `block ${base + i + 1} palms ${e.palms || 'not noted'}`).join(', ');
   const palmNotes = [day.hourly_palm_notes, appPalms].filter(Boolean).join(', ');
-  const rowMin = sets.find(s => s.exercise === 'row')?.min ?? day.row_min;
+  const rowed = rowTotals(day, sets);
   const extraLine = x => {
     const rows = of(x.ex).filter(r => !x.blocks || x.blocks.includes(r.block));
     if (!rows.length) return `  ${x.key}: `;
     return `  ${x.key}: ${x.sides ? `${perLeg(rows, x.field || 'reps')} (${x.unit})` : joinSets(rows, x.field || 'reps')}${lbText(rows)}`;
   };
-  const pumps = events.filter(e => e.type === 'habit' && e.habit === 'ankle_pumps').length;
+  const habitCount = key => events.filter(e => e.type === 'habit' && e.habit === key).length;
   // What was eaten: your own notes, then each logged food's line (skipping any already in the notes from before).
   const eating = [day.eating_notes, ...events.filter(e => e.type === 'food' && e.line && !(day.eating_notes || '').includes(e.line)).map(e => e.line)].filter(Boolean).join(' ');
   // When each block finished, in the phone's local time, in program order (last finish if done more than once).
@@ -190,17 +190,18 @@ export function buildHandoff({ day, sets, events, fluids }) {
     `PROGRAM: ${plan.version} | Week ${plan.week}, Day ${plan.day} | ${plan.typeLabel}`,
     `SLEEP: bed ${v(day.bed_time)} | wake ${v(day.wake_time)}`,
     `WEIGHT_LB: ${v(day.weight_lb)}`,
-    `STRETCH: ${statusWord(blockStatus('stretch', events), day.stretch_status)} | toe touch reach: ${v(day.toe_touch_notes)}`,
+    `STRETCH: ${statusWord(blockStatus('stretch', events), day.stretch_status)}`,
     `FAB_FIVE: ${statusWord(blockStatus('gates', events), day.fab_five_status)}`,
     `ROUTINE: ${plan.typeLabel} | ${routine ? statusWord(blockStatus(routine.id, events), day.routine_status) || 'pending' : 'none'}`,
     `  PULLUPS: ${pull.length ? `${joinSets(pull, 'reps')} | ${pullEx === 'chin_up' ? 'chin-up' : 'neutral'} | ${pullMode}` : ''}`,
     `  LEGS: ${legEx ? `${legName} | ${perLeg(of(legEx))} (per leg)${lbText(of(legEx))}` : ''}`,
     ...EXTRA.map(extraLine),
-    `  ROW_MIN: ${v(rowMin)}`,
-    `  ROW_M: ${v(sets.find(s => s.exercise === 'row_dist')?.m ?? day.row_m)}`,
+    `  ROW_MIN: ${v(rowed.min)}`,
+    `  ROW_M: ${v(rowed.m)}`,
     `HANGS_SEC: ${joinSets(of('dead_hang').filter(s => s.block !== 'strength_a' && s.block !== 'strength_b'), 'sec')}`,
     `HOURLY_BLOCKS: ${v(hourlyCount)} | ${v(day.gripper) || 'CoC Trainer'} | ${v(palmNotes)}`,
-    `PUMPS: ${pumps || ''}`,
+    `PUMPS: ${habitCount('ankle_pumps') || ''}`,
+    `CALF_RAISES: ${habitCount('calf_raises') || ''}`,
     `BLOCK_TIMES: ${blockTimes}`,
     `PROTEIN_G: ${v(day.protein_g)}`,
     `EATING: ${eating}`,

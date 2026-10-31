@@ -7,7 +7,6 @@ export const DAY_FIELDS = [
   { key: 'bed_time', label: 'Bed', type: 'time', group: 'Body' },
   { key: 'wake_time', label: 'Wake', type: 'time', group: 'Body' },
   { key: 'weight_lb', label: 'Weight', unit: 'lb', type: 'number', step: 0.1, group: 'Body' },
-  { key: 'toe_touch_notes', label: 'Toe touch reach', type: 'text', group: 'Body' },
   { key: 'protein_g', label: 'Protein', unit: 'g', type: 'number', group: 'Fuel' },
   { key: 'eating_notes', label: 'Eating', type: 'textarea', group: 'Fuel' },
   { key: 'water_oz', label: 'Water', unit: 'oz', type: 'number', step: 0.1, group: 'Fuel', derivedFrom: 'fluids' },
@@ -23,7 +22,8 @@ export const DAY_FIELDS = [
 ];
 
 // Fields carried only by imported handoffs (status lines the app normally derives from events).
-export const IMPORT_ONLY = ['stretch_status', 'fab_five_status', 'routine_status', 'row_min', 'row_m', 'hourly_blocks_count', 'gripper', 'hourly_palm_notes', 'verse_ref', 'instruction_updates', 'handoff_raw', 'program_version', 'week', 'day'];
+// toe_touch_notes: toe touch reach, no longer noted (Ross, 2026-10-31); kept so older handoffs still read in.
+export const IMPORT_ONLY = ['toe_touch_notes', 'stretch_status', 'fab_five_status', 'routine_status', 'row_min', 'row_m', 'hourly_blocks_count', 'gripper', 'hourly_palm_notes', 'verse_ref', 'instruction_updates', 'handoff_raw', 'program_version', 'week', 'day'];
 
 export const FLUID_KINDS = [
   { key: 'water', label: 'Water', bucket: 'water_oz' },
@@ -55,4 +55,11 @@ export function fluidTotals(day, fluids) {
     t[k] = Math.round(((t[k] || 0) + f.oz) * 10) / 10;
   }
   return t;
+}
+
+// Minutes and meters rowed: the row block's logged sets, or the numbers carried in from an imported handoff.
+// Blank stays blank. One answer for the Day log, the breakdowns and the handoff.
+export function rowTotals(day, sets) {
+  const sum = (ex, f) => { const r = sets.filter(s => s.exercise === ex && s[f] != null); return r.length ? r.reduce((a, s) => a + s[f], 0) : null; };
+  return { min: sum('row', 'min') ?? day?.row_min ?? null, m: sum('row_dist', 'm') ?? day?.row_m ?? null };
 }

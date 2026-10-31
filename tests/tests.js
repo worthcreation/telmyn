@@ -140,7 +140,7 @@ test('parse sets', () => {
 test('round trip keeps key lines', () => {
   const { day, sets } = parseHandoff(SAMPLE);
   const out = buildHandoff({ day, sets, events: [], fluids: [] });
-  for (const line of ['DATE: 2026-10-27', 'PROGRAM: v1.1 | Week 1, Day 1 | Row', 'PROTEIN_G: 40', 'WATER_OZ: 22.9', 'OTHER_DRINKS_OZ: 24', 'STRETCH: done | toe touch reach: nearly palms flat, legs nearly straight', 'ROUTINE: Row | pending', 'VERSE: Galatians 6:9 | '])
+  for (const line of ['DATE: 2026-10-27', 'PROGRAM: v1.1 | Week 1, Day 1 | Row', 'PROTEIN_G: 40', 'WATER_OZ: 22.9', 'OTHER_DRINKS_OZ: 24', 'STRETCH: done\nFAB_FIVE', 'ROUTINE: Row | pending', 'VERSE: Galatians 6:9 | '])
     if (!out.includes(line)) throw new Error(`missing "${line}"`);
 });
 test('imported done status closes blocks', () => {
@@ -177,11 +177,46 @@ test('push rules: grip after an hour on a workday, weight once, nothing on weeke
   const t = s => Date.parse(s), off = 300;
   const rec = { offset: off, state: { grip: t('2026-10-28T14:00:00Z'), pumps: t('2026-10-28T14:40:00Z'), weight: '2026-10-27' }, sent: {} };
   eq([due(rec, t('2026-10-28T15:05:00Z')).map(d => d.kind).join(), due(rec, t('2026-10-28T14:30:00Z')).map(d => d.kind).join(),
-    due({ ...rec, state: { ...rec.state, weight: '2026-10-31' } }, t('2026-10-31T15:05:00Z')).length, due({ ...rec, sent: { weight: '2026-10-28', grip: t('2026-10-28T15:00:00Z') } }, t('2026-10-28T15:05:00Z')).length],
-    ['grip,weight', 'weight', 0, 0]);
+    due({ ...rec, state: { ...rec.state, weight: '2026-10-31', calf: t('2026-10-31T14:30:00Z') } }, t('2026-10-31T15:05:00Z')).length, due({ ...rec, sent: { weight: '2026-10-28', grip: t('2026-10-28T15:00:00Z') } }, t('2026-10-28T15:05:00Z')).map(d => d.kind).join()],
+    ['grip,weight', 'weight', 0, 'weight']);   // the last: grip sent 5 min ago waits; weight unanswered since 06:00 follows up
+});
+test('unanswered reminders come again every 15 min until logged; weight follow-ups 7 to noon only', async () => {
+  const { due } = await import('../js/reminder-rules.js');
+  const t = s => Date.parse(s), off = 300;   // Central daylight time: 13:00Z is 08:00
+  const rec = { offset: off, state: { grip: t('2026-10-28T14:00:00Z'), pumps: t('2026-10-28T15:00:00Z'), weight: '2026-10-28' }, sent: { grip: t('2026-10-28T15:00:00Z') } };
+  const kinds = (r, at, only) => due(r, t(at)).filter(d => !only || d.kind === only).map(d => d.kind).join();
+  eq([kinds(rec, '2026-10-28T15:10:00Z'), kinds(rec, '2026-10-28T15:15:00Z'), due(rec, t('2026-10-28T15:15:00Z'))[0].body.startsWith('Still due.'),
+    kinds({ ...rec, state: { ...rec.state, grip: t('2026-10-28T15:12:00Z') } }, '2026-10-28T15:15:00Z')], ['', 'grip', true, '']);
+  const w = { offset: off, state: {}, sent: {} };
+  eq([kinds(w, '2026-10-28T11:00:00Z'), kinds({ ...w, sent: { weight: t('2026-10-28T11:00:00Z') } }, '2026-10-28T11:30:00Z'),
+    kinds({ ...w, sent: { weight: t('2026-10-28T12:00:00Z') } }, '2026-10-28T12:15:00Z'), kinds({ ...w, sent: { weight: t('2026-10-28T16:50:00Z') } }, '2026-10-28T17:30:00Z', 'weight')],
+    ['weight', '', 'weight', '']);
+});
+test('weekends: calf raises hourly with the amount, no pumps or grip', async () => {
+  const { due } = await import('../js/reminder-rules.js');
+  const t = s => Date.parse(s);
+  const rec = { offset: 300, state: { calf: t('2026-10-31T14:30:00Z'), weight: '2026-10-31', say: { calf: '30 reps' } }, sent: {} };
+  const at = s => due(rec, t(s));
+  eq([at('2026-10-31T15:00:00Z').length, at('2026-10-31T15:31:00Z').map(d => `${d.kind}: ${d.body}`).join()],
+    [0, 'calf: 30 reps. It has been over an hour.']);
+});
+test('leg habit: pumps on weekdays, calf raises on weekends', async () => {
+  const { legHabit } = await import('../js/program/index.js');
+  eq([legHabit('2026-10-30').key, legHabit('2026-10-31').key, legHabit('2026-11-01').short, legHabit('2026-11-02').amount], ['ankle_pumps', 'calf_raises', 'Calf', '30 per foot']);
 });
 group('Data');
+test('toe touch reach from older handoffs still reads in (no longer exported)', () => eq(parseHandoff(SAMPLE).day.toe_touch_notes, 'nearly palms flat, legs nearly straight'));
 test('no data stays blank', () => eq(fluidTotals(blankDay('2026-10-27'), []), { water_oz: null, other_drinks_oz: null }));
+test('rowed minutes and meters: from the row block, else the imported numbers, blank when neither', async () => {
+  const { rowTotals } = await import('../js/schema.js');
+  eq([rowTotals({}, [{ exercise: 'row', min: 19 }, { exercise: 'row_dist', m: 3747 }]), rowTotals({ row_min: 20, row_m: null }, []), rowTotals({}, [])],
+    [{ min: 19, m: 3747 }, { min: 20, m: null }, { min: null, m: null }]);
+});
+test('row distance next time compares meters, never reps', async () => {
+  const { pushTip } = await import('../js/ui/detail.js');
+  const EX = { row_dist: { name: 'Row distance' } };
+  eq([pushTip('row_dist', [{ m: 3747 }], null, EX).step, pushTip('row_dist', [{ m: 3800 }], { rows: [{ m: 3747 }] }, EX).step], ['Beat 3747 m at an easy pace', 'Up 53 m. Keep it conversational']);
+});
 test('hourly: imported 3 plus 1 in app', () => {
   const { day, sets } = parseHandoff(SAMPLE);
   const out = buildHandoff({ day, sets, events: [{ type: 'block_done', block: 'hourly', palms: 'down' }], fluids: [] });
@@ -202,7 +237,7 @@ test('every routine exercise prints, with per-set pull-up modes, per-arm rows, w
   const out = buildHandoff({ day: blankDay(d), sets, events, fluids: [] });
   for (const line of ['  PULLUPS: 2 / 5 / 5 | neutral | negatives / full range / full range', '  LEGS: Single-leg RDL | 10 / L9 R8 (per leg)',
     '  SCAP_PULLUPS: 10', '  WARMUP_HANGS_SEC: 15 / 16', '  GOBLET_SQUATS: 12 / 11', '  PAUSED_PUSHUPS: 15', '  CHAMPAGNE_CURLS: 10', '  WINDMILLS: 15 / 15',
-    '  SA_ROWS: ', 'HANGS_SEC: 24', 'PUMPS: 2', 'BLOCK_TIMES: Morning stretch 06:41'])
+    '  SA_ROWS: ', 'HANGS_SEC: 24', 'PUMPS: 2', 'CALF_RAISES: \n', 'STRETCH: done\n', 'BLOCK_TIMES: Morning stretch 06:41'])
     if (!out.includes(line)) throw new Error(`missing "${line}"`);
   // And back again: the same sets come out of the text.
   const back = parseHandoff(out).sets;
