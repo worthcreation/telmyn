@@ -56,7 +56,8 @@ function gripPill(day, rerender, past) {
     toast('Grip break logged', { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); toast('Grip break removed'); } }, `${n} today, palms ${palms}`);
   } },
     h('span', { class: 'pill-l' }, `Grip ${arrow}`),
-    h('span', { class: 'pill-v' }, String(hist.length), h('small', {}, a.label))), gripList);
+    h('span', { class: 'pill-v' }, String(hist.length)),
+    h('span', { class: 'pill-s' }, a.label.trim())), gripList);
 }
 
 // The day's leg habit lives in the top strip too (ankle pumps on weekdays, calf raises on weekends): tap logs a set,
@@ -73,15 +74,18 @@ function legPill(rerender, past) {
     toast(`${leg.name} logged`, { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); toast(`${leg.name} removed`); } }, `${list.length + 1} today, ${leg.amount}`);
   } },
     h('span', { class: 'pill-l' }, leg.short),
-    h('span', { class: 'pill-v' }, String(list.length), h('small', {}, a.label))), () => legList(leg));
+    h('span', { class: 'pill-v' }, String(list.length)),
+    h('span', { class: 'pill-s' }, a.label.trim())), () => legList(leg));
 }
 
-// Labeled fill bar: the numbers sit inside the bar.
+// Labeled fill bar: the numbers sit inside the bar. Every pill has the same three lines (name, number, the rest),
+// so the strip keeps one height and four equal columns whatever the words say.
 function pill(label, value, target, unit, onclick) {
   const p = target ? Math.min(1, (value || 0) / target) : 0;
   return h('button', { class: `pill${p >= 1 ? ' met' : ''}`, onclick, style: `--p:${p}` },
     h('span', { class: 'pill-l' }, label),
-    h('span', { class: 'pill-v' }, value === null || value === undefined ? '–' : String(value), target ? h('small', {}, ` / ${target} ${unit}`) : h('small', {}, ` ${unit}`)));
+    h('span', { class: 'pill-v' }, value === null || value === undefined ? '–' : String(value)),
+    h('span', { class: 'pill-s' }, target ? `/ ${target} ${unit}` : unit));
 }
 
 // A tab whose content loads from storage (Progress, Me) is built off screen and swapped in whole, so switching tabs

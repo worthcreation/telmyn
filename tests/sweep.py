@@ -2,7 +2,8 @@
 #   python3 tests/sweep.py          (starts its own web server; needs Python Playwright)
 # Layout: every page and sheet at seven phone heights (700 to 915 px; a clamped verse with "tap to read all" is by design). Fails on page scrolling, content under the tab
 #   bar, sideways clipping, or a clipped Today verse. Lists and reading panels that scroll inside themselves are exempt.
-# Buttons: every button on every screen keeps at least 6 px between its text and its edges, at 360 and 412 px wide.
+# Buttons: every button on every screen keeps at least 6 px between its text and its edges, at 360 and 412 px wide;
+#   the top strip, filled with its widest words, stays inside the screen with no line cut.
 # Landscape: every main screen, the verse study and the runner at 915x412 and 800x360.
 # Prints one line per sweep, like tests/tests.js; a failing viewport is named under its sweep.
 import asyncio, json, os, socket, subprocess, sys
@@ -22,6 +23,14 @@ MEASURE = """(()=>{const out=[];for(const b of document.querySelectorAll('button
  const range=document.createRange();range.selectNodeContents(b);const t=range.getBoundingClientRect();if(!t.width)continue;
  const l=t.left-r.left,rt=r.right-t.right,tp=t.top-r.top,bt=r.bottom-t.bottom;const m=Math.min(l,rt);
  if(m<6||b.scrollWidth>b.clientWidth+1)out.push(`${(b.textContent||'').trim().slice(0,18)}: ${Math.round(l)}/${Math.round(rt)} px`)}return [...new Set(out)]})()"""
+
+# The top strip with its widest words in every pill: it must stay inside the screen and no line may be cut.
+STRIP = """(()=>{const out=[];const nav=document.querySelector('.status');if(!nav)return ['no strip'];
+ for(const p of nav.querySelectorAll('.pill')){const v=p.querySelector('.pill-v'),s=p.querySelector('.pill-s');if(s){v.textContent='116.5';s.textContent='/ 100 oz';}else if(v)v.textContent='116.5 / 100 oz';}
+ const edge=document.getElementById('app').getBoundingClientRect().right;
+ for(const e of [nav,...nav.children])if(e.getBoundingClientRect().right>edge+1){out.push('strip past the edge');break;}
+ for(const e of nav.querySelectorAll('.pill, .pill-l, .pill-v, .pill-s'))if(e.scrollWidth>e.clientWidth+1){out.push('strip cuts: '+e.className+' '+e.textContent.trim().slice(0,12));break;}
+ dispatchEvent(new HashChangeEvent('hashchange'));return out})()"""
 
 def reply(body): return lambda r: r.fulfill(status=200, content_type='application/json', headers={'Access-Control-Allow-Origin': '*'}, body=json.dumps(body))
 
@@ -76,6 +85,7 @@ async def buttons(b, port, w, h):
     res = {}
     for tab in ('today', 'progress', 'gear', 'me'):
         await pg.evaluate(f"location.hash='#{tab}'"); await pg.wait_for_timeout(400); res[tab] = await pg.evaluate(MEASURE)
+    res['strip'] = await pg.evaluate(STRIP); await pg.wait_for_timeout(300)
     await pg.click('text=Day log'); await opened(pg); res['day view'] = await pg.evaluate(MEASURE)
     await pg.click('text=Edit this day'); await pg.wait_for_selector('.log-form', timeout=8000); await pg.wait_for_timeout(300)
     for g in ('Day', 'Body', 'Fuel'):

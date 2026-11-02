@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.26.2 (2026-11-02)
+Top strip spacing (Ross). With "10 new best" and "17 new best" the Grip and Pumps pills grew wider than a quarter of
+the screen and pushed Pumps past the right edge. The strip is now four columns that can never grow past a quarter,
+and every pill has the same three lines: name, number, then the rest (/ 100 oz, new best, / 8 avg), so the strip keeps
+one height whatever the words say. The button sweep fills every pill with its widest words and fails if the strip
+leaves the screen or cuts a line.
+
 ## 0.26.1 (2026-11-02)
 Verse spacing. Bible Gateway sets each line of poetry (Proverbs, Psalms, much of the prophets) in its own piece, and
 the Worker joined them with nothing between, so Proverbs 3:5-6 read "heart,And lean". Lines now join with a space.

@@ -36,15 +36,17 @@ a { color: var(--lane); }
 .view { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--gap-v); overflow: clip; overflow-clip-margin: var(--s4); }
 .view > * { flex: none; }
 .test-banner { width: 100%; border: 0; background: var(--warn); color: var(--lane-ink); text-align: center; font-size: var(--fs-small); border-radius: var(--r-pill); padding: 2px var(--s3); }
-.status { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--s1); }
-.pill { --fill: color-mix(in srgb, var(--ink) 16%, transparent); display: grid; justify-items: center; text-align: center; padding: var(--s1) var(--s3);
+/* Four equal columns that never grow past a quarter: minmax(0, 1fr), and each pill may shrink below its text. */
+.status { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--s1); }
+.pill { --fill: color-mix(in srgb, var(--ink) 16%, transparent); display: grid; justify-items: center; text-align: center; padding: 2px var(--s2); min-width: 0;
   border-radius: var(--r-btn); border: 1px solid var(--line); color: var(--ink);
   background: linear-gradient(90deg, var(--fill) calc(var(--p) * 100%), var(--surface) 0); }
 .pill.met { --fill: color-mix(in srgb, var(--ok) 35%, transparent); }
 .pill:active { transform: scale(var(--press)); }
-.pill-l { font-size: var(--fs-micro); font-weight: 600; color: var(--ink-2); }
-.pill-v { font: 700 var(--fs-lead)/var(--lh-tight) var(--font-display); white-space: nowrap; }
-.pill-v small { font: 500 var(--fs-caption) var(--font-body); color: var(--ink-2); }
+.pill-l, .pill-v, .pill-s { max-width: 100%; white-space: nowrap; overflow: hidden; }
+.pill-l { font: 600 var(--fs-micro)/var(--lh-tight) var(--font-body); color: var(--ink-2); }
+.pill-v { font: 700 var(--fs-lead)/var(--lh-tight) var(--font-display); }
+.pill-s { font: 500 var(--fs-micro)/var(--lh-tight) var(--font-body); color: var(--ink-2); }
 .tabs-bar { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: var(--s1); }
 .tabs-bar button { display: grid; justify-items: center; background: none; border: 0; border-radius: var(--r-btn); padding: 6px 0; color: var(--ink-2); font-size: var(--fs-caption); font-weight: 600; }
 .tabs-bar .tab-i { font-size: var(--fs-lead); line-height: var(--lh-tight); }
@@ -571,7 +573,6 @@ details.dl-row[open] > .dl-sum::after { transform: rotate(90deg); }
 }
 @media (max-width: 380px) {
   .pill-v { font-size: var(--fs-body); }
-  .pill-v small { font-size: var(--fs-micro); }
 }
 
 /* ===== Landscape: the runner and every video use the width ===== */
