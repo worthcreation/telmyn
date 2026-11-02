@@ -3,6 +3,10 @@
 // word panel steps through every original word in order (‹ ›). Then the chapter, one BibleProject video (more on tap),
 // and where it was applied today.
 // Rules carried over: verse text never italic; original-language notes show word, transliteration and meaning only.
+// Two language modes (Ross, 2026-11-02), switched in the word panel and remembered: Original (Greek for the New
+// Testament, Hebrew for the Old) and Hebrew (for a Greek word, the Hebrew it stands for in the Septuagint, from
+// STEPBible's lexicon; Old Testament verses are Hebrew either way). Hebrew Bible versions (HHH, WLC) read right to
+// left in the Hebrew face; the word marks need an English text, so they are off for those.
 // Everything shows inside the app; nothing opens another site.
 import { h, fill, layer, noteField, fitText, decode } from './dom.js';
 import * as db from '../db.js';
@@ -10,7 +14,7 @@ import { verseFor } from '../verses.js';
 import { state, setField } from '../state.js';
 import { journalSheet } from './journal.js';
 import { playVideo } from './media.js';
-import { getVersion, setVersion, fetchVerse, listVersions, originalWords, studyVideos, getFavs, watchedOn } from '../scripture.js';
+import { getVersion, setVersion, fetchVerse, listVersions, originalWords, studyVideos, getFavs, watchedOn, HEBREW_VERSIONS } from '../scripture.js';
 import { videoRow } from './study-player.js';
 import { dayLabel } from '../clock.js';
 
@@ -112,6 +116,8 @@ export async function verseSheet(date = null) {
   const heb = o?.lang === 'hebrew';
   const words = o?.words || [];
   let current = -1;
+  let mode = heb ? 'hebrew' : await db.getMeta('lang_mode', 'original');   // 'original' or 'hebrew'
+  const hebrewText = () => HEBREW_VERSIONS.has(version);
 
   const text = h('p', { class: 'vs-text' }, 'Loading…');
   const cite = h('p', { class: 'vs-cite' }, `${v.ref} ${version}`);
@@ -131,22 +137,29 @@ export async function verseSheet(date = null) {
     const order = h('p', { class: 'vs-order' }, lo > 0 ? '… ' : '',
       words.slice(lo, hi + 1).map((x, k) => [k ? ' ' : '', lo + k === i ? h('b', {}, x.en || x.t) : h('button', { class: 'vs-order-w', onclick: () => define(lo + k) }, x.en || x.t)]).flat(),
       hi < words.length - 1 ? ' …' : '');
+    // Hebrew mode on a Greek verse: the Hebrew behind the word leads; the Greek stays on its own line.
+    const behind = !heb && mode === 'hebrew' ? (w.heb || []) : null;
+    const lead = behind?.length ? behind[0] : w, leadHeb = heb || !!behind?.length;
     fill(def,
       h('div', { class: 'vs-def-top' },
         h('span', { class: 'vs-word' },
-          h('span', { class: `vs-orig${heb ? ' hebrew' : ''}`, lang: heb ? 'he' : 'grc', dir: heb ? 'rtl' : 'ltr' }, w.w),
-          h('span', { class: 'vs-tr' }, w.t)),
+          h('span', { class: `vs-orig${leadHeb ? ' hebrew' : ''}`, lang: leadHeb ? 'he' : 'grc', dir: leadHeb ? 'rtl' : 'ltr' }, lead.w),
+          h('span', { class: 'vs-tr' }, lead.t)),
         h('span', { class: 'vs-nav' },
           h('button', { class: 'icon-btn', 'aria-label': 'Previous word', disabled: i === 0, onclick: () => define(i - 1) }, '‹'),
           h('span', { class: 'vs-count' }, `${i + 1} of ${words.length}`),
           h('button', { class: 'icon-btn', 'aria-label': 'Next word', disabled: i === words.length - 1, onclick: () => define(i + 1) }, '›'))),
-      h('p', { class: 'vs-line' }, h('b', {}, 'Meaning'), w.g || '(none listed)'),
+      h('p', { class: 'vs-line' }, h('b', {}, 'Meaning'), lead.g || '(none listed)'),
+      behind?.length > 1 ? h('p', { class: 'vs-line' }, h('b', {}, 'Also'), h('span', {}, behind.slice(1).map((x, k) => [k ? '; ' : '', h('span', { class: 'vs-orig hebrew small', lang: 'he', dir: 'rtl' }, x.w), ` ${x.t}, ${x.g}`]).flat())) : null,
+      behind ? h('p', { class: 'vs-line' }, h('b', {}, 'Greek'), h('span', {}, h('span', { lang: 'grc' }, w.w), ` ${w.t}, ${w.g || ''}`, behind.length ? '' : h('span', { class: 'vs-none' }, w.key ? ' (no Hebrew behind it in the Septuagint)' : ' (small word, no Hebrew note)'))) : null,
       h('p', { class: 'vs-line' }, h('b', {}, 'Literally'), w.en || '(not translated)'),
       shown
         ? (shown.toLowerCase() !== (w.en || '').toLowerCase() ? h('p', { class: 'vs-line' }, h('b', {}, version), `“${shown}”`) : null)
         : h('p', { class: 'vs-line' }, h('b', {}, version), h('span', { class: 'vs-none' }, '(no separate word)')),
       h('p', { class: 'vs-line' }, h('b', {}, heb ? 'Hebrew order' : 'Greek order'), order),
-      w.gram ? h('p', { class: 'vs-line muted' }, w.gram === 'cond' ? 'conditional particle' : w.gram) : null);
+      w.gram ? h('p', { class: 'vs-line muted' }, w.gram === 'cond' ? 'conditional particle' : w.gram) : null,
+      heb ? null : h('div', { class: 'seg vs-mode', role: 'group', 'aria-label': 'Word language' },
+        ['original', 'hebrew'].map(m => h('button', { class: mode === m ? 'on' : '', 'aria-pressed': mode === m, onclick: async () => { mode = m; await db.setMeta('lang_mode', m); define(current); } }, m === 'original' ? 'Original' : 'Hebrew'))));
   }
 
 
@@ -154,7 +167,9 @@ export async function verseSheet(date = null) {
     cite.textContent = `${v.ref} ${version}`;
     let d;
     try { d = await fetchVerse(v.ref, version); } catch (err) { return fill(text, h('span', { class: 'muted' }, err.message)); }
+    text.classList.toggle('hebrew', hebrewText()); text.dir = hebrewText() ? 'rtl' : 'ltr'; text.lang = hebrewText() ? 'he' : 'en';
     if (!words.length) { fill(def, h('p', { class: 'muted small' }, 'No word notes for this verse yet.')); return fill(text, d.text); }
+    if (hebrewText()) { fill(text, d.text); if (current < 0) define(words.findIndex(w => w.key)); return; }   // no English to mark
     const { parts } = markWords(d.text, words);
     // Punctuation stays glued to the word before it, so a comma or period never wraps onto a line by itself.
     const out = [];

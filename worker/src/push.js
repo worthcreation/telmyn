@@ -44,7 +44,7 @@ export async function encryptPayload(sub, text) {
 
 async function send(sub, env, list) {
   const body = await encryptPayload(sub, JSON.stringify(list));
-  const r = await fetch(sub.endpoint, { method: 'POST', body, headers: { Authorization: await vapidHeader(sub.endpoint, env), TTL: '120', Urgency: 'high',
+  const r = await fetch(sub.endpoint, { method: 'POST', body, headers: { Authorization: await vapidHeader(sub.endpoint, env), TTL: '900', Urgency: 'high',
     'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream' } });
   return r.status;
 }
@@ -63,9 +63,9 @@ export async function pushRoute(req, url, env, json) {
   if (url.pathname === '/push/subscribe') {
     if (body.off) { await env.PUSH.delete(key); return json(req, { ok: true, off: true }); }
     if (!body.sub?.endpoint) return json(req, { error: 'No subscription.' }, 400);
-    Object.assign(rec, { sub: body.sub, offset: body.offset ?? rec.offset ?? 0, state: { ...(rec.state || {}), ...(body.state || {}) } });
+    Object.assign(rec, { sub: body.sub, offset: body.offset ?? rec.offset ?? 0, state: { ...(rec.state || {}), ...(body.state || {}) }, reported: Date.now() });
   } else if (url.pathname === '/push/state') {
-    Object.assign(rec, { offset: body.offset ?? rec.offset ?? 0, state: { ...(rec.state || {}), ...(body.state || {}) } });
+    Object.assign(rec, { offset: body.offset ?? rec.offset ?? 0, state: { ...(rec.state || {}), ...(body.state || {}) }, reported: Date.now() });
   } else return json(req, { error: 'Unknown.' }, 404);
   await env.PUSH.put(key, JSON.stringify(rec));
   return json(req, { ok: true });
@@ -73,6 +73,8 @@ export async function pushRoute(req, url, env, json) {
 
 export async function pushTick(env) {
   if (!env.PUSH || !env.VAPID_PRIVATE) return;
+  // Heartbeat for the report below, written every tenth minute (KV writes are limited; the cron runs every minute).
+  if (new Date().getUTCMinutes() % 10 === 0) await env.PUSH.put('push:tick', new Date().toISOString());
   for (const site of ['live', 'test']) {
     const key = `push:${site}`;
     const rec = await env.PUSH.get(key, 'json');
@@ -85,6 +87,28 @@ export async function pushTick(env) {
     delete rec.pending;
     await env.PUSH.put(key, JSON.stringify(rec));
     const status = await send(rec.sub, env, list);
+    rec.last = { at: now, kinds: list.map(d => d.kind), status };   // what the report shows
+    await env.PUSH.put(key, JSON.stringify(rec));
     if (status === 404 || status === 410) await env.PUSH.delete(key);   // the phone dropped the subscription
   }
+}
+
+// What the Worker knows about reminders, for the cloud copy read link (no keys, no addresses): is a phone
+// subscribed, when it last reported, what it reported, what was sent and when, and when the cron last ran.
+export async function pushReport(env) {
+  if (!env.PUSH) return 'PUSH: not set up.';
+  const tick = await env.PUSH.get('push:tick');
+  const lines = [`PUSH (keys ${env.VAPID_PRIVATE ? 'set' : 'missing'}, cron last ran ${tick || 'never'} UTC)`];
+  for (const site of ['live', 'test']) {
+    const rec = await env.PUSH.get(`push:${site}`, 'json');
+    if (!rec?.sub) { lines.push(`  ${site}: no subscription`); continue; }
+    const off = rec.offset || 0, at = ms => (ms ? new Date(ms - off * 60000).toISOString().slice(0, 16).replace('T', ' ') : 'never');
+    const s = rec.state || {}, sent = rec.sent || {};
+    const host = (() => { try { return new URL(rec.sub.endpoint).host; } catch { return '?'; } })();
+    lines.push(`  ${site}: subscribed via ${host}, phone offset ${off} min, reported at ${at(rec.reported)}`);
+    lines.push(`    last logged: grip ${at(s.grip)} | pumps ${at(s.pumps)} | calf ${at(s.calf)} | weight ${s.weight || 'not today'}`);
+    lines.push(`    last reminded: grip ${at(sent.grip)} | pumps ${at(sent.pumps)} | calf ${at(sent.calf)} | weight ${at(typeof sent.weight === 'number' ? sent.weight : 0)}`);
+    lines.push(`    last push: ${rec.last ? `${at(rec.last.at)} ${rec.last.kinds.join(',')} (push service said ${rec.last.status})` : 'none yet'}`);
+  }
+  return lines.join('\n');
 }

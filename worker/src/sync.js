@@ -23,11 +23,13 @@ export function sameKey(a, b) {
   return d === 0;
 }
 
+import { pushReport } from './push.js';
+
 // The text Claude reads: a header, then each day's handoff, newest first.
-export function readText(rows, readAt) {
-  if (!rows.length) return `TELMYN SYNC (read ${readAt})\nNo days synced yet.\n`;
+export function readText(rows, readAt, push = '') {
+  if (!rows.length) return `TELMYN SYNC (read ${readAt})\nNo days synced yet.\n${push}\n`;
   return `TELMYN SYNC (read ${readAt}, ${rows.length} day${rows.length === 1 ? '' : 's'}, newest first)\n\n` +
-    rows.map(r => `${r.handoff}\nSYNCED_AT: ${r.updated_at}${r.app ? ` | app ${r.app}` : ''}${r.device ? `\nDEVICE: ${r.device}` : ''}`).join('\n\n----------\n\n') + '\n';
+    rows.map(r => `${r.handoff}\nSYNCED_AT: ${r.updated_at}${r.app ? ` | app ${r.app}` : ''}${r.device ? `\nDEVICE: ${r.device}` : ''}${r.push ? `\nPHONE_PUSH: ${r.push}` : ''}`).join('\n\n----------\n\n') + (push ? `\n\n----------\n\n${push}` : '') + '\n';
 }
 
 export async function syncRoute(req, url, env, json) {
@@ -52,8 +54,8 @@ export async function syncRoute(req, url, env, json) {
     const plain = (body, status = 200) => new Response(body, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
     if (!sameKey(url.searchParams.get('k') || '', env.SYNC_READ)) return plain('Wrong or missing key.\n', 401);
     const n = Math.min(Math.max(parseInt(url.searchParams.get('days') || '7', 10) || 7, 1), 60);
-    const { results } = await env.DB.prepare("SELECT date, handoff, updated_at, json_extract(data, '$.app') AS app, json_extract(data, '$.device') AS device FROM days WHERE site = ?1 ORDER BY date DESC LIMIT ?2").bind(site, n).all();
-    return plain(readText(results || [], new Date().toISOString()));
+    const { results } = await env.DB.prepare("SELECT date, handoff, updated_at, json_extract(data, '$.app') AS app, json_extract(data, '$.device') AS device, json_extract(data, '$.push') AS push FROM days WHERE site = ?1 ORDER BY date DESC LIMIT ?2").bind(site, n).all();
+    return plain(readText(results || [], new Date().toISOString(), await pushReport(env)));
   }
 
   return json(req, { error: 'Not found.' }, 404);

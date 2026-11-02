@@ -72,7 +72,7 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 - A new daily field: schema.js DAY_FIELDS (the form, import and export follow); handoff.js only for its line
 - How a screen looks: css/app.css with a token from css/tokens.css; a new shared piece goes in ui/dom.js
 - A notification's text or pictures: reminder-rules.js (text), sw.js (which picture), icons/ (icon-* and badge-*)
-- A new verse: verses.js and data/original.json (key words; the tests check every bank verse has them)
+- A new verse: verses.js and data/original.json (key words, each Greek key word with its Hebrew behind it; the tests check every bank verse has them)
 - The cloud copy's lines: handoff.js buildHandoff (and the handoff template in the Project instructions)
 
 ## Build steps

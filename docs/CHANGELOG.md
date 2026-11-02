@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.26.0 (2026-11-02)
+Hebrew in verse study (Ross). The word panel has a switch, Original or Hebrew, remembered between visits. Original
+is the language the verse was written in (Greek for the New Testament, Hebrew for the Old). Hebrew, on a New
+Testament verse, leads with the Hebrew word the Greek stands for in the Septuagint (STEPBible's Abbott-Smith lexicon
+data, CC BY 4.0), with its transliteration and meaning, any second and third equivalents on an Also line, and the
+Greek on its own line; 240 of the 293 Greek key words have one, the rest say so. Old Testament verses are Hebrew in
+both modes. The version menu now carries two Hebrew Bibles from Bible Gateway, HHH (with the New Testament) and WLC
+(Hebrew Old Testament); they read right to left in the Hebrew face, with the word panel still walking every word.
+A dictionary cannot always tell two Hebrew words spelled alike apart, so a gloss can occasionally be the wrong
+sense; the Greek line is always there to check against. Includes 0.25.1.
+
+## 0.25.1 (2026-11-02)
+Reminders that only showed when the app was opened: three things changed. (1) If reminders are on but the phone's
+push subscription is gone (Chrome and Android drop them), the app subscribes again at start instead of quietly
+falling back to in-app checks. (2) A push now waits up to 15 minutes for the phone to reconnect (was 2), which is
+how long the follow-up cycle is anyway. (3) The picture of what is happening is now visible: the service worker
+notes every push that reaches the phone; Me shows "Push reminders on, last arrived HH:MM" or "in-app only, no push
+subscription"; the cloud copy read link ends with the Worker's report (keys set, cron last ran, each site's
+subscription, what the phone last reported, what was last sent and the push service's answer) and each day carries
+the phone's side. Whether an alert pops up and sounds is still Android's setting for Telmyn's notifications.
+
 ## 0.25.0 (2026-10-31)
 Audit release: one source of truth, nothing new to learn. No change in how the app behaves except two fixes.
 Fixes: meters pasted in from a chat handoff (no logged set) now show in the Endurance breakdown; the Day log's

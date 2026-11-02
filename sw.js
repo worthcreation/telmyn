@@ -1,5 +1,5 @@
 // Bump with js/version.js on every release (any change to this file makes phones install the new version).
-const VERSION = '0.25.0';
+const VERSION = '0.26.0';
 const CACHE = `telmyn-${VERSION}`;
 // Fonts keep their own cache across versions: dropping them with each update made every update load with the
 // stand-in font first and then jump when the real one arrived.
@@ -45,8 +45,22 @@ self.addEventListener('push', e => {
     try { list = e.data ? e.data.json() : []; } catch { /* unreadable payload */ }
     if (!Array.isArray(list) || !list.length) list = [{ kind: 'telmyn', title: 'Telmyn', body: 'A reminder is due.' }];
     for (const n of list) await show(n.kind, n.title, n.body);
+    await noteArrival(list.map(n => n.kind));
   })());
 });
+// Keep the last push's time and kinds in the app's own store (meta push_last), so Me and the cloud copy can show
+// whether reminders reach the phone with the app closed. Opens the store as it is; a store that is not there yet
+// is skipped.
+function noteArrival(kinds) {
+  return new Promise(res => {
+    try {
+      const r = indexedDB.open('telmyn');
+      r.onerror = () => res();
+      r.onupgradeneeded = () => { r.transaction.abort(); res(); };   // no store yet: the app has never opened
+      r.onsuccess = () => { const db = r.result; try { db.transaction('meta', 'readwrite').objectStore('meta').put({ key: 'push_last', value: { at: new Date().toISOString(), kinds } }).onsuccess = () => res(); } catch { res(); } db.close(); };
+    } catch { res(); }
+  });
+}
 // The one place a Telmyn notification is shaped. The page asks for its own (in-app checks) through postMessage, so
 // every alert looks the same: the app icon stays on the left (Android's own), the picture on the right is a glyph for
 // the kind in the app's gold on graphite (gripper, foot, rising arrow for calf raises, scale), the status-bar badge is

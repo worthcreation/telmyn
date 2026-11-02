@@ -3,7 +3,7 @@ import * as db from '../db.js';
 import { importDay } from '../state.js';
 import { parseHandoff } from '../handoff.js';
 import { APP_VERSION } from '../version.js';
-import { remindersOn, setReminders } from '../remind.js';
+import { remindersOn, setReminders, pushStatus } from '../remind.js';
 import { TEST, SPEED, isoDate, hhmm, now } from '../clock.js';
 import { voiceSettings, setRate, utterance, RATES } from '../voice.js';
 import { syncKey, syncLast, syncAll, syncDates } from '../sync.js';
@@ -94,7 +94,9 @@ export async function dataActions() {
   const sent = cloud ? await syncLast() : null;
   const when = t => (isoDate(new Date(t)) === isoDate() ? hhmm(new Date(t)) : isoDate(new Date(t)));
   // One status line: the backup file's age (warning color after 7 days) and the cloud copy's last send.
-  const status = `${last === null ? 'No backup file yet.' : `Backed up ${days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`}.`}${cloud ? ` Cloud copy ${sent ? when(sent) : 'waiting'}.` : ''}`;
+  const ps = on ? await pushStatus() : null;
+  const reminders = !on ? '' : !ps.push ? ' Reminders: in-app only, no push subscription.' : ` Push reminders on${ps.last ? `, last arrived ${when(new Date(ps.last.at).getTime())}` : ', none arrived yet'}.`;
+  const status = `${last === null ? 'No backup file yet.' : `Backed up ${days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`}.`}${cloud ? ` Cloud copy ${sent ? when(sent) : 'waiting'}.` : ''}${reminders}`;
   return h('div', { class: 'stack' },
     h('div', { class: 'bar' },
       h('button', { class: 'btn ghost', onclick: backUp }, 'Back up'),

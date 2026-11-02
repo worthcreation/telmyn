@@ -5,10 +5,14 @@ import { daysBetween } from './clock.js';
 
 export const DEFAULT_VERSION = 'NKJV';
 // Used until the full Bible Gateway list loads (or if it can't).
+// Hebrew Bible versions on Bible Gateway: read right to left in the Hebrew face. HHH is a modern Hebrew Bible with
+// the New Testament; WLC is the Hebrew Old Testament (Westminster Leningrad Codex).
+export const HEBREW_VERSIONS = new Set(['HHH', 'WLC']);
 const FALLBACK_VERSIONS = [
   ['NKJV', 'New King James Version'], ['KJV', 'King James Version'], ['ESV', 'English Standard Version'],
   ['NIV', 'New International Version'], ['NASB', 'New American Standard Bible'], ['NLT', 'New Living Translation'],
   ['CSB', 'Christian Standard Bible'], ['AMP', 'Amplified Bible'], ['MSG', 'The Message'], ['WEB', 'World English Bible'],
+  ['HHH', 'Habrit Hakhadasha/Haderekh (Hebrew)'], ['WLC', 'The Westminster Leningrad Codex (Hebrew OT)'],
 ].map(([abbr, name]) => ({ abbr, name }));
 
 export const getVersion = () => getMeta('verse_version', DEFAULT_VERSION);

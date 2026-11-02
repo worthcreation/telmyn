@@ -64,6 +64,11 @@ export async function syncPush(on) {
   toast('Reminders will arrive even with Telmyn closed.');
   return true;
 }
+// For Me and the cloud copy: are pushes on, and when did the last one reach this phone (noted by sw.js).
+export async function pushStatus() {
+  const last = await db.getMeta('push_last', null);
+  return { on: await remindersOn(), push: pushActive, last };
+}
 // Tell the Worker whenever a grip break, pumps, calf raises or weight is logged (only those times are sent).
 let lastSent = '';
 function reportState() {
@@ -94,6 +99,9 @@ export async function startReminders() {
   if (await remindersOn()) {
     const reg = await navigator.serviceWorker?.ready.catch(() => null);
     pushActive = !!(await reg?.pushManager?.getSubscription().catch(() => null));
+    // Reminders on but no subscription (the phone or Chrome dropped it): subscribe again, so reminders never fall
+    // back to app-open-only without anyone noticing.
+    if (!pushActive && reg?.pushManager && Notification.permission === 'granted') await syncPush(true).catch(() => {});
   }
   onChange(reportState);
   setInterval(() => { check().catch(() => {}); }, 60000);

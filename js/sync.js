@@ -7,6 +7,7 @@ import { API_BASE } from './config.js';
 import { SITE } from './site.js';
 import { buildHandoff } from './handoff.js';
 import { APP_VERSION } from './version.js';
+import { pushStatus } from './remind.js';
 
 const KEY = /^[0-9a-f]{32,128}$/;
 let timer = null;
@@ -23,11 +24,17 @@ export async function dayRecord(date) {
   return { day, events, sets, fluids };
 }
 
+// One line about push reminders for the read link: on or off, subscribed or not, when the last one arrived.
+async function pushLine() {
+  const s = await pushStatus().catch(() => null);
+  if (!s) return null;
+  return !s.on ? 'reminders off' : !s.push ? 'reminders on, no push subscription (in-app only)' : `push on, last arrived ${s.last ? `${s.last.at} (${s.last.kinds.join(',')})` : 'never'}`;
+}
 async function send(key, rec, keepalive = false) {
   const r = await fetch(`${API_BASE}/sync/day?site=${SITE === 'test' ? 'test' : 'live'}`, {
     method: 'POST', keepalive,
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-    body: JSON.stringify({ date: rec.day.date, handoff: buildHandoff(rec), data: { ...rec, device: document.documentElement.dataset.screen || null, app: APP_VERSION } }),
+    body: JSON.stringify({ date: rec.day.date, handoff: buildHandoff(rec), data: { ...rec, device: document.documentElement.dataset.screen || null, app: APP_VERSION, push: await pushLine() } }),
   });
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `Sync returned ${r.status}.`);
 }

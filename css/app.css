@@ -310,6 +310,9 @@ details.dl-row[open] > .dl-sum::after { transform: rotate(90deg); }
 .vs-word { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s3); min-width: 0; }
 .vs-orig { font: 400 var(--fs-original)/1.2 var(--font-greek); overflow-wrap: anywhere; }
 .vs-orig.hebrew { font-family: var(--font-hebrew); }
+.vs-orig.small { font-size: var(--fs-lead); }
+.vs-text.hebrew { font-family: var(--font-hebrew); }
+.vs-mode { margin-top: var(--s2); }
 .vs-tr { color: var(--ink-2); font-size: var(--fs-small); }
 .vs-nav { display: grid; grid-template-columns: var(--h-ctrl-sm) auto var(--h-ctrl-sm); align-items: center; }
 .vs-nav .icon-btn { width: var(--h-ctrl-sm); height: var(--h-ctrl-sm); font-size: var(--fs-heading); }

@@ -56,6 +56,12 @@ test('push payload decrypts to the reminders', async () => {
 });
 
 group('Verses');
+test('every Greek key word carries its Hebrew behind it (a list, empty when the Septuagint has none)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const d = JSON.parse(readFileSync(new URL('../data/original.json', import.meta.url), 'utf8'));
+  const greekKeys = Object.values(d.verses).filter(v => v.lang === 'greek').flatMap(v => v.words.filter(w => w.key));
+  eq([greekKeys.every(w => Array.isArray(w.heb)), greekKeys.filter(w => w.heb.length).length > greekKeys.length * 0.7, greekKeys.every(w => w.heb.every(x => x.w && x.t && x.g))], [true, true, true]);
+});
 test('video lengths read as m:ss or h:mm:ss', () => { eq(fmtDuration(526), '8:46'); eq(fmtDuration(59), '0:59'); eq(fmtDuration(3725), '1:02:05'); eq(fmtDuration(null), ''); });
 
 test('daily video: newest not shown in the last 13 days, never two days running', () => {
