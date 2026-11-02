@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.26.1 (2026-11-02)
+Verse spacing. Bible Gateway sets each line of poetry (Proverbs, Psalms, much of the prophets) in its own piece, and
+the Worker joined them with nothing between, so Proverbs 3:5-6 read "heart,And lean". Lines now join with a space.
+Copies of verses saved on the phone and in the Worker's cache are fetched fresh once.
+
 ## 0.26.0 (2026-11-02)
 Hebrew in verse study (Ross). The word panel has a switch, Original or Hebrew, remembered between visits. Original
 is the language the verse was written in (Greek for the New Testament, Hebrew for the Old). Hebrew, on a New

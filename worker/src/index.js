@@ -39,14 +39,15 @@ async function parsePassage(html) {
       element(el) {
         const cls = el.getAttribute('class') || '';
         const id = (cls.match(/\b([A-Za-z0-9]+-\d+-\d+)\b/) || [])[1] || cls;   // e.g. Gal-6-9
-        if (!current || current.id !== id) { current = { id, text: '' }; verses.push(current); }
+        // Poetry sets each line in its own span: a line break is a space, or "heart,And" runs together (0.26.1).
+        if (!current || current.id !== id) { current = { id, text: '' }; verses.push(current); } else current.text += ' ';
       },
       text(t) { if (!skip && current) current.text += t.text; },
     })
     .on('div.publisher-info-bottom p', { element() { copyright += ' '; } })
     .on('div.publisher-info-bottom', { element(el) { inCopy = true; el.onEndTag(() => { inCopy = false; }); }, text(t) { if (inCopy) copyright += t.text; } });
   await rw.transform(new Response(html)).text();
-  const clean = s => s.replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&#8217;|&rsquo;/g, '’').replace(/&#8220;|&ldquo;/g, '“').replace(/&#8221;|&rdquo;/g, '”').replace(/\s+/g, ' ').trim();
+  const clean = s => s.replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&#8217;|&rsquo;/g, '’').replace(/&#8220;|&ldquo;/g, '“').replace(/&#8221;|&rdquo;/g, '”').replace(/\s+/g, ' ').replace(/ ([,.;:!?’”])/g, '$1').trim();
   const out = verses.map(v => ({ id: v.id, text: clean(v.text) })).filter(v => v.text);
   return { verses: out, text: out.map(v => v.text).join(' '), copyright: clean(copyright) };
 }

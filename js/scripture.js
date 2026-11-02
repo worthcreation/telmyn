@@ -18,12 +18,15 @@ const FALLBACK_VERSIONS = [
 export const getVersion = () => getMeta('verse_version', DEFAULT_VERSION);
 export const setVersion = v => setMeta('verse_version', v);
 
+// FORMAT: bump when the Worker's verse text changes shape, so copies saved on the phone (and the Worker's 7-day
+// cache, keyed by this URL) are fetched fresh. 2: lines of poetry joined with a space (0.26.1).
+const FORMAT = 2;
 export async function fetchVerse(ref, version) {
-  const key = `verse:${version}:${ref}`;
+  const key = `verse${FORMAT}:${version}:${ref}`;
   const cached = await getMeta(key);
   if (cached) return cached;
   if (!API_BASE) throw new Error('Verse service not connected yet.');
-  const r = await fetch(`${API_BASE}/verse?ref=${encodeURIComponent(ref)}&v=${encodeURIComponent(version)}`)
+  const r = await fetch(`${API_BASE}/verse?ref=${encodeURIComponent(ref)}&v=${encodeURIComponent(version)}&f=${FORMAT}`)
     .catch(() => { throw new Error('Could not reach the verse service. Check the connection and try again.'); });
   const data = await r.json().catch(() => ({}));
   if (!r.ok || !data.text) throw new Error(data.error || 'Could not load the verse.');
