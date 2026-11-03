@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.28.0 (2026-11-03)
+Word page (Ross: "more granularity to the translation"). Tap the word in the verse card ("More ›") for its own page:
+Meaning (every sense, indented by level; for Greek the full Abbott-Smith entry; the Strong's entry with its KJV
+renderings and origin), Grammar (this verse's form in plain words: "Subject: the one doing or being"), Family (the
+root and words built from it, each opening its own page) and Verses (every verse it appears in, up to 60 spread across
+the Bible; tap one to read it in place, this verse marked). Hebrew words listed under "Also" open their pages too.
+Everything shows in the app. One small file per word in data/words/, fetched only when opened.
+
+The Hebrew behind the Greek, corrected. It was matched by letters only, so words sharing letters were confused:
+makarios showed ashar "to bless" where Abbott-Smith gives osher "happiness"; thanatos showed davar "to speak"
+(now mavet, death); morphe showed taar "to border" (now toar, appearance). tools/lexicon.py rebuilds it from the
+sources, matching vowels too and, when two words share a spelling, the one whose meaning fits the Greek. 112 of 293
+Greek key words changed. Each Hebrew word now carries its Strong's number.
+
+Also released here (built as 0.27.0, not pushed yet): beat your past self, and swipe through weeks.
+
+## 0.27.0 (2026-11-02)
+Beat your past self (Ross). Every working set races the same set (and side) from your last session: under "Last
+time" a line says how the number in the box compares, updated as it changes ("2 reps to beat it", "Ties it. One more
+beats it", green "Beats it by 1", "Beats it: 5 lb heavier", "Beats it: full reps"). Saving a set that beat it plays a
+rising chime with a buzz and a burst, and a notice says by how much. More reps at the same weight, as many at a heavier
+weight, or full reps where last time was negatives count; a lighter weight never does. Warm-up sets show last time but
+are not raced. In the Day log, each set that beat last time carries the green "up". The rule lives once in js/log.js
+(lastSessionOf, sameSetLast, versusLast), used by the runner, the breakdowns and the tests.
+
+Swipe through weeks (Ross; built as 0.26.3, released here). On Progress, a sideways swipe on the day strip (and only there) moves between weeks:
+right for the week before, left back toward this week, from the program's first week to this one. The title reads
+This Week, Last Week, or N Weeks Ago, and every bar, tile and breakdown follows the week shown. The strip slides in
+from the side the week came from; a swipe never also opens the day under the finger. Leaving and coming back to the
+tab starts at this week. The layout sweep swipes to last week and back at every height.
+
 ## 0.26.2 (2026-11-02)
 Top strip spacing (Ross). With "10 new best" and "17 new best" the Grip and Pumps pills grew wider than a quarter of
 the screen and pushed Pumps past the right edge. The strip is now four columns that can never grow past a quarter,

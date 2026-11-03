@@ -1,5 +1,5 @@
-// Progress tab: this week from real logs only. Bars appear only where the program sets a target.
-// Spirit is shown as history, never as a score.
+// Progress tab: one week from real logs only (this week unless the day strip was swiped). Bars appear only where the
+// program sets a target. Spirit is shown as history, never as a score.
 import { h, fill, bar, tile, plural } from './dom.js';
 import * as db from '../db.js';
 import { journalSheet } from './journal.js';
@@ -11,11 +11,36 @@ import { state } from '../state.js';
 import { planFor, blockStatus, PROGRAMS } from '../program/index.js';
 import { addDays, weekday, WEEKDAYS } from '../clock.js';
 
+// Which week shows: 0 is this week, -1 last week. Swiping the day strip moves it (only the strip takes the swipe);
+// coming back to the tab starts at this week again. This listener is added before the shell's, so it runs first.
+let offset = 0, slide = '';
+addEventListener('hashchange', () => { if (location.hash === '#progress') offset = 0; });
+const mondayOf = d => addDays(d, -((weekday(d) + 6) % 7));
+const TITLE = n => n === 0 ? 'This Week' : n === -1 ? 'Last Week' : `${-n} Weeks Ago`;
+
+// A sideways swipe on the strip: past weeks to the right, back toward this week to the left. A swipe never also
+// opens the day under the finger.
+function swipeable(strip, go) {
+  let x0 = null, y0 = 0, swiped = false;
+  strip.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; swiped = false; });
+  strip.addEventListener('pointerup', e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
+    if (Math.abs(dx) >= 40 && Math.abs(dx) > Math.abs(dy) * 1.5) { swiped = true; go(dx > 0 ? -1 : 1); }
+  });
+  strip.addEventListener('pointercancel', () => { x0 = null; });
+  strip.addEventListener('click', e => { if (swiped) { e.stopPropagation(); e.preventDefault(); swiped = false; } }, true);
+  return strip;
+}
+
 export async function renderProgress(root) {
   const today = state.date;
   const { TARGETS } = state.plan.program.data;
   const start = PROGRAMS[0].effective;
-  const monday = addDays(today, -((weekday(today) + 6) % 7));
+  const first = mondayOf(start), thisMonday = mondayOf(today);
+  const oldest = -Math.round((Date.parse(thisMonday) - Date.parse(first)) / 6048e5);
+  offset = Math.min(0, Math.max(oldest, offset));
+  const monday = addDays(thisMonday, offset * 7);
   const dates = Array.from({ length: 7 }, (_, k) => addDays(monday, k));
   const inWeek = r => r.date >= monday && r.date <= dates[6];
   const [days, events, sets, fluids] = await Promise.all([db.all('days'), db.all('events'), db.all('sets'), db.all('fluids')]);
@@ -25,7 +50,7 @@ export async function renderProgress(root) {
   const done = (d, id) => { const p = planFor(d); return blockStatus(id, evOn(d), dayRec[d] || null, p) === 'done'; };
 
   // Week strip: blocks done per day.
-  const strip = h('div', { class: 'week' }, dates.map(d => {
+  const strip = h('div', { class: `week${slide}`, 'aria-label': 'Days of the week. Swipe for other weeks.' }, dates.map(d => {
     const p = planFor(d);
     const n = p.blocks.filter(b => blockStatus(b.id, evOn(d), dayRec[d] || null, p)).length;
     const frac = p.blocks.length ? n / p.blocks.length : 0;
@@ -36,6 +61,14 @@ export async function renderProgress(root) {
       h('span', { class: 'wk-dot', style: `--p:${before ? 0 : frac}` }),
       h('span', { class: 'wk-n' }, d > today || before ? '' : `${n}/${p.blocks.length}`));
   }));
+
+  slide = '';
+  swipeable(strip, step => {
+    const next = Math.min(0, Math.max(oldest, offset + step));
+    if (next === offset) return;
+    offset = next; slide = step < 0 ? ' from-l' : ' from-r';
+    renderProgress(root);
+  });
 
   const past = dates.filter(d => d <= today && d >= start);   // days the program was running
   const week = area => () => areaSheet(area, monday, dates[6]);
@@ -63,7 +96,7 @@ export async function renderProgress(root) {
   const nOf = v => v.filter(x => x !== null && x !== undefined).length;
 
   fill(root,
-    h('header', { class: 'top' }, h('p', { class: 'date' }, `Week of ${monday}`), h('h1', { class: 'daytype' }, 'This Week')),
+    h('header', { class: 'top' }, h('p', { class: 'date' }, `Week of ${monday}`), h('h1', { class: 'daytype' }, TITLE(offset))),
     strip,
     h('section', { class: 'stats' },
       bar('Strength', strengthDone, strengthPlanned || null, `${strengthDone}/${strengthPlanned} sessions${pulls.length ? `, best pull set ${Math.max(...pulls)}` : ''}`, week('strength')),
@@ -79,5 +112,5 @@ export async function renderProgress(root) {
       avgTile('Protein', avg(proteinVals), 'g', nOf(proteinVals), week('fuel')),
       avgTile('Fluids', avg(fluidVals), 'oz', nOf(fluidVals), week('hydration')),
       avgTile('Weight', avg(weightVals), 'lb', nOf(weightVals), weightList)),
-    h('p', { class: 'muted small progress-hint' }, 'Tap a day for its log, or anything else for its breakdown.'));
+    h('p', { class: 'muted small progress-hint' }, 'Tap a day for its log, anything else for its breakdown. Swipe the days for other weeks.'));
 }

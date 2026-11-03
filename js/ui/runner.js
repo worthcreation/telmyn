@@ -2,13 +2,14 @@
 // Flow: tap Start once and every timed step chains into the next. Each timed step gets a short
 // transition countdown first (0, 5 or 10 sec), ticks at 3-2-1, a held tone as it starts, and a
 // double beep when it ends. Rests run and advance by themselves. Steps counted in reps wait for Done.
-import { h, chime, sounds, unlockAudio, fill, toast, homeButton } from './dom.js';
+import { h, chime, sounds, tone, unlockAudio, fill, toast, homeButton } from './dom.js';
 import * as db from '../db.js';
 import { burst } from './fx.js';
 import { state, addEvent, addSet, setField } from '../state.js';
 import { now, fmtSec, weekday, WEEKDAYS } from '../clock.js';
 import { transitionSec } from '../flow.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
+import { lastSessionOf, sameSetLast, versusLast } from '../log.js';
 import { studyPlayer } from './study-player.js';
 import { DAILY_VIDEO } from '../config.js';
 import { runVideoBlock } from './video-block.js';
@@ -36,19 +37,14 @@ export function runBlock(block, opts = {}) {
   let lastTime = {};
   const blockEx = new Set(steps.filter(s => s.kind === 'set').map(s => s.exercise));
   db.all('sets').then(all => {
-    for (const ex of blockEx) {
-      const prior = all.filter(r => r.exercise === ex && r.date < state.date && (r.reps != null || r.sec != null || r.min != null));
-      const date = prior.map(r => r.date).sort().pop();
-      if (date) lastTime[ex] = { date, rows: prior.filter(r => r.date === date) };
-    }
+    for (const ex of blockEx) { const t = lastSessionOf(all, ex, state.date); if (t) lastTime[ex] = t; }
     if (root.isConnected) render();
   });
-  // The same set (and side) from last time, or that session's last set when it had fewer.
+  // The ghost: the same set (and side) from last time, or that session's last set when it had fewer. Warm-up sets
+  // show last time but are not raced (they are there to warm up, not to beat).
+  const races = s => s.phase !== 'Warm-up';
   const lastFor = s => {
-    const t = lastTime[s.exercise];
-    if (!t) return null;
-    const same = t.rows.filter(r => (r.side || 'each') === (s.side || 'each') || r.side === 'each' || !r.side);
-    const pick = same.find(r => (r.set_no || 1) === (s.set_no || 1)) || same.sort((a, b) => (a.set_no || 1) - (b.set_no || 1)).pop();
+    const t = lastTime[s.exercise], pick = t && sameSetLast(t.rows, s);
     return pick ? { ...pick, day: WEEKDAYS[weekday(t.date)] } : null;
   };
   const resumeKey = `resume:${block.id}:${state.date}`;
@@ -178,8 +174,10 @@ export function runBlock(block, opts = {}) {
       const field = LOG[s.log][0];
       const val = entry.value;
       if (val !== undefined && val !== null && val !== '') {
-        await addSet({ block: block.id, exercise: s.exercise, set_no: s.set_no || 1, side: s.side || null, [field]: Number(val), mode: entry.mode || (s.modes ? 'full' : null), lb: weighted(s) ? entry.lb : undefined });
+        const saved = { block: block.id, exercise: s.exercise, set_no: s.set_no || 1, side: s.side || null, [field]: Number(val), mode: entry.mode || (s.modes ? 'full' : null), lb: weighted(s) ? entry.lb : undefined };
+        await addSet(saved);
         if (s.logField) await setField(s.logField, Number(val));
+        if (races(s)) cheer(versusLast(saved, lastFor(s), field), LOG[s.log][1]);
       }
     }
     if (s.choice === 'palms') entry.palmsSaved = entry.mode;
@@ -248,9 +246,11 @@ export function runBlock(block, opts = {}) {
     // a set not done is entered as 0.
     const last = lastFor(s);
     if ((entry.value === undefined || entry.value === '') && (prev?.[field] ?? last?.[field]) != null) entry.value = String(prev?.[field] ?? last[field]);
+    const ghostEl = h('p', { class: 'ghost-vs' });
+    const race = () => ghost(ghostEl, s, field, unit);
     const input = h('input', { class: 'num', type: 'number', inputmode: 'decimal', min: 0, 'aria-label': unit,
-      value: entry.value ?? '', oninput: e => { entry.value = e.target.value; syncSave(s); } });
-    const bump = d => () => { const cur = Number(input.value || 0); input.value = Math.max(0, cur + d); entry.value = input.value; syncSave(s); };
+      value: entry.value ?? '', oninput: e => { entry.value = e.target.value; syncSave(s); race(); } });
+    const bump = d => () => { const cur = Number(input.value || 0); input.value = Math.max(0, cur + d); entry.value = input.value; syncSave(s); race(); };
     const kids = [h('div', { class: 'stepper' },
       h('button', { class: 'round', 'aria-label': 'Less', onclick: bump(-stepBy) }, '−'),
       h('label', {}, input, h('span', {}, unit)),
@@ -264,15 +264,35 @@ export function runBlock(block, opts = {}) {
     if (weighted(s)) {
       entry.lb ??= prev?.lb ?? last?.lb ?? EXERCISES[s.exercise].weight_lb;
       const wt = h('b', {}, `${entry.lb} lb`);
-      const nudge = d => () => { entry.lb = Math.max(0, entry.lb + d); wt.textContent = `${entry.lb} lb`; };
+      const nudge = d => () => { entry.lb = Math.max(0, entry.lb + d); wt.textContent = `${entry.lb} lb`; race(); };
       kids.push(h('div', { class: 'weight-row' },
         h('button', { class: 'chip', 'aria-label': 'Lighter', onclick: nudge(-5) }, '−5'), wt,
         h('button', { class: 'chip', 'aria-label': 'Heavier', onclick: nudge(5) }, '+5')));
     }
-    // What you did: the set before this one today, and this set last time.
+    // What you did: the set before this one today, and this set last time (the ghost you are racing), with how the
+    // number in the box compares, updated as it changes.
     const did = (r, label) => r?.[field] != null ? h('p', { class: 'muted small' }, `${label}: ${r[field]} ${unit}${r.lb != null ? ` at ${r.lb} lb` : ''}${r.mode === 'negative' ? ', negatives' : ''}`) : null;
-    kids.push(h('div', { class: 'did' }, did(prev, 'Last set'), did(last, `Last time, ${last?.day || ''}`)));
+    kids.push(h('div', { class: 'did' }, did(prev, 'Last set'), did(last, `Last time, ${last?.day || ''}`), last?.[field] != null && races(s) ? ghostEl : null));
+    race();
     return h('div', { class: 'log' }, kids);
+  }
+
+  // The race line under the ghost. One line, always there while there is a ghost, so nothing jumps as it changes.
+  function ghost(el, s, field, unit) {
+    const g = lastFor(s);
+    const v = versusLast({ [field]: entry.value, lb: weighted(s) ? entry.lb : undefined, mode: entry.mode || (s.modes ? 'full' : null) }, g, field);
+    el.className = `ghost-vs${v?.result === 'up' ? ' up' : ''}`;
+    el.textContent = !v ? '\u00a0' : v.result === 'up' ? (v.mode ? 'Beats it: full reps' : v.heavier ? `Beats it: ${v.heavier} lb heavier` : `Beats it by ${v.by}`)
+      : v.result === 'tie' ? 'Ties it. One more beats it'
+      : v.heavier < 0 ? 'Lighter than last time' : v.mode ? 'Negatives this time' : `${-v.by} ${unit} to beat it`;
+  }
+
+  // Saved a set that beat last time: a quick rising chime, a buzz and a burst, and a notice of by how much.
+  function cheer(v, unit) {
+    if (v?.result !== 'up') return;
+    study.duck(); tone(988, 0.12); tone(1319, 0.28, 0.12); navigator.vibrate?.([40, 40, 90]);
+    burst(innerWidth / 2, innerHeight * 0.4);
+    toast('Beat last time', null, v.mode ? 'Full reps where it was negatives' : v.heavier ? `${v.heavier} lb heavier` : `${v.by} more ${unit === 'reps' && v.by === 1 ? 'rep' : unit}`);
   }
 
   // A set step's Save stays off until there is a number, and says what it needs. Updated in place while typing so

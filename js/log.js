@@ -45,3 +45,34 @@ export function fluidOz(day, fluids) {
   const t = fluidTotals(day, fluids);
   return t.water_oz === null && t.other_drinks_oz === null ? null : Math.round(((t.water_oz || 0) + (t.other_drinks_oz || 0)) * 10) / 10;
 }
+
+// ---------- Beat your past self: one set against the same set last session ----------
+
+// The last session of an exercise before a date: { date, rows } or null. Only sets with a number count.
+export function lastSessionOf(allSets, exercise, before) {
+  const prior = allSets.filter(r => r.exercise === exercise && r.date < before && (r.reps != null || r.sec != null || r.min != null || r.m != null));
+  const date = prior.map(r => r.date).sort().pop();
+  return date ? { date, rows: prior.filter(r => r.date === date) } : null;
+}
+// From that session, the same set and side, or its last set of that side when it had fewer.
+export function sameSetLast(rows, set) {
+  const same = (rows || []).filter(r => (r.side || 'each') === (set.side || 'each') || r.side === 'each' || !r.side);
+  return same.find(r => (r.set_no || 1) === (set.set_no || 1)) || [...same].sort((a, b) => (a.set_no || 1) - (b.set_no || 1)).pop() || null;
+}
+// How a set compares with the ghost (that set last time) on one measure (reps or sec):
+//   { result: 'up' | 'tie' | 'down', by, heavier } or null when there is nothing to compare.
+// Up means more at the same weight, at least as much at a heavier weight, or full reps where last time was negatives.
+// A lighter weight, or negatives where last time was full reps, never counts as up.
+export function versusLast(set, ghost, field) {
+  const a = set?.[field], b = ghost?.[field];
+  if (a == null || a === '' || b == null) return null;
+  const n = Number(a), was = Number(b), by = n - was;
+  const neg = x => x?.mode === 'negative';
+  if (neg(set) !== neg(ghost)) return { result: neg(ghost) && n > 0 ? 'up' : 'down', by, heavier: false, mode: true };
+  const lb = set.lb ?? null, wasLb = ghost.lb ?? null;
+  if (lb != null && wasLb != null && lb !== wasLb) {
+    if (lb > wasLb && n >= was) return { result: 'up', by, heavier: lb - wasLb };
+    return { result: 'down', by, heavier: lb > wasLb ? lb - wasLb : -(wasLb - lb) };
+  }
+  return { result: by > 0 ? 'up' : by === 0 ? 'tie' : 'down', by, heavier: 0 };
+}

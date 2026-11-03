@@ -3,13 +3,14 @@ import { parseHandoff, buildHandoff } from '../js/handoff.js';
 import { verseFor } from '../js/verses.js';
 import { planFor, weekAndDay, nextBlock } from '../js/program/index.js';
 import { cleanNumber, blankDay } from '../js/schema.js';
-import { fluidTotals, rowTotals } from '../js/log.js';
+import { fluidTotals, rowTotals, versusLast, sameSetLast, lastSessionOf } from '../js/log.js';
 import { transitionSec } from '../js/flow.js';
 import { hourlyHistory, nextPalms } from '../js/hourly.js';
 import { FOODS, foodByKey, foodLine, addLine, removeLine } from '../js/foods.js';
 import { sameKey, readText } from '../worker/src/sync.js';
 import { encryptPayload } from '../worker/src/push.js';
 import { fmtDuration, pickDaily } from '../js/scripture.js';
+import { plainGrammar, readableRef, inPassage } from '../js/grammar.js';
 
 const results = [];
 // Every result is filed under the group named last, so the run prints one line per group (failures by name).
@@ -61,6 +62,32 @@ test('every Greek key word carries its Hebrew behind it (a list, empty when the 
   const d = JSON.parse(readFileSync(new URL('../data/original.json', import.meta.url), 'utf8'));
   const greekKeys = Object.values(d.verses).filter(v => v.lang === 'greek').flatMap(v => v.words.filter(w => w.key));
   eq([greekKeys.every(w => Array.isArray(w.heb)), greekKeys.filter(w => w.heb.length).length > greekKeys.length * 0.7, greekKeys.every(w => w.heb.every(x => x.w && x.t && x.g))], [true, true, true]);
+});
+test('every key word, and every Hebrew word behind one, has a word page with its senses and verses', async () => {
+  const { readFileSync, existsSync } = await import('node:fs');
+  const d = JSON.parse(readFileSync(new URL('../data/original.json', import.meta.url), 'utf8'));
+  const ids = new Set(Object.values(d.verses).flatMap(v => v.words.filter(w => w.key).flatMap(w => [w.s, ...(w.heb || []).map(x => x.s)])).map(s => s.replace(/[A-Z]$/, '')));
+  const missing = [...ids].filter(id => !existsSync(new URL(`../data/words/${id}.json`, import.meta.url)));
+  eq(missing, [], 'no page for');
+  const m = JSON.parse(readFileSync(new URL('../data/words/G3107.json', import.meta.url), 'utf8'));
+  eq([m.w.normalize('NFC'), m.senses.length > 0, m.strongs.id, m.refs.includes('Jas.1.12')], ['μακάριος'.normalize('NFC'), true, 'G3107', true]);
+});
+test('the Hebrew behind a Greek word is matched by its vowels: makarios stands for osher (happiness), not ashar', async () => {
+  const { readFileSync } = await import('node:fs');
+  const d = JSON.parse(readFileSync(new URL('../data/original.json', import.meta.url), 'utf8'));
+  const first = (ref, i) => d.verses[ref].words[i].heb.map(x => x.s);
+  eq(first('James 1:12', 0), ['H0837']);
+  eq(d.verses['Philippians 2:5-8'].words.find(w => w.s === 'G2288').heb[0].s, 'H4194');   // thanatos: mavet, death
+});
+test('grammar in plain words', () => {
+  const v = plainGrammar('verb, present, middle, indicative, 3rd person, singular');
+  eq([v.kind, v.lines.map(l => l[0])], ['verb', ['Present', 'Middle', 'Statement', 'Who']]);
+  eq(v.lines[3][1], 'he, she or it');
+  const n = plainGrammar('adjective, nominative, singular, masculine');
+  eq(n.lines, [['Subject', 'the one doing or being (or describing it)'], ['Form', 'singular, masculine']]);
+  eq(plainGrammar('verb, Qal, imperative, 2nd person, masculine, singular').lines.map(l => l[0]), ['Qal', 'Command', 'Who']);
+  eq([readableRef('Psa.1.1'), readableRef('1Co.13.4'), inPassage('Php.2.7', 'Philippians 2:5-8'), inPassage('Php.2.9', 'Philippians 2:5-8'), inPassage('Psa.1.1', 'James 1:12')],
+    ['Psalm 1:1', '1 Corinthians 13:4', true, false, false]);
 });
 test('video lengths read as m:ss or h:mm:ss', () => { eq(fmtDuration(526), '8:46'); eq(fmtDuration(59), '0:59'); eq(fmtDuration(3725), '1:02:05'); eq(fmtDuration(null), ''); });
 
@@ -253,6 +280,21 @@ test('every routine exercise prints, with per-set pull-up modes, per-arm rows, w
   eq(back.filter(x => x.exercise === 'dead_hang' && x.block === 'strength_a').map(x => x.sec), [15, 16]);
   eq(buildHandoff({ day: blankDay(d), sets: back, events: [], fluids: [] }).includes('HANGS_SEC: 24'), true);
 });
+group('Data');
+test('beat your past self: same weight more reps, heavier, negatives to full, lighter never counts', () => {
+  const r = (a, b) => versusLast(a, b, 'reps')?.result ?? null;
+  eq([r({ reps: 9, lb: 25 }, { reps: 8, lb: 25 }), r({ reps: 8, lb: 25 }, { reps: 8, lb: 25 }), r({ reps: 7, lb: 25 }, { reps: 8, lb: 25 })], ['up', 'tie', 'down']);
+  eq([r({ reps: 8, lb: 30 }, { reps: 8, lb: 25 }), r({ reps: 6, lb: 30 }, { reps: 8, lb: 25 }), r({ reps: 12, lb: 20 }, { reps: 8, lb: 25 })], ['up', 'down', 'down']);
+  eq([r({ reps: 2, mode: 'full' }, { reps: 4, mode: 'negative' }), r({ reps: 5, mode: 'negative' }, { reps: 3, mode: 'full' }), r({ reps: '' }, { reps: 3 }), r({ reps: 3 }, null)], ['up', 'down', null, null]);
+  eq(versusLast({ reps: 10, lb: 25 }, { reps: 8, lb: 25 }, 'reps').by, 2);
+});
+test('the ghost is the same set and side from the last earlier session', () => {
+  const all = [{ exercise: 'sa_row', date: '2026-10-26', set_no: 1, side: 'L', reps: 9 }, { exercise: 'sa_row', date: '2026-11-02', set_no: 1, side: 'L', reps: 12 },
+    { exercise: 'sa_row', date: '2026-11-02', set_no: 2, side: 'R', reps: 11 }, { exercise: 'sa_row', date: '2026-11-09', set_no: 1, side: 'L', reps: 14 }];
+  const t = lastSessionOf(all, 'sa_row', '2026-11-09');
+  eq([t.date, sameSetLast(t.rows, { set_no: 1, side: 'L' }).reps, sameSetLast(t.rows, { set_no: 3, side: 'R' }).reps], ['2026-11-02', 12, 11]);
+});
+
 group('Data');
 test('weights print and read back, one number or set by set', () => {
   const d = '2026-10-29';

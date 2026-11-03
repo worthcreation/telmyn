@@ -9,7 +9,7 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 | clock.js | Time. now(), isoDate, hhmm, atTime, dayLabel, addDays, weekday. Fake clock in the test app |
 | db.js | IndexedDB stores and migrations (DB_VERSION), backups (exportAll, importAll) |
 | schema.js | The day's fields (DAY_FIELDS: form, import, export), FLUID_KINDS, cleanNumber |
-| log.js | What happened: every query over events, sets and fluids (grip breaks, leg habits, pulls, hangs, rowed, fluids) |
+| log.js | What happened: every query over events, sets and fluids (grip breaks, leg habits, pulls, hangs, rowed, fluids), and how a set compares with the same set last time |
 | state.js | The day on screen: load, add and remove events, sets, fluids, foods, protein; importDay; legToday |
 | program/index.js | Which program is in effect, planFor(date) (blocks in order, day type, week and day), blockStatus, legHabit |
 | program/v1_1.js | The program content: EXERCISES (videos, weights), BLOCKS (steps), DAY_TYPES, SCHEDULE, HABITS, TARGETS |
@@ -21,7 +21,8 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 | handoff.js | The handoff text: parseHandoff (restore) and buildHandoff (cloud copy, export) |
 | sync.js | Cloud copy: dayRecord(date) and sending it to the Worker |
 | verses.js | The verse bank and verseFor(date) |
-| scripture.js | Verse text, versions, study videos, the daily Fab Five video, favorites, watched |
+| scripture.js | Verse text, versions, study videos, the daily Fab Five video, favorites, watched, word page data (wordEntry) |
+| grammar.js | Grammar in plain words for the word page; Bible book names for STEPBible refs (Psa.1.1 to Psalm 1:1) |
 | foods.js | One-tap foods (Huel) |
 | flow.js | Seconds to get into position between steps |
 | voice.js | Reading speed for Listen (text-to-speech) |
@@ -41,10 +42,11 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 | media.js | The in-app video player for Watch buttons, landscape |
 | progress.js | This week: strip, bars, averages |
 | day.js | The Day log for one day, with arrows between days |
-| detail.js | Breakdowns (week or day, per area) and the next-time tips from the progression rules |
+| detail.js | Breakdowns (week or day, per area), the next-time tips from the progression rules, and the green "up" on sets that beat last time |
 | forms.js | Fluid and Protein sheets, the full day form (Edit this day), entry lists |
 | history.js | Hold on Grip, Pumps or Calf, Weight: today's entries, the last 7 weights |
-| verse.js | Verse study: text, key words, chapter, videos, journal note |
+| verse.js | Verse study: text, key words, chapter, videos, journal note; the word card opens the word page |
+| word.js | The word page: Meaning (senses, lexicon, Strong's), Grammar, Family, Verses (read in place) |
 | journal.js | The journal (verse notes by day) |
 | gear.js | Gear tab (dumbbell use comes from the program's weights) |
 | me.js, data.js | Me tab; backups, restore, reading speed, reminders, cloud copy, test controls |
@@ -58,7 +60,7 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 | sw.js | Offline copy of the app (SHELL list), update waiting, notifications (one shape; badge per kind) |
 | icons/ | App icons; icon-*.png and badge-*.png are the reminder pictures and status-bar badges per kind |
 | worker/src | The Worker: index.js (verses, videos, routing, cron), push.js (Web Push), sync.js (cloud copy) |
-| tools/ | apply.ps1 (apply a patch, test, push, deploy), bump.mjs, cf.ps1, test-site.ps1, push-setup.ps1, sync-setup.ps1, instructions.ps1 |
+| tools/ | apply.ps1 (apply a patch, test, push, deploy), lexicon.py (builds data/words and the Hebrew behind each Greek word), bump.mjs, cf.ps1, test-site.ps1, push-setup.ps1, sync-setup.ps1, instructions.ps1 |
 | tests/tests.js | Unit and app-rule tests (node tests/tests.js) |
 | tests/sweep.py | Layout, button and landscape sweeps in one browser (python3 tests/sweep.py) |
 | test-site/ | The files swapped in for the test app (site.js, icons, manifest) |
@@ -72,7 +74,7 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 - A new daily field: schema.js DAY_FIELDS (the form, import and export follow); handoff.js only for its line
 - How a screen looks: css/app.css with a token from css/tokens.css; a new shared piece goes in ui/dom.js
 - A notification's text or pictures: reminder-rules.js (text), sw.js (which picture), icons/ (icon-* and badge-*)
-- A new verse: verses.js and data/original.json (key words, each Greek key word with its Hebrew behind it; the tests check every bank verse has them)
+- A new verse: verses.js and data/original.json (key words, each Greek key word with its Hebrew behind it; the tests check every bank verse has them), then `python3 tools/lexicon.py` for its word pages
 - The cloud copy's lines: handoff.js buildHandoff (and the handoff template in the Project instructions)
 
 ## Build steps

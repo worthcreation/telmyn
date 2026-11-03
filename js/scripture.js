@@ -123,6 +123,14 @@ export async function originalWords(ref) {
   return (await originalData).verses[ref];
 }
 
+// One word's page data (data/words/<id>.json, built by tools/lexicon.py), fetched when first opened, then kept.
+const wordFiles = {};
+export function wordEntry(id) {
+  id = id.replace(/[A-Z]$/, '');            // G0435G -> G0435 (the file is per word, not per sense)
+  return (wordFiles[id] ||= fetch(`data/words/${id}.json`).then(r => { if (!r.ok) throw new Error('missing'); return r.json(); })
+    .catch(err => { delete wordFiles[id]; throw err; }));
+}
+
 // The one list of study videos for a verse, in order, each tagged with what it covers: on this verse, on its chapter,
 // BibleProject on the whole book, BibleProject on the verse's main word. Used by verse study and by the workout.
 export async function studyVideos(ref) {

@@ -6,7 +6,7 @@ import * as db from '../db.js';
 import { state } from '../state.js';
 import { planFor, blockStatus, PROGRAMS, LEG_HABITS } from '../program/index.js';
 import { FLUID_KINDS } from '../schema.js';
-import { fluidOz, rowTotals, rowText, gripBreaks, habitSets, doneEvent } from '../log.js';
+import { fluidOz, rowTotals, rowText, gripBreaks, habitSets, doneEvent, lastSessionOf, sameSetLast, versusLast } from '../log.js';
 import { addDays, atTime as t, weekday, WEEKDAYS, dayLabel } from '../clock.js';
 import { foodByKey } from '../foods.js';
 
@@ -20,11 +20,12 @@ export const BLOCK_AREA = { stretch: 'mobility', gates: 'strength', strength_a: 
 const span = (a, b) => (a && b ? `${t(a)} to ${t(b)}, ${Math.max(1, Math.round((new Date(b) - new Date(a)) / 60000))} min` : b ? `finished ${t(b)}` : '');
 
 // One expandable row, the same everywhere. The summary says what was done; a green check marks a target met or a
-// block done, a thin meter shows progress toward a target, and a green "up" tag marks a session that beat the last.
+// block done, a thin meter shows progress toward a target, and a green "up" tag marks a session (or, in its list, a
+// set) that beat the last.
 // Opened, it lists the entries as time, what, amount (the Fluids and Protein list rows), then plain lines, and any
 // notes behind their own "Notes" line.
 const isEnt = x => x && typeof x === 'object' && 'what' in x;
-const entRow = x => h('div', { class: 'ent' }, h('span', { class: 'ent-at' }, x.at ? t(x.at) : ''), h('span', { class: 'ent-what' }, x.what), h('span', { class: 'ent-amt' }, x.amt || ''), h('span'));
+const entRow = x => h('div', { class: 'ent' }, h('span', { class: 'ent-at' }, x.at ? t(x.at) : ''), h('span', { class: 'ent-what' }, x.what), h('span', { class: 'ent-amt' }, x.amt || ''), x.up ? h('span', { class: 'dl-tag', 'aria-label': 'beat last time' }, 'up') : h('span'));
 function row(summary, lines, { ok = false, meter = null, tag = null, notes = null } = {}) {
   const more = (lines || []).filter(Boolean);
   const head = [h('span', { class: 'dl-text' }, ok ? h('span', { class: 'dl-ok', 'aria-label': 'done' }, '✓') : null, summary),
@@ -47,12 +48,7 @@ async function load(from, to) {
 // ---------- How to push: from the program's progression rules and your previous session ----------
 
 const total = rows => rows.reduce((a, r) => a + (r.reps || 0), 0);
-function lastSession(allSets, ex, before) {
-  const prior = allSets.filter(s => s.exercise === ex && s.date < before && (s.reps || s.sec || s.min || s.m));
-  if (!prior.length) return null;
-  const date = prior.map(s => s.date).sort().pop();
-  return { date, rows: prior.filter(s => s.date === date) };
-}
+const lastSession = lastSessionOf;
 // The next step for one exercise, short enough to read at a glance: { name, step, rule }. rule marks steps that come
 // from the progression rules (they sort first); "beat" steps are first sessions with nothing to compare yet.
 export function pushTip(ex, rows, prev, EX) {
@@ -114,7 +110,9 @@ function dayArea(area, date, data, tips) {
       .map(e => ({ at: e.at, what: e.text, amt: e.sec != null ? `${e.sec} sec` : '' }));
     const sets = st.filter(x => x.block === id && pick(x)).map(x => {
       const f = fieldOf([x]);
-      return { at: x.at, what: `${EX[x.exercise]?.name || x.exercise}, set ${x.set_no || 1}${x.side && x.side !== 'each' ? ` ${x.side}` : ''}`, amt: `${x[f]} ${UNIT[f]}${x.lb != null ? ` at ${x.lb} lb` : ''}` };
+      // A green "up" on a set that beat the same set last session (the ghost the runner raced).
+      const ghost = sameSetLast(lastSessionOf(data.allSets, x.exercise, date)?.rows, x);
+      return { up: versusLast(x, ghost, f)?.result === 'up', at: x.at, what: `${EX[x.exercise]?.name || x.exercise}, set ${x.set_no || 1}${x.side && x.side !== 'each' ? ` ${x.side}` : ''}`, amt: `${x[f]} ${UNIT[f]}${x.lb != null ? ` at ${x.lb} lb` : ''}` };
     });
     return [...steps, ...sets].sort((a, b) => (a.at || '').localeCompare(b.at || ''));
   };

@@ -2,7 +2,8 @@
 // Every word of the verse is reachable: key words are highlighted in the text, the rest are tappable too, and the
 // word panel steps through every original word in order (‹ ›). Then the chapter, one BibleProject video (more on tap),
 // and where it was applied today.
-// Rules carried over: verse text never italic; original-language notes show word, transliteration and meaning only.
+// Rules carried over: verse text never italic; the word card shows word, transliteration and meaning at a glance, and
+// tapping the word opens its page (word.js) with every sense, grammar, family and verses (Ross, 2026-11-03).
 // Two language modes (Ross, 2026-11-02), switched in the word panel and remembered: Original (Greek for the New
 // Testament, Hebrew for the Old) and Hebrew (for a Greek word, the Hebrew it stands for in the Septuagint, from
 // STEPBible's lexicon; Old Testament verses are Hebrew either way). Hebrew Bible versions (HHH, WLC) read right to
@@ -14,6 +15,7 @@ import { verseFor } from '../verses.js';
 import { state, setField } from '../state.js';
 import { journalSheet } from './journal.js';
 import { playVideo } from './media.js';
+import { wordPage } from './word.js';
 import { getVersion, setVersion, fetchVerse, listVersions, originalWords, studyVideos, getFavs, watchedOn, HEBREW_VERSIONS } from '../scripture.js';
 import { videoRow } from './study-player.js';
 import { dayLabel } from '../clock.js';
@@ -124,6 +126,9 @@ export async function verseSheet(date = null) {
   const def = h('div', { class: 'vs-def card' });
   const select = h('select', { class: 'vs-version', 'aria-label': 'Bible version', onchange: async e => { version = e.target.value; await setVersion(version); load(); } });
 
+  // The word page for the word in the card: the verse's own word (with its grammar here), or a Hebrew word behind it.
+  const openWord = (x, w) => x.s && wordPage(x.s, x === w ? { gram: w.gram, here: v.ref } : { greek: { w: w.w, t: w.t }, here: v.ref });
+
   // One original word at a time, right under the verse. ‹ › walk every word in order.
   function define(i) {
     current = i;
@@ -142,15 +147,16 @@ export async function verseSheet(date = null) {
     const lead = behind?.length ? behind[0] : w, leadHeb = heb || !!behind?.length;
     fill(def,
       h('div', { class: 'vs-def-top' },
-        h('span', { class: 'vs-word' },
+        // Tap the word for its page: every sense, its grammar here, its family, where else it appears.
+        h('button', { class: 'vs-word', 'aria-label': `More about ${lead.t}`, onclick: () => openWord(lead, w) },
           h('span', { class: `vs-orig${leadHeb ? ' hebrew' : ''}`, lang: leadHeb ? 'he' : 'grc', dir: leadHeb ? 'rtl' : 'ltr' }, lead.w),
-          h('span', { class: 'vs-tr' }, lead.t)),
+          h('span', { class: 'vs-tr' }, lead.t), h('span', { class: 'vs-more' }, 'More ›')),
         h('span', { class: 'vs-nav' },
           h('button', { class: 'icon-btn', 'aria-label': 'Previous word', disabled: i === 0, onclick: () => define(i - 1) }, '‹'),
           h('span', { class: 'vs-count' }, `${i + 1} of ${words.length}`),
           h('button', { class: 'icon-btn', 'aria-label': 'Next word', disabled: i === words.length - 1, onclick: () => define(i + 1) }, '›'))),
       h('p', { class: 'vs-line' }, h('b', {}, 'Meaning'), lead.g || '(none listed)'),
-      behind?.length > 1 ? h('p', { class: 'vs-line' }, h('b', {}, 'Also'), h('span', {}, behind.slice(1).map((x, k) => [k ? '; ' : '', h('span', { class: 'vs-orig hebrew small', lang: 'he', dir: 'rtl' }, x.w), ` ${x.t}, ${x.g}`]).flat())) : null,
+      behind?.length > 1 ? h('p', { class: 'vs-line' }, h('b', {}, 'Also'), h('span', {}, behind.slice(1).map((x, k) => [k ? '; ' : '', h('button', { class: 'vs-also', onclick: () => openWord(x, w) }, h('span', { class: 'vs-orig hebrew small', lang: 'he', dir: 'rtl' }, x.w), ` ${x.t}, ${x.g}`)]).flat())) : null,
       behind ? h('p', { class: 'vs-line' }, h('b', {}, 'Greek'), h('span', {}, h('span', { lang: 'grc' }, w.w), ` ${w.t}, ${w.g || ''}`, behind.length ? '' : h('span', { class: 'vs-none' }, w.key ? ' (no Hebrew behind it in the Septuagint)' : ' (small word, no Hebrew note)'))) : null,
       h('p', { class: 'vs-line' }, h('b', {}, 'Literally'), w.en || '(not translated)'),
       shown

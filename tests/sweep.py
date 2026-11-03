@@ -1,7 +1,8 @@
 # Sweeps (run before each release): one browser, every viewport at once.
 #   python3 tests/sweep.py          (starts its own web server; needs Python Playwright)
 # Layout: every page and sheet at seven phone heights (700 to 915 px; a clamped verse with "tap to read all" is by design). Fails on page scrolling, content under the tab
-#   bar, sideways clipping, or a clipped Today verse. Lists and reading panels that scroll inside themselves are exempt.
+#   bar, sideways clipping, or a clipped Today verse. Progress is swiped to last week and back (it must fit and must not open a day);
+#   the word page is checked on every tab. Lists and reading panels that scroll inside themselves are exempt.
 # Buttons: every button on every screen keeps at least 6 px between its text and its edges, at 360 and 412 px wide;
 #   the top strip, filled with its widest words, stays inside the screen with no line cut.
 # Landscape: every main screen, the verse study and the runner at 915x412 and 800x360.
@@ -16,7 +17,7 @@ CHECK = """(()=>{const out=[];const vis=e=>{const r=e.getBoundingClientRect();re
  const scope=document.querySelector('.layer:not(.closing) .layer-body')||document.querySelector('.view');
  if(scope.scrollHeight>scope.clientHeight+1) out.push('scrolls '+(scope.scrollHeight-scope.clientHeight)+'px');
  const tabs=document.querySelector('.tabs-bar');const tb=tabs&&!document.querySelector('.layer:not(.closing)')?tabs.getBoundingClientRect().top:innerHeight;
- for(const e of scope.querySelectorAll('*')){if(!vis(e)||e.closest('.vs-studypage, .vs-verse, .vs-vlist'))continue;const r=e.getBoundingClientRect();if(r.bottom>tb+1&&e.children.length===0&&e.textContent.trim()){out.push('under bar: '+e.textContent.trim().slice(0,20));break;}}
+ for(const e of scope.querySelectorAll('*')){if(!vis(e)||e.closest('.vs-studypage, .vs-verse, .vs-vlist, .wp-panel'))continue;const r=e.getBoundingClientRect();if(r.bottom>tb+1&&e.children.length===0&&e.textContent.trim()){out.push('under bar: '+e.textContent.trim().slice(0,20));break;}}
  for(const e of scope.querySelectorAll('*')){if(e.scrollWidth>e.clientWidth+2&&getComputedStyle(e).overflowX!=='visible'&&!['vs-lead-t','nf-text','go-name'].some(c=>e.classList.contains(c))&&e.tagName!=='SMALL'&&e.clientWidth>0){out.push('clips sideways: '+(e.className||e.tagName));break;}}
  return out})()"""
 MEASURE = """(()=>{const out=[];for(const b of document.querySelectorAll('button, .btn, .chip')){if(b.matches('.daylist button, .kw, .sw, .stat, .vs-start, .vs-order-w, .icon-btn, .tabs-bar button, label.btn, .j-entry, .vs-lead, .vs-video, .note-field, .pill, .wk'))continue;const r=b.getBoundingClientRect();if(!r.width||!r.height)continue;
@@ -52,6 +53,12 @@ async def page(b, port, w, h):
     await pg.evaluate(SEED); await pg.reload(); await pg.wait_for_selector('.status .pill', timeout=15000); await pg.wait_for_timeout(600)
     return pg
 
+# A sideways drag across the middle of the Progress day strip (positive dx = to the right).
+async def swipe(pg, dx):
+    r = await pg.evaluate("(()=>{const r=document.querySelector('.view .week').getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]})()")
+    await pg.mouse.move(r[0] - dx / 2, r[1]); await pg.mouse.down(); await pg.mouse.move(r[0] + dx / 2, r[1], steps=6); await pg.mouse.up()
+    await pg.wait_for_timeout(500)
+
 # After a tap that opens a sheet or layer: wait for it, then a beat for its layout.
 async def opened(pg, ms=400):
     await pg.wait_for_selector('.layer:not(.closing) .layer-body', timeout=8000); await pg.wait_for_timeout(ms)
@@ -64,6 +71,25 @@ async def layout(b, port, h):
     res = {}
     for tab in ('today', 'progress', 'gear', 'me'):
         await pg.evaluate(f"location.hash='#{tab}'"); await pg.wait_for_timeout(500); res[tab] = await pg.evaluate(CHECK) + (['verse clamped'] if tab == 'today' and await pg.locator('.vp-text.clamped').count() else [])
+    # Swipe the Progress day strip right for last week (it must fit too), then left back to this week. The program
+    # started 2026-10-27, so there is always a last week.
+    await pg.evaluate("location.hash='#progress'"); await pg.wait_for_timeout(500)
+    await swipe(pg, 120); title = await pg.inner_text('.view .daytype')
+    res['last week'] = await pg.evaluate(CHECK) + ([] if title == 'Last Week' else [f'swipe right showed {title}'])
+    await swipe(pg, -120); title = await pg.inner_text('.view .daytype')
+    if title != 'This Week': res['last week'].append(f'swipe left showed {title}')
+    if await pg.locator('.layer:not(.closing)').count(): res['last week'].append('swipe opened a day'); await close_layer(pg)
+    # The word page (makarios, with its grammar here): every tab fits, the open tab scrolling inside itself.
+    await pg.evaluate("import('./js/ui/word.js').then(w => w.wordPage('G3107', { gram: 'adjective, nominative, singular, masculine', here: 'James 1:12' }))")
+    await pg.wait_for_selector('.wp-tabs button'); await pg.wait_for_timeout(400)
+    res['word page'] = await pg.evaluate(CHECK)
+    for t in ('Grammar', 'Family', 'Verses'):
+        await pg.click(f'.wp-tabs button:has-text("{t}")'); await pg.wait_for_timeout(400)
+        res['word page'] += [f'{t}: {x}' for x in await pg.evaluate(CHECK)]
+        # The open tab scrolls inside itself, so it must end above the layer's own tab bar.
+        res['word page'] += await pg.evaluate(f"""(()=>{{const p=document.querySelector('.layer:not(.closing) .wp-panel').getBoundingClientRect(),b=document.querySelector('.layer:not(.closing) .tabs-bar');
+          return b&&p.bottom>b.getBoundingClientRect().top+1?['{t}: tab runs under the bar']:[]}})()""")
+    await close_layer(pg)
     await pg.evaluate("location.hash='#me'"); await pg.wait_for_timeout(300)
     await pg.click('text=Day log'); await opened(pg); res['day view'] = await pg.evaluate(CHECK)
     await pg.click('text=Edit this day'); await pg.wait_for_selector('.log-form', timeout=8000); await pg.wait_for_timeout(300)

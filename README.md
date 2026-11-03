@@ -38,4 +38,7 @@ The Worker answers only requests from Telmyn's own addresses. Telmyn has its own
 ## Credits
 Greek and Hebrew word data (data/original.json): STEPBible.org TAGNT and TAHOT, from Tyndale House Cambridge, CC BY 4.0.
 The Hebrew behind each Greek key word (the Septuagint equivalents) comes from STEPBible's TBESG (Abbott-Smith's
-lexicon) with forms and glosses from TBESH, CC BY 4.0.
+lexicon) with forms and glosses from TBESH, CC BY 4.0, matched by vowels as well as letters (tools/lexicon.py).
+The word page (data/words/): senses from STEPBible's TBESH and TBESG (Abbott-Smith), counts and verses from TAHOT and
+TAGNT, CC BY 4.0; Strong's definitions, KJV renderings and root links from Strong's dictionaries (1894, public domain
+text) in the Open Scriptures JSON edition, CC BY-SA.
