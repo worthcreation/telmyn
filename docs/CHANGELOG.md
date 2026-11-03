@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.28.2 (2026-11-03)
+Verse study says nothing twice and gives the words more room (Ross). Gone: the citation under the verse (the title is
+the reference, the menu is the version) and the theme line (it is on Today). The page tabs and the version share one
+row. The verse takes only the room its text needs, at most 40% of the page (its type shrinks first), and the word
+card gets everything below it. The Strong's definition joins the senses when it adds something they do not already
+say (makarios: "supremely blest; by extension, fortunate, well off"). The word stays on one line with "More ›" beside
+it, the counter reads 1/20, and the Original/Hebrew switch is smaller. Landscape: the verse on the left, the open page
+(word card or Study) on the right.
+
 ## 0.28.1 (2026-11-03)
 Senses first, in the card (Ross: too many steps to the definitions). The word card in verse study now opens with
 every sense of the word, indented by level, right under the word, where the one-word "Meaning" line was. A word with
