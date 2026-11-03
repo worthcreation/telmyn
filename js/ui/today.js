@@ -25,8 +25,15 @@ function ring(done, total) {
     h('div', { html: svg }), h('span', { class: 'ring-n' }, h('b', {}, done), `/${total}`));
 }
 
-// Today's verse, kept in memory once loaded, so each redraw of Today starts with the text already in place.
+// Today's verse, kept in memory once loaded, so each redraw of Today starts with the text already in place, at the
+// size it was last fitted to (Today is rebuilt every minute and after every change).
 let verseMem = null;
+// The verse font (Source Serif) sets taller than the fallback. Until it has loaded, the verse stays hidden, so it is
+// first seen in its own font at its fitted size instead of jumping when the font arrives (Ross, 2026-11-03).
+let fontsDone = false;
+// (fonts.ready alone can resolve before the font has even been asked for, so the verse faces are loaded by name.)
+const fontsReady = Promise.all(['400 30px "Source Serif 4"', '600 14px "Source Serif 4"'].map(f => document.fonts?.load(f)))
+  .catch(() => null).then(() => { fontsDone = true; });
 const waitAtMost = (promise, ms) => Promise.race([promise, new Promise(r => setTimeout(() => r(null), ms))]);
 
 // Today is rebuilt every minute and after every change, so everything on it is gathered first and the screen is
@@ -55,26 +62,30 @@ export async function renderToday(root, rerender) {
     if (d) verseMem = { key, d };
   }
   const known = verseMem?.key === key ? verseMem.d : null;
-  const verseText = h('span', { class: `vp-text${known ? '' : ' loading'}` }, known ? known.text : ' ');
+  // Hidden until it has been fitted in its own font; a redraw that already knows its size shows straight away.
+  const hidden = !known || !fontsDone || !verseMem.size;
+  const verseText = h('span', { class: `vp-text${hidden ? ' loading' : ''}`, style: known && verseMem.size ? `font-size:${verseMem.size}px` : '' }, known ? known.text : ' ');
   const verseRef = h('span', { class: 'vp-ref' }, known ? `${verse.ref} ${known.version}` : verse.ref);
   const versePanel = h('button', { class: 'verse-card', onclick: verseSheet, 'aria-label': `Today's verse, ${verse.ref}` },
     h('span', { class: 'vp-theme' }, verse.theme), verseText, verseRef);
-  // A passage too long for the card ends with … and the reference says how to read the rest. Fitted right away
-  // (resize notices arrive before the screen is drawn), and the text fades in only once it is sized, so it never
-  // shows at one size and then jumps to another.
+  // A passage too long for the card ends with … and the reference says how to read the rest. Fitted whenever the card
+  // changes size; the fitted size is kept, so the next redraw starts at it and nothing moves.
   const fit = () => {
-    fitText(versePanel, verseText, { clamp: true });
+    const size = fitText(versePanel, verseText, { clamp: true });
     verseRef.dataset.more = verseText.classList.contains('clamped') ? 'yes' : '';
+    if (size && verseMem?.key === key) verseMem.size = size;
+    if (size && fontsDone && verseMem?.key === key) verseText.classList.remove('loading');
   };
   new ResizeObserver(fit).observe(versePanel);
-  document.fonts?.ready.then(fit);
+  // Shown once the text is in place, the font has loaded and it has been fitted (fit() reveals it).
+  if (known && !fontsDone) fontsReady.then(fit);
   // Only the very first load (nothing in memory yet, slow connection) fills in afterwards and fades in.
-  if (!known) fetchVerse(verse.ref, version).then(d => {
+  if (!known) fetchVerse(verse.ref, version).then(async d => {
     verseMem = { key, d };
     verseText.textContent = d.text;
     verseRef.textContent = `${verse.ref} ${d.version}`;
+    await fontsReady;
     fit();
-    verseText.classList.remove('loading');
   }).catch(() => { verseText.textContent = 'Tap to read today’s verse.'; verseText.classList.remove('loading'); verseText.classList.add('offline'); });
 
   // Weight, once a day: a small floating button in the header corner, pulsing as the morning goes on, gone once

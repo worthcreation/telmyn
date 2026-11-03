@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.28.3 (2026-11-03)
+Today's verse no longer shifts on open (Ross). Two causes, both fixed at the source: Today is redrawn about a second
+after opening (and every minute), and each redraw built the verse at the largest size and shrank it a moment later;
+and the verse's serif font could arrive after the first fit, which then had to be redone at different measurements.
+Now the verse is fitted only in its own font (loaded by name first), stays hidden until that first fit, and each
+redraw starts at the size it was last fitted to, so nothing moves. fitText returns the size it chose.
+
 ## 0.28.2 (2026-11-03)
 Verse study says nothing twice and gives the words more room (Ross). Gone: the citation under the verse (the title is
 the reference, the menu is the version) and the theme line (it is on Today). The page tabs and the version share one

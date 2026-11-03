@@ -141,7 +141,7 @@ export function noteField(label, value, { placeholder = '', onSave, readOnly = f
 // The one way text is sized to fit a box. Steps the size down from max to min (defaults: the verse tokens), counting
 // the box's padding, gaps and other children; if it still won't fit and clamp is on, ends the text with … .
 export function fitText(box, text, { max, min, clamp = false } = {}) {
-  if (!box.clientHeight) return;
+  if (!box.clientHeight) return null;
   const root = getComputedStyle(document.documentElement);
   max ??= parseFloat(root.getPropertyValue('--fs-verse-max')); min ??= parseFloat(root.getPropertyValue('--fs-verse-min'));
   const cs = getComputedStyle(box);
@@ -157,6 +157,7 @@ export function fitText(box, text, { max, min, clamp = false } = {}) {
     text.style.webkitLineClamp = String(Math.max(1, Math.floor((box.clientHeight - others()) / lh)));
     text.classList.add('clamped');
   }
+  return size;   // the size chosen, so a screen that is redrawn can start at it
 }
 
 // Every notice (toasts, the update card) goes in one centered stack, where the video title card also appears.
