@@ -45,7 +45,7 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 | detail.js | Breakdowns (week or day, per area), the next-time tips from the progression rules, and the green "up" on sets that beat last time |
 | forms.js | Fluid and Protein sheets, the full day form (Edit this day), entry lists |
 | history.js | Hold on Grip, Pumps or Calf, Weight: today's entries, the last 7 weights |
-| verse.js | Verse study: text, key words, chapter, videos, journal note; the word card opens the word page |
+| verse.js | Verse study: text, key words, chapter, videos, journal note; the word card shows every sense (and the root's for a one-sense word) and opens the word page |
 | word.js | The word page: Meaning (senses, lexicon, Strong's), Grammar, Family, Verses (read in place) |
 | journal.js | The journal (verse notes by day) |
 | gear.js | Gear tab (dumbbell use comes from the program's weights) |

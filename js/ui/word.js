@@ -8,6 +8,10 @@ import { wordEntry, fetchVerse, getVersion } from '../scripture.js';
 import { plainGrammar, readableRef, inPassage } from '../grammar.js';
 
 const isHeb = id => id[0] === 'H';
+
+// Senses, indented by level, no numbers (the lexicon's own 1a, 1b1 labels read as noise); a stem name on its own,
+// like "(Piel)", heads the senses under it. Shared by this page and the word card in verse study.
+export const sensesList = senses => h('div', { class: 'wp-senses' }, senses.map(([d, t]) => h('p', { class: `d${d}${/^\(\w+\)$/.test(t) ? ' stem' : ''}` }, t)));
 const orig = (w, id, cls = '') => h('span', { class: `vs-orig${isHeb(id) ? ' hebrew' : ''} ${cls}`, lang: isHeb(id) ? 'he' : 'grc', dir: isHeb(id) ? 'rtl' : 'ltr' }, w);
 
 // id: STEPBible number (G3107, H0835). opts: gram (this verse's parsing, when the page is for the verse's own word),
@@ -34,9 +38,7 @@ export async function wordPage(id, opts = {}) {
     const st = e.strongs || {};
     return [
       e.senses?.length ? h('section', {}, h('p', { class: 'lbl' }, 'Senses'),
-        // Indented by level, no numbers (the lexicon's own 1a, 1b1 labels read as noise); a stem name on its own,
-        // like "(Piel)", heads the senses under it.
-        h('div', { class: 'wp-senses' }, e.senses.map(([d, t]) => h('p', { class: `d${d}${/^\(\w+\)$/.test(t) ? ' stem' : ''}` }, t)))) : null,
+        sensesList(e.senses)) : null,
       e.lex ? h('section', {}, h('p', { class: 'lbl' }, 'Lexicon (Abbott-Smith)'), e.lex.split('\n').map(l => h('p', { class: 'wp-lex' }, l))) : null,
       st.def || st.kjv ? h('section', {}, h('p', { class: 'lbl' }, `Strong's ${st.id}`),
         st.def ? h('p', {}, st.def) : null,

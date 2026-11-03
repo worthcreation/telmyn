@@ -312,8 +312,12 @@ details.dl-row[open] > .dl-sum::after { transform: rotate(90deg); }
 .vs-cite { font: 600 var(--fs-small) var(--font-verse); color: var(--spirit); }
 .kw, .sw { font: inherit; color: inherit; background: none; border: 0; border-bottom: 2px dotted color-mix(in srgb, var(--ink) 40%, transparent); border-radius: 4px; padding: 0 0 1px; margin: 0; cursor: pointer; }
 .kw.on, .sw.on { background: color-mix(in srgb, var(--spirit) 26%, transparent); border-bottom: 2px solid var(--spirit); padding: 0 2px 1px; }
-.vs-def { display: grid; gap: var(--s1); align-content: center; min-width: 0; overflow: hidden; padding: var(--s3); border-radius: var(--r-btn); border-left: 3px solid var(--spirit); }
-.vs-def:has(.vs-hint) { justify-items: center; text-align: center; }
+.vs-def { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: var(--s2); min-width: 0; min-height: 0; overflow: hidden; padding: var(--s3); border-radius: var(--r-btn); border-left: 3px solid var(--spirit); }
+/* Under the word: its senses first, then the Greek, literal, version and order lines; scrolls inside the card. */
+.vs-def-body { min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: var(--s1); }
+.vs-senses { display: grid; gap: var(--s1); padding-bottom: var(--s2); border-bottom: 1px solid var(--line); margin-bottom: var(--s1); }
+.vs-root { font-size: var(--fs-caption); font-weight: 600; letter-spacing: .04em; color: var(--ink-2); padding-top: var(--s2); }
+.vs-def:has(.vs-hint) { grid-template-rows: none; align-content: center; justify-items: center; text-align: center; }
 .vs-hint { color: var(--ink-2); font-size: var(--fs-small); }
 .vs-start { background: none; border: 0; padding: var(--s1) 0; color: var(--ink); font-weight: 600; font-size: var(--fs-small); }
 .vs-def-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--s2); }
@@ -322,7 +326,7 @@ details.dl-row[open] > .dl-sum::after { transform: rotate(90deg); }
 .vs-orig.hebrew { font-family: var(--font-hebrew); }
 .vs-orig.small { font-size: var(--fs-lead); }
 .vs-text.hebrew { font-family: var(--font-hebrew); }
-.vs-mode { margin-top: var(--s2); }
+.vs-mode { margin-top: 0; }
 .vs-tr { color: var(--ink-2); font-size: var(--fs-small); }
 /* The word in the card is a button to its page; "More ›" says so without taking a line of its own. */
 button.vs-word { background: none; border: 0; padding: 0; color: inherit; text-align: left; font: inherit; }
@@ -402,8 +406,6 @@ button.vs-word { background: none; border: 0; padding: 0; color: inherit; text-a
 .vs-pages { flex: none; }
 .vs[data-page='verse'] .vs-p-study, .vs[data-page='study'] .vs-p-verse { display: none; }
 .vs-defwrap { display: grid; }
-.vs-def.tight .vs-line.muted { display: none; }
-.vs-def.tight { gap: 2px; padding: var(--s2) var(--s3); }
 .vs-studypage { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: var(--s3); overflow-y: auto; }
 .vs-studypage > * { flex: none; }
 .vs-chapterrow { display: grid; gap: 2px; text-align: left; }

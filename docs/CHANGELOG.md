@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.28.1 (2026-11-03)
+Senses first, in the card (Ross: too many steps to the definitions). The word card in verse study now opens with
+every sense of the word, indented by level, right under the word, where the one-word "Meaning" line was. A word with
+a single short sense also shows its root's senses (osher, "happiness", then "From the root ashar": go straight,
+advance, call blessed). The Greek, literal, version and order lines follow below. The card keeps one height (42% of
+the page) and its contents scroll inside it, so the verse above never resizes while stepping through words. Senses
+for every word in the verse load when the page opens. "More ›" still opens the full word page.
+
 ## 0.28.0 (2026-11-03)
 Word page (Ross: "more granularity to the translation"). Tap the word in the verse card ("More ›") for its own page:
 Meaning (every sense, indented by level; for Greek the full Abbott-Smith entry; the Strong's entry with its KJV

@@ -15,8 +15,8 @@ import { verseFor } from '../verses.js';
 import { state, setField } from '../state.js';
 import { journalSheet } from './journal.js';
 import { playVideo } from './media.js';
-import { wordPage } from './word.js';
-import { getVersion, setVersion, fetchVerse, listVersions, originalWords, studyVideos, getFavs, watchedOn, HEBREW_VERSIONS } from '../scripture.js';
+import { wordPage, sensesList } from './word.js';
+import { getVersion, setVersion, fetchVerse, listVersions, originalWords, studyVideos, wordEntry, getFavs, watchedOn, HEBREW_VERSIONS } from '../scripture.js';
 import { videoRow } from './study-player.js';
 import { dayLabel } from '../clock.js';
 
@@ -126,6 +126,21 @@ export async function verseSheet(date = null) {
   const def = h('div', { class: 'vs-def card' });
   const select = h('select', { class: 'vs-version', 'aria-label': 'Bible version', onchange: async e => { version = e.target.value; await setVersion(version); load(); } });
 
+  // Every word's senses, loaded when the page opens (one small file each, cached), so the card shows them first
+  // without waiting. A word with a single short sense also shows its root's senses (osher, "happiness", from ashar:
+  // go straight, advance, call blessed).
+  const entries = {};
+  const idOf = x => x?.s?.replace(/[A-Z]$/, '');
+  const want = [...new Set(words.flatMap(w => [w.s, ...(w.heb || []).map(x => x.s)]).filter(Boolean).map(s => s.replace(/[A-Z]$/, '')))];
+  Promise.all(want.map(id => wordEntry(id).then(e => { entries[id] = e; return e.root && e.senses?.length < 3 ? wordEntry(e.root).then(r => { entries[e.root] = r; }) : null; }).catch(() => null)))
+    .then(() => { if (current >= 0 && def.isConnected) define(current); });
+  function meaningOf(lead) {
+    const e = entries[idOf(lead)], root = e?.root && e.senses?.length < 3 ? entries[e.root] : null;
+    if (!e?.senses?.length) return h('div', { class: 'wp-senses' }, h('p', { class: 'd0' }, lead.g || '(none listed)'));
+    return h('div', { class: 'vs-senses' }, sensesList(e.senses),
+      root?.senses?.length ? [h('p', { class: 'vs-root' }, 'From the root ', h('span', { class: 'vs-orig hebrew small', lang: root.w.match(/[\u0590-\u05FF]/) ? 'he' : 'grc' }, root.w), ` ${root.t}`), sensesList(root.senses)] : null);
+  }
+
   // The word page for the word in the card: the verse's own word (with its grammar here), or a Hebrew word behind it.
   const openWord = (x, w) => x.s && wordPage(x.s, x === w ? { gram: w.gram, here: v.ref } : { greek: { w: w.w, t: w.t }, here: v.ref });
 
@@ -155,7 +170,9 @@ export async function verseSheet(date = null) {
           h('button', { class: 'icon-btn', 'aria-label': 'Previous word', disabled: i === 0, onclick: () => define(i - 1) }, '‹'),
           h('span', { class: 'vs-count' }, `${i + 1} of ${words.length}`),
           h('button', { class: 'icon-btn', 'aria-label': 'Next word', disabled: i === words.length - 1, onclick: () => define(i + 1) }, '›'))),
-      h('p', { class: 'vs-line' }, h('b', {}, 'Meaning'), lead.g || '(none listed)'),
+      // Meaning first, every sense; the rest below it. The card keeps one height; this part scrolls inside it.
+      h('div', { class: 'vs-def-body' },
+      meaningOf(lead),
       behind?.length > 1 ? h('p', { class: 'vs-line' }, h('b', {}, 'Also'), h('span', {}, behind.slice(1).map((x, k) => [k ? '; ' : '', h('button', { class: 'vs-also', onclick: () => openWord(x, w) }, h('span', { class: 'vs-orig hebrew small', lang: 'he', dir: 'rtl' }, x.w), ` ${x.t}, ${x.g}`)]).flat())) : null,
       behind ? h('p', { class: 'vs-line' }, h('b', {}, 'Greek'), h('span', {}, h('span', { lang: 'grc' }, w.w), ` ${w.t}, ${w.g || ''}`, behind.length ? '' : h('span', { class: 'vs-none' }, w.key ? ' (no Hebrew behind it in the Septuagint)' : ' (small word, no Hebrew note)'))) : null,
       h('p', { class: 'vs-line' }, h('b', {}, 'Literally'), w.en || '(not translated)'),
@@ -163,7 +180,7 @@ export async function verseSheet(date = null) {
         ? (shown.toLowerCase() !== (w.en || '').toLowerCase() ? h('p', { class: 'vs-line' }, h('b', {}, version), `“${shown}”`) : null)
         : h('p', { class: 'vs-line' }, h('b', {}, version), h('span', { class: 'vs-none' }, '(no separate word)')),
       h('p', { class: 'vs-line' }, h('b', {}, heb ? 'Hebrew order' : 'Greek order'), order),
-      w.gram ? h('p', { class: 'vs-line muted' }, w.gram === 'cond' ? 'conditional particle' : w.gram) : null,
+      w.gram ? h('p', { class: 'vs-line muted' }, w.gram === 'cond' ? 'conditional particle' : w.gram) : null),
       heb ? null : h('div', { class: 'seg vs-mode', role: 'group', 'aria-label': 'Word language' },
         ['original', 'hebrew'].map(m => h('button', { class: mode === m ? 'on' : '', 'aria-pressed': mode === m, onclick: async () => { mode = m; await db.setMeta('lang_mode', m); define(current); } }, m === 'original' ? 'Original' : 'Hebrew'))));
   }
@@ -187,20 +204,19 @@ export async function verseSheet(date = null) {
       if (m) { nx.t = nx.t.slice(m[0].length); out.push(h('span', { class: 'nw' }, btn, m[0])); } else out.push(btn);
     });
     fill(text, out);
-    // Size the word panel once for its tallest word, so it never grows while you step through and the verse
-    // above it never has to resize.
-    def.style.minHeight = '';
-    let tallest = 0;
-    for (let k = 0; k < words.length; k++) { define(k); tallest = Math.max(tallest, def.offsetHeight); }
-    // Long passages: the panel never takes more than a third of the page; the grammar line drops first if needed.
-    const cap = (body.closest('.layer-body')?.clientHeight || 600) * 0.32;
-    def.classList.toggle('tight', tallest > cap);
-    def.style.minHeight = `${Math.min(tallest, cap)}px`;
+    // The word panel keeps one height whatever the word (its senses scroll inside it), so the verse above never
+    // resizes while you step through: 42% of the page, set again if the page changes size.
+    sizeDef();
     current = -1;
     text.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
     // Nothing is marked until you pick a word; the panel says how to start.
     fill(def, h('p', { class: 'vs-hint' }, `Underlined words have the ${heb ? 'Hebrew' : 'Greek'} behind them. Tap one.`),
       h('button', { class: 'vs-start', onclick: () => define(0) }, `Or step through all ${words.length} words ›`));
+  }
+
+  function sizeDef() {
+    const room = body.closest('.layer-body')?.clientHeight;
+    if (room && words.length) def.style.height = `${Math.round(room * 0.42)}px`;
   }
 
   // The whole chapter, today's verses marked, on its own study layer.
@@ -292,7 +308,7 @@ export async function verseSheet(date = null) {
   // The verse keeps a large, readable size; it only shrinks (down to 17 px) if a long passage would not fit.
   // The verse takes whatever room is left; one shared routine sizes it (tokens set the range).
   const scroller = body.closest('.layer-body');
-  const fit = () => fitText(body.querySelector('.vs-verse'), text, { min: 15 });
+  const fit = () => { sizeDef(); fitText(body.querySelector('.vs-verse'), text, { min: 15 }); };
   new ResizeObserver(fit).observe(scroller);
   // Refit once the serif font has loaded: it sets taller than the fallback, which clipped the citation.
   document.fonts?.ready.then(fit);
