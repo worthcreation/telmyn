@@ -19,8 +19,9 @@ export const getVersion = () => getMeta('verse_version', DEFAULT_VERSION);
 export const setVersion = v => setMeta('verse_version', v);
 
 // FORMAT: bump when the Worker's verse text changes shape, so copies saved on the phone (and the Worker's 7-day
-// cache, keyed by this URL) are fetched fresh. 2: lines of poetry joined with a space (0.26.1).
-const FORMAT = 2;
+// cache, keyed by this URL) are fetched fresh. 2: lines of poetry joined with a space (0.26.1). 3: the divine name
+// in capitals as printed, LORD (0.29.1).
+const FORMAT = 3;
 export async function fetchVerse(ref, version) {
   const key = `verse${FORMAT}:${version}:${ref}`;
   const cached = await getMeta(key);

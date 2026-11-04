@@ -29,12 +29,14 @@ const json = (req, body, status = 200) => new Response(JSON.stringify(body), {
 // Pull verse text out of the passage page. Skips verse numbers, footnote and cross-reference markers.
 async function parsePassage(html) {
   const verses = [];
-  let current = null, skip = 0, inPassage = 0, copyright = '', inCopy = false;
+  let current = null, skip = 0, inPassage = 0, copyright = '', inCopy = false, caps = 0;
   const rw = new HTMLRewriter()
     .on('div.passage-text', { element(el) { inPassage++; el.onEndTag(() => { inPassage--; }); } })
     .on('div.passage-text sup.versenum, div.passage-text sup.footnote, div.passage-text sup.crossreference, div.passage-text span.chapternum, div.passage-text div.footnotes, div.passage-text div.crossrefs, div.passage-text h3, div.passage-text h4', {
       element(el) { skip++; el.onEndTag(() => { skip--; }); },
     })
+    // The divine name is set in small capitals (LORD, GOD); keep it in capitals as printed (0.29.1).
+    .on('div.passage-text span.small-caps', { element(el) { caps++; el.onEndTag(() => { caps--; }); } })
     .on('div.passage-text span.text', {
       element(el) {
         const cls = el.getAttribute('class') || '';
@@ -42,7 +44,7 @@ async function parsePassage(html) {
         // Poetry sets each line in its own span: a line break is a space, or "heart,And" runs together (0.26.1).
         if (!current || current.id !== id) { current = { id, text: '' }; verses.push(current); } else current.text += ' ';
       },
-      text(t) { if (!skip && current) current.text += t.text; },
+      text(t) { if (!skip && current) current.text += caps ? t.text.toUpperCase() : t.text; },
     })
     .on('div.publisher-info-bottom p', { element() { copyright += ' '; } })
     .on('div.publisher-info-bottom', { element(el) { inCopy = true; el.onEndTag(() => { inCopy = false; }); }, text(t) { if (inCopy) copyright += t.text; } });

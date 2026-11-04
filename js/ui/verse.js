@@ -48,15 +48,17 @@ export function markWords(text, words) {
   const free = (a, b) => !marks.some(x => a < x.end && b > x.at);
   const place = (w, i, pats, from) => {
     for (const pat of pats) {
-      const all = [...lower.matchAll(new RegExp(pat, 'g'))].map(m => ({ at: m.index, end: m.index + m[0].length, w, i })).filter(m => free(m.at, m.end));
+      const all = [...lower.matchAll(new RegExp(pat, 'g'))].map(m => ({ at: m.index, end: m.index + m[0].length, w, i })).filter(m => m.end > m.at && free(m.at, m.end));
       const hit = all.find(m => m.at >= from) || all[0];
       if (hit) { marks.push(hit); return hit; }
     }
     return null;
   };
-  const esc = c => c.replace(/[^a-z']/g, '');
-  // The word itself first, then its stem with a common ending ("giving" finds "gives").
-  const loose = c => [`\\b${esc(c)}\\b`, `\\b${esc(stem(c))}(?:ing|ed|es|s|ly|en|e)?\\b`];
+  // Lowercase first: the text is matched lowercased, and a meaning like "LORD" would otherwise escape to nothing and
+  // match an empty spot, which split the verse and printed words twice (Proverbs 1:7, 0.29.1).
+  const esc = c => c.toLowerCase().replace(/[^a-z']/g, '');
+  // The word itself first, then its stem with a common ending ("giving" finds "gives"). Never an empty pattern.
+  const loose = c => esc(c) ? [`\\b${esc(c)}\\b`, `\\b${esc(stem(c.toLowerCase()))}(?:ing|ed|es|s|ly|en|e)?\\b`] : [];
   let from = 0;
   const keys = words.map((w, i) => ({ w, i })).filter(x => x.w.key);
   const unplaced = [];
@@ -69,13 +71,18 @@ export function markWords(text, words) {
   // Small words: in original order, starting after the nearest earlier word already placed.
   for (const { w, i } of words.map((w, i) => ({ w, i })).filter(x => !x.w.key)) {
     const prev = marks.filter(m => m.i < i).sort((a, b) => b.i - a.i)[0];
-    place(w, i, tokens(w.en).reverse().map(c => `\\b${esc(c)}\\b`), prev ? prev.end : 0);
+    place(w, i, tokens(w.en).reverse().filter(c => esc(c)).map(c => `\\b${esc(c)}\\b`), prev ? prev.end : 0);
   }
-  // 3. Grow each match over adjacent words its own English contains.
+  // 3. Grow each match over adjacent words its own English contains, each of its words used once: "the fear of"
+  //    takes "The fear of" in "The fear of the LORD", not the second "the" too (0.29.1). Backward first, so a
+  //    leading word ("the") is taken before the same word after the match.
   for (const m of marks) {
-    const own = new Set(tokens(m.w.en).map(stem));
-    for (let k = toks.findIndex(t => t.at >= m.end); k >= 0 && k < toks.length && own.has(stem(toks[k].t)) && free(toks[k].at, toks[k].end) && /^[\s]*$/.test(lower.slice(m.end, toks[k].at)); k++) m.end = toks[k].end;
-    for (let k = toks.findLastIndex(t => t.end <= m.at); k >= 0 && own.has(stem(toks[k].t)) && free(toks[k].at, toks[k].end) && /^[\s]*$/.test(lower.slice(toks[k].end, m.at)); k--) m.at = toks[k].at;
+    const left = new Map();
+    for (const t of tokens(m.w.en).map(stem)) left.set(t, (left.get(t) || 0) + 1);
+    const use = t => { const n = left.get(stem(t)) || 0; if (n) left.set(stem(t), n - 1); return n > 0; };
+    for (const t of toks.filter(t => t.at >= m.at && t.end <= m.end)) use(t.t);
+    for (let k = toks.findLastIndex(t => t.end <= m.at); k >= 0 && free(toks[k].at, toks[k].end) && /^[\s]*$/.test(lower.slice(toks[k].end, m.at)) && use(toks[k].t); k--) m.at = toks[k].at;
+    for (let k = toks.findIndex(t => t.at >= m.end); k >= 0 && k < toks.length && free(toks[k].at, toks[k].end) && /^[\s]*$/.test(lower.slice(m.end, toks[k].at)) && use(toks[k].t); k++) m.end = toks[k].end;
   }
   // 4. Unplaced key words take the nearest run of unused content words, guided by their placed neighbors.
   const runs = [];

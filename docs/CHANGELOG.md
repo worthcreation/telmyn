@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.29.1 (2026-11-04)
+Verse study no longer prints words twice (Ross, Proverbs 1:7 read "The fear of the of the Lord"). Cause, fixed at
+the source in markWords: a meaning in capitals ("LORD") escaped to an empty pattern, matched an empty spot, and split
+the verse so "of the" printed again; the same broke every bank verse with the divine name (Deuteronomy 6:5, Joshua
+1:9, Proverbs 1:7, 3:5-6, 9:10, Isaiah 40:31, Micah 6:8). Patterns are lowercased and never empty, empty matches are
+refused, and a match grows over each of its own words only once ("The fear of", not "The fear of the"). The divine
+name now shows in capitals as printed (LORD): the Worker keeps small capitals as capitals, and the verse format moves
+to 3 so saved copies refresh. New test: every bank verse keeps its exact text when marked, checked on its literal
+English, in capitals, and on its dictionary meanings.
+
 ## 0.29.0 (2026-11-03)
 Creatine as a one-tap daily habit (Ross started 5 g on 2026-11-03). Today shows a Creatine row (5 g, tap when
 taken) until it is logged, with Undo; then it joins the done line. The Fuel breakdown shows it with its time, or

@@ -456,7 +456,8 @@ if (typeof document !== 'undefined') {
   {
     const { markWords } = await import('../js/ui/verse.js');
     const cases = [['James 1:5', nkjv, { liberally: 'generously', 'without reproach': 'finding fault' }],
-      ['Galatians 6:9', 'And let us not grow weary while doing good, for in due season we shall reap if we do not lose heart.', { good: 'in well', season: 'in time', 'lose heart': 'giving up' }]];
+      ['Galatians 6:9', 'And let us not grow weary while doing good, for in due season we shall reap if we do not lose heart.', { good: 'in well', season: 'in time', 'lose heart': 'giving up' }],
+      ['Proverbs 1:7', 'The fear of the LORD is the beginning of knowledge, But fools despise wisdom and instruction.', { 'the fear of': 'the fear of', lord: 'Yahweh', despise: 'they despise' }]];
     for (const [ref, t, expect] of cases) {
       const r = markWords(t, orig.verses[ref].words);
       const map = Object.fromEntries(r.parts.filter(p => p.w).map(p => [p.t.toLowerCase(), p.w.en]));
@@ -464,6 +465,25 @@ if (typeof document !== 'undefined') {
       results.push([`${ref}: every key word sits inside the text`, ok, JSON.stringify(map)]);
       if (!ok) failed.push(results[results.length - 1]);
     }
+  }
+  // No verse can print a word twice or drop one: for every bank verse, the marked pieces join back to the exact text,
+  // none is empty, and none overlaps another (Proverbs 1:7 printed "of the" twice in 0.29.0). Checked on the
+  // verse's own literal English (as written and in capitals) and on its dictionary meanings, which word it the way
+  // another version might.
+  {
+    const { markWords } = await import('../js/ui/verse.js');
+    const bad = [];
+    for (const [ref, o] of Object.entries(orig.verses)) {
+      const lit = o.words.map(w => w.en).filter(Boolean).join(' ') + '.';
+      const dict = o.words.map(w => (w.g || w.en || '').replace(/[_:]/g, ' ').trim()).filter(Boolean).join(' ') + '.';
+      for (const t of [lit, lit.toUpperCase(), dict]) {
+        const r = markWords(t, o.words);
+        const joined = r.parts.map(p => p.t).join('') === t, empty = r.parts.some(p => !p.t);
+        if (!joined || empty) bad.push(ref);
+      }
+    }
+    results.push(['every bank verse keeps its exact text when marked (no repeated or empty pieces)', !bad.length, [...new Set(bad)].join(', ')]);
+    if (bad.length) failed.push(results[results.length - 1]);
   }
   group('App rules');
   // Design-system guards: every size and color comes from tokens.css, every selector is defined once, and text is
