@@ -7,10 +7,11 @@
 #   the top strip, filled with its widest words, stays inside the screen with no line cut.
 # Landscape: every main screen, the verse study and the runner at 915x412 and 800x360.
 # Prints one line per sweep, like tests/tests.js; a failing viewport is named under its sweep.
-import asyncio, json, os, socket, subprocess, sys
+import asyncio, glob, json, os, socket, subprocess, sys
 from playwright.async_api import async_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'
+# Whichever Chromium build this machine has (the build number changes when Playwright updates).
+CHROME = (sorted(glob.glob('/opt/pw-browsers/chromium-*/chrome-linux*/chrome')) or [None])[-1]
 T = 'If any of you lacks wisdom, let him ask of God, who gives to all liberally and without reproach, and it will be given to him.'
 SEED = """(async()=>{const m=await import('./js/db.js');await m.open('telmyn');await m.put('days',{date:'2026-10-27',protein_g:174,water_oz:113.9,verse_applied_notes:'x',weight_lb:220});})()"""
 CHECK = """(()=>{const out=[];const vis=e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0};

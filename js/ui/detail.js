@@ -4,9 +4,9 @@
 import { h, fill, sheet, plural } from './dom.js';
 import * as db from '../db.js';
 import { state } from '../state.js';
-import { planFor, blockStatus, PROGRAMS, LEG_HABITS } from '../program/index.js';
+import { planFor, blockStatus, PROGRAMS, LEG_HABITS, dailyHabits } from '../program/index.js';
 import { FLUID_KINDS } from '../schema.js';
-import { fluidOz, rowTotals, rowText, gripBreaks, habitSets, doneEvent, lastSessionOf, sameSetLast, versusLast } from '../log.js';
+import { fluidOz, rowTotals, rowText, gripBreaks, habitSets, takenEvent, takenGrams, doneEvent, lastSessionOf, sameSetLast, versusLast } from '../log.js';
 import { addDays, atTime as t, weekday, WEEKDAYS, dayLabel } from '../clock.js';
 import { foodByKey } from '../foods.js';
 
@@ -183,6 +183,11 @@ function dayArea(area, date, data, tips) {
     notes = notes.replace(/\s{2,}/g, ' ').trim();
     out.push(row(`Protein ${Math.round(g)} of ${target} g`, timed.map(e => ({ at: e.at, what: e.type === 'food' ? (foodByKey(e.food)?.label || 'Food') : 'Added', amt: `${Math.round(e.protein_g)} g` })),
       { ok: g >= target, meter: [g, target], notes: notes || null }));
+    // Once-a-day habits (creatine), from their start date: taken with its time, or not logged.
+    for (const x of dailyHabits(date)) {
+      const e = takenEvent(ev, x.key), grams = takenGrams(rec, ev, x);
+      out.push(grams != null ? row(`${x.name} ${grams} g`, e ? [{ at: e.at, what: x.name, amt: x.amount }] : [], { ok: true }) : row(`${x.name} not logged`, []));
+    }
   } else if (area === 'hydration') {
     const target = plan.program.data.TARGETS.fluids_oz[0], oz = fluidOz(rec, fl) || 0;
     out.push(row(`Fluids ${oz} of ${target} oz`, [...fl].sort((a, b) => (a.at || '').localeCompare(b.at || '')).map(f => ({ at: f.at, what: FLUID_KINDS.find(k => k.key === f.kind)?.label || f.kind, amt: `${f.oz} oz` })),

@@ -230,6 +230,8 @@ export const DEFAULT_TIMING = {
 export const HABITS = {
   ankle_pumps: { name: 'Ankle pumps', short: 'Pumps', perFoot: 30, amount: '30 per foot', remind: 'pumps', note: '30 per foot, every 20-30 min while sitting.' },
   calf_raises: { name: 'Calf raises', short: 'Calf', reps: 30, amount: '30 reps', remind: 'calf', note: '30 reps, hourly on weekends.' },
+  // Once a day, one tap (Ross started 5 g in the morning Huel on 2026-11-03). daily: a row on Today until taken.
+  creatine: { name: 'Creatine', amount: '5 g', grams: 5, daily: true, since: '2026-11-03', note: '5 g, stirred into the morning Huel.' },
 };
 export const TARGETS = { fluids_oz: [100, 120], protein_g: [160, 200] };
 

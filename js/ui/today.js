@@ -1,11 +1,12 @@
 // Today tab: date and verse, the next block with the day ring, the rest of the day, verse text in spare space,
 // and the weight button in the header until weight is logged. Status pills (Fluids, Protein, Grip, Pumps) and tabs live in the shell.
-import { h, fill, fitText, holdable } from './dom.js';
+import { h, fill, fitText, holdable, toast } from './dom.js';
 import { weightList } from './history.js';
-import { state, addEvent } from '../state.js';
+import { state, addEvent, removeEvent } from '../state.js';
 import * as db from '../db.js';
 import { weightLevel } from '../status.js';
-import { nextBlock, blockStatus } from '../program/index.js';
+import { nextBlock, blockStatus, dailyHabits } from '../program/index.js';
+import { takenEvent } from '../log.js';
 import { hhmm, daysBetween, dayLabel } from '../clock.js';
 import { runBlock } from './runner.js';
 import { weightSheet, lastWeight } from './forms.js';
@@ -46,9 +47,24 @@ export async function renderToday(root, rerender) {
   const closed = plan.blocks.filter(status);
   const open = plan.blocks.filter(b => !status(b));
 
+  // Once-a-day habits (creatine): one tap logs it, then it joins the done line.
+  const daily = dailyHabits(state.date);
+  const taken = daily.filter(x => takenEvent(events, x.key)), toTake = daily.filter(x => !takenEvent(events, x.key));
+  const take = x => async () => {
+    const e = await addEvent('habit', { habit: x.key });
+    rerender();
+    toast(`${x.name} logged`, { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); toast(`${x.name} removed`); } }, x.amount);
+  };
+  const doneNames = [...closed.map(b => b.name + ({ skip: ' (skipped)', partial: ' (partial)' }[status(b)] || '')), ...taken.map(x => x.name)];
+
   const dayList = h('ol', { class: 'daylist' },
-    closed.length ? h('li', { class: 'closed-summary' }, h('span', { class: 'dl-mark' }, '✓'),
-      h('span', { class: 'dl-name' }, closed.map(b => b.name + ({ skip: ' (skipped)', partial: ' (partial)' }[status(b)] || '')).join(', '))) : null,
+    doneNames.length ? h('li', { class: 'closed-summary' }, h('span', { class: 'dl-mark' }, '✓'),
+      h('span', { class: 'dl-name' }, doneNames.join(', '))) : null,
+    toTake.map(x => h('li', {},
+      h('button', { onclick: take(x), 'aria-label': `${x.name}, ${x.amount}. Tap when taken.` },
+        h('span', { class: 'dl-mark' }, ''),
+        h('span', { class: 'dl-name' }, x.name),
+        h('span', { class: 'dl-when' }, `${x.amount}, tap when taken`)))),
     open.filter(b => b !== next).map(b => h('li', {},
       h('button', { onclick: () => runBlock(b, { onExit: rerender }) },
         h('span', { class: 'dl-mark' }, ''),

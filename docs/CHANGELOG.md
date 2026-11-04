@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.29.0 (2026-11-03)
+Creatine as a one-tap daily habit (Ross started 5 g on 2026-11-03). Today shows a Creatine row (5 g, tap when
+taken) until it is logged, with Undo; then it joins the done line. The Fuel breakdown shows it with its time, or
+"not logged", from the start date. The cloud copy has a new line, CREATINE_G (5 when taken, blank when not), read
+back on restore. The habit lives in program HABITS (daily, since); dailyHabits(date) and log.js takenEvent and
+takenGrams answer it once.
+
 ## 0.28.3 (2026-11-03)
 Today's verse no longer shifts on open (Ross). Two causes, both fixed at the source: Today is redrawn about a second
 after opening (and every minute), and each redraw built the verse at the largest size and shrank it a moment later;

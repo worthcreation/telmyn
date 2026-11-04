@@ -14,6 +14,10 @@ export const gripCount = (day, events) => gripBreaks(events).length + (day?.hour
 
 // Leg habits (ankle pumps, calf raises): each tap is one set.
 export const habitSets = (events, key) => events.filter(e => e.type === 'habit' && e.habit === key);
+// Once-a-day habits (creatine): the tap that logged it today, or nothing.
+export const takenEvent = (events, key) => habitSets(events, key)[0] || null;
+// Grams taken: the habit's amount when tapped, else the number carried in from an imported handoff. Blank stays blank.
+export const takenGrams = (day, events, habit) => (takenEvent(events, habit.key) ? habit.grams : day?.[`${habit.key}_g`] ?? null);
 
 // Sets by exercise. Pull sets are chin-ups or neutral-grip pull-ups; hangs are the hangs block's (not the strength
 // warm-up's two short ones).

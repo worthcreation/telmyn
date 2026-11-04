@@ -23,7 +23,7 @@ export const DAY_FIELDS = [
 
 // Fields carried only by imported handoffs (status lines the app normally derives from events).
 // toe_touch_notes: toe touch reach, no longer noted (Ross, 2026-10-31); kept so older handoffs still read in.
-export const IMPORT_ONLY = ['toe_touch_notes', 'stretch_status', 'fab_five_status', 'routine_status', 'row_min', 'row_m', 'hourly_blocks_count', 'gripper', 'hourly_palm_notes', 'verse_ref', 'instruction_updates', 'handoff_raw', 'program_version', 'week', 'day'];
+export const IMPORT_ONLY = ['toe_touch_notes', 'stretch_status', 'fab_five_status', 'routine_status', 'row_min', 'row_m', 'hourly_blocks_count', 'creatine_g', 'gripper', 'hourly_palm_notes', 'verse_ref', 'instruction_updates', 'handoff_raw', 'program_version', 'week', 'day'];
 
 export const FLUID_KINDS = [
   { key: 'water', label: 'Water', bucket: 'water_oz' },

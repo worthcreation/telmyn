@@ -2,7 +2,7 @@
 // Import keeps the full original text in handoff_raw so nothing is ever lost, then parses what is clean.
 import { isoDate, atTime } from './clock.js';
 import { cleanNumber, blankDay } from './schema.js';
-import { fluidTotals, rowTotals, gripBreaks, habitSets, doneEvent } from './log.js';
+import { fluidTotals, rowTotals, gripBreaks, habitSets, doneEvent, takenGrams } from './log.js';
 import { planFor, blockStatus } from './program/index.js';
 import { verseFor } from './verses.js';
 
@@ -82,7 +82,7 @@ export function parseHandoff(text) {
   day.bed_time = orNull((sleep.match(/bed\s*([^|]*)/i) || [])[1]);
   day.wake_time = orNull((sleep.match(/wake\s*(.*)$/i) || [])[1]);
 
-  for (const k of ['WEIGHT_LB', 'PROTEIN_G', 'WATER_OZ', 'OTHER_DRINKS_OZ', 'ROW_MIN', 'ROW_M']) day[k.toLowerCase()] = cleanNumber(raw[k]);
+  for (const k of ['WEIGHT_LB', 'PROTEIN_G', 'CREATINE_G', 'WATER_OZ', 'OTHER_DRINKS_OZ', 'ROW_MIN', 'ROW_M']) day[k.toLowerCase()] = cleanNumber(raw[k]);
 
   const st = split(raw.STRETCH);
   day.stretch_status = filled(st[0]);
@@ -183,6 +183,7 @@ export function buildHandoff({ day, sets, events, fluids }) {
   const doneAt = id => doneEvent(events, id)?.done_at;
   const blockTimes = plan.blocks.filter(b => doneAt(b.id)).map(b => `${b.name} ${atTime(doneAt(b.id))}`).join(' | ');
   const routine = plan.blocks.find(b => !['stretch', 'gates', 'hangs', 'evening_legs'].includes(b.id));
+  const creatine = { key: 'creatine', ...(plan.program.data.HABITS?.creatine || {}) };
 
   const lines = [
     `DATE: ${day.date}`,
@@ -204,6 +205,7 @@ export function buildHandoff({ day, sets, events, fluids }) {
     `CALF_RAISES: ${habitCount('calf_raises') || ''}`,
     `BLOCK_TIMES: ${blockTimes}`,
     `PROTEIN_G: ${v(day.protein_g)}`,
+    `CREATINE_G: ${v(takenGrams(day, events, creatine))}`,
     `EATING: ${eating}`,
     `WATER_OZ: ${v(totals.water_oz)}`,
     `OTHER_DRINKS_OZ: ${v(totals.other_drinks_oz)}`,

@@ -1,7 +1,7 @@
 // Runs in the browser (tests/index.html) and in Node (node tests/tests.js).
 import { parseHandoff, buildHandoff } from '../js/handoff.js';
 import { verseFor } from '../js/verses.js';
-import { planFor, weekAndDay, nextBlock } from '../js/program/index.js';
+import { planFor, weekAndDay, nextBlock, dailyHabits } from '../js/program/index.js';
 import { cleanNumber, blankDay } from '../js/schema.js';
 import { fluidTotals, rowTotals, versusLast, sameSetLast, lastSessionOf } from '../js/log.js';
 import { transitionSec } from '../js/flow.js';
@@ -279,6 +279,16 @@ test('every routine exercise prints, with per-set pull-up modes, per-arm rows, w
   eq(back.filter(x => x.exercise === 'goblet').map(x => x.reps), [12, 11]);
   eq(back.filter(x => x.exercise === 'dead_hang' && x.block === 'strength_a').map(x => x.sec), [15, 16]);
   eq(buildHandoff({ day: blankDay(d), sets: back, events: [], fluids: [] }).includes('HANGS_SEC: 24'), true);
+});
+test('creatine: one tap prints CREATINE_G 5, reads back, blank when not taken or before its start', () => {
+  const d = '2026-11-04';
+  const tapped = buildHandoff({ day: blankDay(d), sets: [], events: [{ type: 'habit', habit: 'creatine', at: 'x' }], fluids: [] });
+  if (!tapped.includes('PROTEIN_G: \nCREATINE_G: 5\n')) throw new Error(tapped.split('\n').find(l => l.startsWith('CREATINE')));
+  eq(parseHandoff(tapped).day.creatine_g, 5);
+  eq(buildHandoff({ day: blankDay(d), sets: [], events: [], fluids: [] }).includes('CREATINE_G: \n'), true);
+  eq(buildHandoff({ day: { ...blankDay(d), creatine_g: 5 }, sets: [], events: [], fluids: [] }).includes('CREATINE_G: 5\n'), true);
+  eq(dailyHabits('2026-11-03').map(x => x.key), ['creatine']);
+  eq(dailyHabits('2026-11-02'), []);
 });
 group('Data');
 test('beat your past self: same weight more reps, heavier, negatives to full, lighter never counts', () => {

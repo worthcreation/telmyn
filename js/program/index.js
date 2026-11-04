@@ -83,3 +83,8 @@ export function legHabit(iso) {
 }
 // Every leg habit in any program version (for views that read past days of either kind).
 export const LEG_HABITS = [...new Set(PROGRAMS.flatMap(p => Object.entries(p.data.HABITS || {}).filter(([, v]) => v.remind).map(([k]) => k)))];
+// Once-a-day habits in effect on a date (creatine from its start date): [{ key, name, amount, grams }].
+export function dailyHabits(iso) {
+  const H = programFor(iso).data.HABITS || {};
+  return Object.entries(H).filter(([, v]) => v.daily && iso >= (v.since || '')).map(([key, v]) => ({ key, ...v }));
+}

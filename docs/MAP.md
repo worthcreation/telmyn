@@ -9,9 +9,9 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 | clock.js | Time. now(), isoDate, hhmm, atTime, dayLabel, addDays, weekday. Fake clock in the test app |
 | db.js | IndexedDB stores and migrations (DB_VERSION), backups (exportAll, importAll) |
 | schema.js | The day's fields (DAY_FIELDS: form, import, export), FLUID_KINDS, cleanNumber |
-| log.js | What happened: every query over events, sets and fluids (grip breaks, leg habits, pulls, hangs, rowed, fluids), and how a set compares with the same set last time |
+| log.js | What happened: every query over events, sets and fluids (grip breaks, leg habits, once-a-day habits like creatine, pulls, hangs, rowed, fluids), and how a set compares with the same set last time |
 | state.js | The day on screen: load, add and remove events, sets, fluids, foods, protein; importDay; legToday |
-| program/index.js | Which program is in effect, planFor(date) (blocks in order, day type, week and day), blockStatus, legHabit |
+| program/index.js | Which program is in effect, planFor(date) (blocks in order, day type, week and day), blockStatus, legHabit, dailyHabits (creatine) |
 | program/v1_1.js | The program content: EXERCISES (videos, weights), BLOCKS (steps), DAY_TYPES, SCHEDULE, HABITS, TARGETS |
 | program/steps.js | Step builders used by the program file (do, timed, rest, set, sets, sides, phase) |
 | reminder-rules.js | Reminder days, hours, intervals, follow-ups; due(). Bundled into the Worker too |
@@ -69,7 +69,7 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 ## To change X, edit Y
 - A step, cue, rest, weight, or video in a block: program/v1_1.js (new program version: a new file, see ARCHITECTURE)
 - A reminder's hours, interval or follow-up: reminder-rules.js (the Worker redeploys itself from apply.ps1)
-- What a habit is called or its amount: program/v1_1.js HABITS
+- What a habit is called or its amount: program/v1_1.js HABITS (daily: true makes a one-tap row on Today)
 - A new fact to count or total: log.js, then use it where it shows
 - A new daily field: schema.js DAY_FIELDS (the form, import and export follow); handoff.js only for its line
 - How a screen looks: css/app.css with a token from css/tokens.css; a new shared piece goes in ui/dom.js
