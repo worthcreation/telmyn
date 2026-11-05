@@ -230,8 +230,11 @@ export const DEFAULT_TIMING = {
 export const HABITS = {
   ankle_pumps: { name: 'Ankle pumps', short: 'Pumps', perFoot: 30, amount: '30 per foot', remind: 'pumps', note: '30 per foot, every 20-30 min while sitting.' },
   calf_raises: { name: 'Calf raises', short: 'Calf', reps: 30, amount: '30 reps', remind: 'calf', note: '30 reps, hourly on weekends.' },
-  // Once a day, one tap (Ross started 5 g in the morning Huel on 2026-11-03). daily: a row on Today until taken.
-  creatine: { name: 'Creatine', amount: '5 g', grams: 5, daily: true, since: '2026-11-03', note: '5 g, stirred into the morning Huel.' },
+  // Daily (Ross started 5 g in the morning Huel on 2026-11-03). daily: a row on Today until every dose is taken; each
+  // tap logs one dose of grams. Loading (Ross, 2026-11-04): 10 g three times a day with food, 11-05 to 11-10, then
+  // back to 5 g once a day. remind names its reminder rule; the dose times are there.
+  creatine: { name: 'Creatine', grams: 5, times: 1, daily: true, since: '2026-11-03', remind: 'creatine', note: '5 g, stirred into the morning Huel.',
+    phases: [{ from: '2026-11-05', to: '2026-11-10', grams: 10, times: 3, note: '10 g three times a day with food, loading.' }] },
 };
 export const TARGETS = { fluids_oz: [100, 120], protein_g: [160, 200] };
 

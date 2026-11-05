@@ -106,8 +106,8 @@ export async function pushReport(env) {
     const s = rec.state || {}, sent = rec.sent || {};
     const host = (() => { try { return new URL(rec.sub.endpoint).host; } catch { return '?'; } })();
     lines.push(`  ${site}: subscribed via ${host}, phone offset ${off} min, reported at ${at(rec.reported)}`);
-    lines.push(`    last logged: grip ${at(s.grip)} | pumps ${at(s.pumps)} | calf ${at(s.calf)} | weight ${s.weight || 'not today'}`);
-    lines.push(`    last reminded: grip ${at(sent.grip)} | pumps ${at(sent.pumps)} | calf ${at(sent.calf)} | weight ${at(typeof sent.weight === 'number' ? sent.weight : 0)}`);
+    lines.push(`    last logged: grip ${at(s.grip)} | pumps ${at(s.pumps)} | calf ${at(s.calf)} | weight ${s.weight || 'not today'} | creatine ${s.creatine ? `${s.creatine.taken} of ${s.creatine.times} on ${s.creatine.date}` : 'not reported'}`);
+    lines.push(`    last reminded: grip ${at(sent.grip)} | pumps ${at(sent.pumps)} | calf ${at(sent.calf)} | weight ${at(typeof sent.weight === 'number' ? sent.weight : 0)} | creatine ${at(sent.creatine)}`);
     lines.push(`    last push: ${rec.last ? `${at(rec.last.at)} ${rec.last.kinds.join(',')} (push service said ${rec.last.status})` : 'none yet'}`);
   }
   return lines.join('\n');

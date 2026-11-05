@@ -6,7 +6,7 @@ import * as db from '../db.js';
 import { state } from '../state.js';
 import { planFor, blockStatus, PROGRAMS, LEG_HABITS, dailyHabits } from '../program/index.js';
 import { FLUID_KINDS } from '../schema.js';
-import { fluidOz, rowTotals, rowText, gripBreaks, habitSets, takenEvent, takenGrams, doneEvent, lastSessionOf, sameSetLast, versusLast } from '../log.js';
+import { fluidOz, rowTotals, rowText, gripBreaks, habitSets, takenDoses, takenGrams, habitMet, doneEvent, lastSessionOf, sameSetLast, versusLast } from '../log.js';
 import { addDays, atTime as t, weekday, WEEKDAYS, dayLabel } from '../clock.js';
 import { foodByKey } from '../foods.js';
 
@@ -183,10 +183,11 @@ function dayArea(area, date, data, tips) {
     notes = notes.replace(/\s{2,}/g, ' ').trim();
     out.push(row(`Protein ${Math.round(g)} of ${target} g`, timed.map(e => ({ at: e.at, what: e.type === 'food' ? (foodByKey(e.food)?.label || 'Food') : 'Added', amt: `${Math.round(e.protein_g)} g` })),
       { ok: g >= target, meter: [g, target], notes: notes || null }));
-    // Once-a-day habits (creatine), from their start date: taken with its time, or not logged.
+    // Daily habits (creatine), from their start date: each dose with its time; green once the day's doses are all
+    // taken (of the day's total, e.g. "Creatine 20 of 30 g" while loading); or not logged.
     for (const x of dailyHabits(date)) {
-      const e = takenEvent(ev, x.key), grams = takenGrams(rec, ev, x);
-      out.push(grams != null ? row(`${x.name} ${grams} g`, e ? [{ at: e.at, what: x.name, amt: x.amount }] : [], { ok: true }) : row(`${x.name} not logged`, []));
+      const doses = takenDoses(ev, x.key), grams = takenGrams(rec, ev, x), full = x.grams * x.times, met = habitMet(rec, ev, x);
+      out.push(grams != null ? row(met ? `${x.name} ${grams} g` : `${x.name} ${grams} of ${full} g`, doses.map(e => ({ at: e.at, what: x.name, amt: x.amount })), { ok: met }) : row(`${x.name} not logged`, []));
     }
   } else if (area === 'hydration') {
     const target = plan.program.data.TARGETS.fluids_oz[0], oz = fluidOz(rec, fl) || 0;

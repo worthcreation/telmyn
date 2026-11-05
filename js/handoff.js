@@ -3,7 +3,7 @@
 import { isoDate, atTime } from './clock.js';
 import { cleanNumber, blankDay } from './schema.js';
 import { fluidTotals, rowTotals, gripBreaks, habitSets, doneEvent, takenGrams } from './log.js';
-import { planFor, blockStatus } from './program/index.js';
+import { planFor, blockStatus, dailyHabits } from './program/index.js';
 import { verseFor } from './verses.js';
 
 const KEY = /^\s*([A-Z][A-Z_ ]*[A-Z]):\s?(.*)$/;
@@ -183,7 +183,7 @@ export function buildHandoff({ day, sets, events, fluids }) {
   const doneAt = id => doneEvent(events, id)?.done_at;
   const blockTimes = plan.blocks.filter(b => doneAt(b.id)).map(b => `${b.name} ${atTime(doneAt(b.id))}`).join(' | ');
   const routine = plan.blocks.find(b => !['stretch', 'gates', 'hangs', 'evening_legs'].includes(b.id));
-  const creatine = { key: 'creatine', ...(plan.program.data.HABITS?.creatine || {}) };
+  const creatine = dailyHabits(day.date).find(x => x.key === 'creatine') || { key: 'creatine', grams: 5, times: 1 };
 
   const lines = [
     `DATE: ${day.date}`,

@@ -1,7 +1,7 @@
 // Runs in the browser (tests/index.html) and in Node (node tests/tests.js).
 import { parseHandoff, buildHandoff } from '../js/handoff.js';
 import { verseFor } from '../js/verses.js';
-import { planFor, weekAndDay, nextBlock, dailyHabits } from '../js/program/index.js';
+import { planFor, weekAndDay, nextBlock, dailyHabits, LEG_HABITS } from '../js/program/index.js';
 import { cleanNumber, blankDay } from '../js/schema.js';
 import { fluidTotals, rowTotals, versusLast, sameSetLast, lastSessionOf } from '../js/log.js';
 import { transitionSec } from '../js/flow.js';
@@ -226,6 +226,24 @@ test('unanswered reminders come again every 15 min until logged; weight follow-u
     kinds({ ...w, sent: { weight: t('2026-10-28T12:00:00Z') } }, '2026-10-28T12:15:00Z'), kinds({ ...w, sent: { weight: t('2026-10-28T16:50:00Z') } }, '2026-10-28T17:30:00Z', 'weight')],
     ['weight', '', 'weight', '']);
 });
+test('creatine: a dose due at each time until taken, 15 min follow-ups, quiet after 21:00 and on a fresh day until its time', async () => {
+  const { due } = await import('../js/reminder-rules.js');
+  const t = s => Date.parse(s), off = 360;   // Central standard time: 15:30Z is 09:30
+  const kinds = (st, at, sent = {}) => due({ offset: off, state: { weight: '2026-11-05', grip: t(at), pumps: t(at), ...st }, sent }, t(at)).filter(d => d.kind === 'creatine');
+  const load = { creatine: { date: '2026-11-05', taken: 0, times: 3, say: '10 g' } };
+  eq(kinds(load, '2026-11-05T15:29:00Z').length, 0);                                                  // before 09:30
+  eq(kinds(load, '2026-11-05T15:30:00Z')[0].body, 'Dose 1 of 3, 10 g, with food. Tap Creatine on Today.');
+  eq(kinds({ creatine: { ...load.creatine, taken: 1 } }, '2026-11-05T19:00:00Z').length, 0);           // one taken, 13:00: not yet
+  eq(kinds({ creatine: { ...load.creatine, taken: 1 } }, '2026-11-05T19:30:00Z')[0].body.startsWith('Dose 2 of 3'), true);
+  eq(kinds({ creatine: { ...load.creatine, taken: 1 } }, '2026-11-05T19:40:00Z', { creatine: t('2026-11-05T19:30:00Z') }).length, 0);   // sent 10 min ago
+  eq(kinds({ creatine: { ...load.creatine, taken: 1 } }, '2026-11-05T19:45:00Z', { creatine: t('2026-11-05T19:30:00Z') })[0].body.startsWith('Still due. Dose 2 of 3'), true);
+  eq(kinds({ creatine: { ...load.creatine, taken: 2 } }, '2026-11-05T19:45:00Z', { creatine: t('2026-11-05T19:30:00Z') }).length, 0);   // dose 2 logged
+  eq(kinds({ creatine: { ...load.creatine, taken: 2 } }, '2026-11-06T03:30:00Z').length, 0);           // 21:30: quiet
+  eq(kinds({ creatine: { ...load.creatine, taken: 3 } }, '2026-11-06T15:00:00Z').length, 0);           // next day 09:00, old report: none taken but not due yet
+  eq(kinds({ creatine: { ...load.creatine, taken: 3 } }, '2026-11-06T15:31:00Z', { creatine: t('2026-11-06T00:30:00Z') })[0].body.startsWith('Dose 1 of 3'), true);   // next day 09:31: due again
+  eq(kinds({ creatine: { date: '2026-11-11', taken: 0, times: 1, say: '5 g' } }, '2026-11-11T15:31:00Z')[0].body.startsWith('Today\u2019s dose, 5 g'), true);
+  eq(kinds({}, '2026-11-05T15:31:00Z').length, 0);                                                     // phone never reported creatine
+});
 test('weekends: calf raises hourly with the amount, no pumps or grip', async () => {
   const { due } = await import('../js/reminder-rules.js');
   const t = s => Date.parse(s);
@@ -279,6 +297,17 @@ test('every routine exercise prints, with per-set pull-up modes, per-arm rows, w
   eq(back.filter(x => x.exercise === 'goblet').map(x => x.reps), [12, 11]);
   eq(back.filter(x => x.exercise === 'dead_hang' && x.block === 'strength_a').map(x => x.sec), [15, 16]);
   eq(buildHandoff({ day: blankDay(d), sets: back, events: [], fluids: [] }).includes('HANGS_SEC: 24'), true);
+});
+test('creatine loading: 10 g a tap three times a day 11-05 to 11-10, 5 g once before and after; grams and met from the log', async () => {
+  const { takenGrams, habitMet } = await import('../js/log.js');
+  const dose = iso => { const x = dailyHabits(iso)[0]; return [x.grams, x.times, x.amount]; };
+  eq([dose('2026-11-04'), dose('2026-11-05'), dose('2026-11-10'), dose('2026-11-11')], [[5, 1, '5 g'], [10, 3, '10 g'], [10, 3, '10 g'], [5, 1, '5 g']]);
+  const x = dailyHabits('2026-11-05')[0], tap = { type: 'habit', habit: 'creatine' };
+  eq([takenGrams(null, [tap, tap], x), habitMet(null, [tap, tap], x), habitMet(null, [tap, tap, tap], x), takenGrams(null, [], x), takenGrams({ creatine_g: 20 }, [], x), habitMet({ creatine_g: 30 }, [], x)], [20, false, true, null, 20, true]);
+  const two = buildHandoff({ day: blankDay('2026-11-05'), sets: [], events: [tap, tap], fluids: [] });
+  eq(two.includes('CREATINE_G: 20\n'), true);
+  eq(parseHandoff(two).day.creatine_g, 20);
+  eq(LEG_HABITS.includes('creatine'), false);
 });
 test('creatine: one tap prints CREATINE_G 5, reads back, blank when not taken or before its start', () => {
   const d = '2026-11-04';

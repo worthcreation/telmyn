@@ -7,9 +7,9 @@
 // rules run in the app while it is open.
 import * as db from './db.js';
 import { state, onChange } from './state.js';
-import { planFor } from './program/index.js';
+import { planFor, dailyHabits } from './program/index.js';
 import { due } from './reminder-rules.js';
-import { gripBreaks, habitSets } from './log.js';
+import { gripBreaks, habitSets, takenGrams } from './log.js';
 import { API_BASE } from './config.js';
 import { SITE } from './site.js';
 import { now } from './clock.js';
@@ -39,6 +39,12 @@ async function post(path, body) {
   const r = await fetch(`${API_BASE}${path}?site=${site}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Push service unavailable.');
 }
+// Creatine today: how many doses the day holds, how many are taken (or carried in), and the dose text.
+function creatineState() {
+  const x = dailyHabits(state.date).find(h => h.key === 'creatine');
+  if (!x) return undefined;
+  return { date: state.date, taken: Math.floor((takenGrams(state.day, state.events, x) || 0) / x.grams), times: x.times, say: x.amount };
+}
 function lastTimes() {
   const ms = v => (v ? new Date(v).getTime() : undefined);
   const H = planFor(state.date).program.data.HABITS || {};
@@ -48,6 +54,7 @@ function lastTimes() {
     calf: ms(habitSets(state.events, 'calf_raises').pop()?.at),
     weight: state.day.weight_lb !== null && state.day.weight_lb !== undefined ? state.date : undefined,
     say: { pumps: H.ankle_pumps?.amount, calf: H.calf_raises?.amount },
+    creatine: creatineState(),
   };
 }
 export async function syncPush(on) {

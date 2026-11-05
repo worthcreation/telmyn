@@ -14,10 +14,14 @@ export const gripCount = (day, events) => gripBreaks(events).length + (day?.hour
 
 // Leg habits (ankle pumps, calf raises): each tap is one set.
 export const habitSets = (events, key) => events.filter(e => e.type === 'habit' && e.habit === key);
-// Once-a-day habits (creatine): the tap that logged it today, or nothing.
-export const takenEvent = (events, key) => habitSets(events, key)[0] || null;
-// Grams taken: the habit's amount when tapped, else the number carried in from an imported handoff. Blank stays blank.
-export const takenGrams = (day, events, habit) => (takenEvent(events, habit.key) ? habit.grams : day?.[`${habit.key}_g`] ?? null);
+// Daily habits (creatine): each tap is one dose. takenDoses: today's taps in order; takenEvent: the first, or nothing.
+export const takenDoses = (events, key) => habitSets(events, key);
+export const takenEvent = (events, key) => takenDoses(events, key)[0] || null;
+// Grams taken: doses times the day's dose when tapped, else the number carried in from an imported handoff. Blank
+// stays blank. habit: the day's entry from dailyHabits (grams, times).
+export const takenGrams = (day, events, habit) => { const n = takenDoses(events, habit.key).length; return n ? n * habit.grams : day?.[`${habit.key}_g`] ?? null; };
+// Every dose taken: all of the day's doses logged (or carried in as at least that many grams).
+export const habitMet = (day, events, habit) => (takenGrams(day, events, habit) ?? 0) >= habit.grams * habit.times;
 
 // Sets by exercise. Pull sets are chin-ups or neutral-grip pull-ups; hangs are the hangs block's (not the strength
 // warm-up's two short ones).

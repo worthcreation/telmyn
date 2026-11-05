@@ -4,13 +4,16 @@
 // Rules (Ross's choices): grip break hourly and ankle pumps every 30 min on weekdays 08:00-17:00; on weekends ankle
 // pumps become calf raises, hourly, same hours (2026-10-31). Weight from 06:00 until logged. A reminder that goes
 // unanswered (nothing logged for it since) comes again every 15 min (2026-10-31); weight's follow-ups run
-// 07:00-12:00 so they never ring before the usual wake time.
+// 07:00-12:00 so they never ring before the usual wake time. Creatine (2026-11-05): a dose is due at each of its
+// times (the day's first, second, third dose) until that many doses are logged; follow-ups until 21:00. The phone
+// reports how many doses today holds and how many are taken; the program decides those (js/program/v1_1.js).
 
 export const RULES = {
   grip: { title: 'Grip break', days: 'weekdays', from: '08:00', to: '17:00', every: 60 },
   pumps: { title: 'Ankle pumps', days: 'weekdays', from: '08:00', to: '17:00', every: 30 },
   calf: { title: 'Calf raises', days: 'weekends', from: '08:00', to: '17:00', every: 60 },
   weight: { title: 'Weight', days: 'all', from: '06:00', followFrom: '07:00', followTo: '12:00' },
+  creatine: { title: 'Creatine', days: 'all', at: ['09:30', '13:30', '18:30'], followTo: '21:00' },
 };
 export const FOLLOW_UP_MIN = 15;
 export const TIMED = ['grip', 'pumps', 'calf'];
@@ -47,6 +50,22 @@ export function due(rec, now = Date.now()) {
       ? (s.grip && s.grip > opened ? 'It has been an hour since the last one.' : 'First grip break of the day.')
       : `${say[kind] || 'Time for a set'}. It has been over ${ago(r.every)}.`;
     out.push({ kind, title: r.title, body: again ? `Still due. ${text}` : text });
+  }
+  // Creatine: s.creatine = { date, taken, times, say } from the phone (doses taken today, doses the day holds, the
+  // dose text). A day the phone has not reported yet counts as none taken.
+  const c = RULES.creatine, cs = s.creatine;
+  if (cs && cs.times > 0 && L.hm < c.followTo) {
+    const taken = cs.date === L.date ? cs.taken || 0 : 0;
+    const dueAt = c.at.slice(0, cs.times).filter(t => L.hm >= t).length;   // doses whose time has come
+    if (taken < dueAt) {
+      const last = typeof sent.creatine === 'number' ? sent.creatine : 0;
+      const base = L.at(c.at[taken]);
+      const again = last >= base;
+      if (!again || now - last >= follow) {
+        const which = cs.times > 1 ? `Dose ${taken + 1} of ${cs.times}` : 'Today\u2019s dose';
+        out.push({ kind: 'creatine', title: c.title, body: `${again ? 'Still due. ' : ''}${which}, ${cs.say || 'creatine'}, with food. Tap Creatine on Today.` });
+      }
+    }
   }
   const w = RULES.weight;
   if (L.hm >= w.from && s.weight !== L.date) {

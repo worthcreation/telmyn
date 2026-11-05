@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.30.0 (2026-11-05)
+Creatine takes more than one dose a day (Ross, loading 10 g three times a day, Thu 11-05 to Tue 11-10; the one-tap
+row vanished after the first 5 g and could log nothing else). The Creatine row on Today now stays until the day's
+doses are all taken, each tap logging one dose at the day's amount ("10 g, 1 of 3 taken"), with Undo; then it joins
+the done line with the day's grams. The dose comes from the program: HABITS.creatine has grams and times, and a
+phase (from, to, grams, times) replaces them while it runs; dailyHabits(date) answers the day's dose. log.js
+takenDoses, takenGrams (doses times grams) and habitMet answer the rest. The Fuel breakdown lists every dose with
+its time, "Creatine 20 of 30 g" until met, green when met. CREATINE_G exports the total. New push reminder,
+creatine: a dose is due at 09:30, 13:30 and 18:30 (as many of those as the day's doses) until that many are logged,
+repeating every 15 min until 21:00; a gold scoop picture and badge; the phone reports doses taken and the day's
+count with every log, and the PUSH report shows them. Tests: the dose by date, grams and met, the reminder's day.
+
 ## 0.29.1 (2026-11-04)
 Verse study no longer prints words twice (Ross, Proverbs 1:7 read "The fear of the of the Lord"). Cause, fixed at
 the source in markWords: a meaning in capitals ("LORD") escaped to an empty pattern, matched an empty spot, and split

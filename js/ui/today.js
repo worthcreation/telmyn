@@ -6,7 +6,7 @@ import { state, addEvent, removeEvent } from '../state.js';
 import * as db from '../db.js';
 import { weightLevel } from '../status.js';
 import { nextBlock, blockStatus, dailyHabits } from '../program/index.js';
-import { takenEvent } from '../log.js';
+import { takenDoses, takenGrams, habitMet } from '../log.js';
 import { hhmm, daysBetween, dayLabel } from '../clock.js';
 import { runBlock } from './runner.js';
 import { weightSheet, lastWeight } from './forms.js';
@@ -47,24 +47,27 @@ export async function renderToday(root, rerender) {
   const closed = plan.blocks.filter(status);
   const open = plan.blocks.filter(b => !status(b));
 
-  // Once-a-day habits (creatine): one tap logs it, then it joins the done line.
+  // Daily habits (creatine): each tap logs one dose; the row stays, showing doses taken, until the day's doses are
+  // all taken, then it joins the done line with the day's grams.
   const daily = dailyHabits(state.date);
-  const taken = daily.filter(x => takenEvent(events, x.key)), toTake = daily.filter(x => !takenEvent(events, x.key));
+  const taken = daily.filter(x => habitMet(day, events, x)), toTake = daily.filter(x => !habitMet(day, events, x));
   const take = x => async () => {
+    const n = takenDoses(events, x.key).length + 1;
     const e = await addEvent('habit', { habit: x.key });
     rerender();
-    toast(`${x.name} logged`, { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); toast(`${x.name} removed`); } }, x.amount);
+    toast(`${x.name} logged${x.times > 1 ? `, dose ${n} of ${x.times}` : ''}`, { label: 'Undo', fn: async () => { await removeEvent(e); rerender(); toast(`${x.name} removed`); } }, x.amount);
   };
-  const doneNames = [...closed.map(b => b.name + ({ skip: ' (skipped)', partial: ' (partial)' }[status(b)] || '')), ...taken.map(x => x.name)];
+  const doneNames = [...closed.map(b => b.name + ({ skip: ' (skipped)', partial: ' (partial)' }[status(b)] || '')), ...taken.map(x => `${x.name} ${takenGrams(day, events, x)} g`)];
+  const doseWhen = x => { const n = takenDoses(events, x.key).length; return x.times > 1 ? `${x.amount}, ${n} of ${x.times} taken` : `${x.amount}, tap when taken`; };
 
   const dayList = h('ol', { class: 'daylist' },
     doneNames.length ? h('li', { class: 'closed-summary' }, h('span', { class: 'dl-mark' }, '✓'),
       h('span', { class: 'dl-name' }, doneNames.join(', '))) : null,
     toTake.map(x => h('li', {},
-      h('button', { onclick: take(x), 'aria-label': `${x.name}, ${x.amount}. Tap when taken.` },
+      h('button', { onclick: take(x), 'aria-label': `${x.name}, ${doseWhen(x)}. Tap when taken.` },
         h('span', { class: 'dl-mark' }, ''),
         h('span', { class: 'dl-name' }, x.name),
-        h('span', { class: 'dl-when' }, `${x.amount}, tap when taken`)))),
+        h('span', { class: 'dl-when' }, doseWhen(x))))),
     open.filter(b => b !== next).map(b => h('li', {},
       h('button', { onclick: () => runBlock(b, { onExit: rerender }) },
         h('span', { class: 'dl-mark' }, ''),

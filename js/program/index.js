@@ -78,13 +78,20 @@ export function nextBlock(plan, events, day = null) {
 // weekdays, calf raises on weekends from v1.1). Returns { key, name, short, amount, remind } or null.
 export function legHabit(iso) {
   const H = programFor(iso).data.HABITS || {}, wd = weekday(iso);
-  const key = Object.keys(H).find(k => H[k].remind && onDay(RULES[H[k].remind].days, wd));
+  const key = Object.keys(H).find(k => H[k].remind && !H[k].daily && onDay(RULES[H[k].remind].days, wd));
   return key ? { key, ...H[key] } : null;
 }
 // Every leg habit in any program version (for views that read past days of either kind).
-export const LEG_HABITS = [...new Set(PROGRAMS.flatMap(p => Object.entries(p.data.HABITS || {}).filter(([, v]) => v.remind).map(([k]) => k)))];
-// Once-a-day habits in effect on a date (creatine from its start date): [{ key, name, amount, grams }].
+export const LEG_HABITS = [...new Set(PROGRAMS.flatMap(p => Object.entries(p.data.HABITS || {}).filter(([, v]) => v.remind && !v.daily).map(([k]) => k)))];
+// Daily habits in effect on a date (creatine from its start date), with that date's dose: [{ key, name, grams,
+// times, amount, note }]. A phase (loading) replaces grams, times and note between its from and to dates; amount
+// is the one text every screen shows ("10 g", or "5 g").
 export function dailyHabits(iso) {
   const H = programFor(iso).data.HABITS || {};
-  return Object.entries(H).filter(([, v]) => v.daily && iso >= (v.since || '')).map(([key, v]) => ({ key, ...v }));
+  return Object.entries(H).filter(([, v]) => v.daily && iso >= (v.since || '')).map(([key, v]) => {
+    const { phases, ...base } = v;
+    const phase = (phases || []).find(p => iso >= p.from && iso <= p.to) || {};
+    const x = { key, ...base, ...phase, times: phase.times || base.times || 1 };
+    return { ...x, amount: `${x.grams} g` };
+  });
 }
