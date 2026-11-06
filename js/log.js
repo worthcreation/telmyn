@@ -8,6 +8,14 @@ export const isDone = (e, block) => e.type === 'block_done' && e.block === block
 // Block events: the last finish of a block (its time, start and end), or nothing.
 export const doneEvent = (events, block) => [...events].reverse().find(e => isDone(e, block)) || null;
 
+// Does a step apply now? A step tied to a block (after, within minutes) applies only when that block finished within
+// those minutes; every other step always applies. nowMs: the current time in ms.
+export function stepApplies(s, events, nowMs) {
+  if (!s.after) return true;
+  const at = doneEvent(events, s.after)?.done_at;
+  return !!at && nowMs - new Date(at).getTime() <= (s.within || 0) * 60000;
+}
+
 // Grip breaks: the ones logged in the app, and the day's total with any carried in from a chat handoff.
 export const gripBreaks = events => events.filter(e => isDone(e, 'hourly'));
 export const gripCount = (day, events) => gripBreaks(events).length + (day?.hourly_blocks_count || 0);

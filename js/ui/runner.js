@@ -9,7 +9,7 @@ import { state, addEvent, addSet, setField } from '../state.js';
 import { now, fmtSec, weekday, WEEKDAYS } from '../clock.js';
 import { transitionSec } from '../flow.js';
 import { hourlyHistory, nextPalms } from '../hourly.js';
-import { lastSessionOf, sameSetLast, versusLast } from '../log.js';
+import { lastSessionOf, sameSetLast, versusLast, stepApplies } from '../log.js';
 import { studyPlayer } from './study-player.js';
 import { DAILY_VIDEO } from '../config.js';
 import { runVideoBlock } from './video-block.js';
@@ -26,7 +26,11 @@ export function runBlock(block, opts = {}) {
   const { EXERCISES } = state.plan.program.data;
   unlockAudio();
   lockScreen();
-  const steps = block.steps;
+  // The steps that apply right now (the rest after the Fab Five only when it was just done). keep maps each to its
+  // place in the block, so a resumed block lands on the same step whichever steps applied when it was left.
+  const nowMs = now().getTime();
+  const keep = block.steps.map((s, k) => (stepApplies(s, state.events, nowMs) ? k : -1)).filter(k => k >= 0);
+  const steps = keep.map(k => block.steps[k]);
   let i = 0;
   let timer = null;            // { end, total, int, kind: 'hold' | 'rest' | 'transition' }
   let stopwatch = null;        // { int }
@@ -224,7 +228,7 @@ export function runBlock(block, opts = {}) {
   // simply closes (it is done). Skip lives on Today; Done comes from finishing.
   async function leave() {
     if (counted) return finish('block_done');
-    if (i > 0) await db.setMeta(resumeKey, { i, at: now().toISOString() });
+    if (i > 0) await db.setMeta(resumeKey, { i, full: keep[i], at: now().toISOString() });
     finish(null);
   }
   function videoLinks(s) {
@@ -372,7 +376,9 @@ export function runBlock(block, opts = {}) {
   // Pick up where this block was left earlier today.
   if (opts.cooldownOnly && cooldownAt > 0) enter(cooldownAt, true);
   else db.getMeta(resumeKey).then(r => {
-    if (r && r.i > 0 && r.i < steps.length) { enter(r.i, false); toast(`Resumed at step ${r.i + 1} of ${steps.length}`); }
+    // Saved as the step's place in the block (older saves: i counted every step); the first step that applies from there.
+    const at = r ? keep.findIndex(k => k >= (r.full ?? r.i)) : -1;
+    if (at > 0) { enter(at, false); toast(`Resumed at step ${at + 1} of ${steps.length}`); }
     else enter(0, true);
   });
 }

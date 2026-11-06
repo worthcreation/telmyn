@@ -298,6 +298,14 @@ test('every routine exercise prints, with per-set pull-up modes, per-arm rows, w
   eq(back.filter(x => x.exercise === 'dead_hang' && x.block === 'strength_a').map(x => x.sec), [15, 16]);
   eq(buildHandoff({ day: blankDay(d), sets: back, events: [], fluids: [] }).includes('HANGS_SEC: 24'), true);
 });
+test('rest after the Fab Five only when it finished within 15 min; other steps always apply', async () => {
+  const { stepApplies } = await import('../js/log.js');
+  const rest = planFor('2026-11-05').blocks.find(b => b.id === 'strength_b').steps[0], t = s => Date.parse(s);
+  const ev = [{ type: 'block_done', block: 'gates', done_at: '2026-11-05T13:50:00Z' }];
+  eq([stepApplies(rest, ev, t('2026-11-05T14:00:00Z')), stepApplies(rest, ev, t('2026-11-05T14:06:00Z')), stepApplies(rest, ev, t('2026-11-05T22:06:00Z')), stepApplies(rest, [], t('2026-11-05T14:00:00Z')), stepApplies({ kind: 'rest', sec: 90 }, [], 0)],
+    [true, false, false, false, true]);
+  eq(planFor('2026-11-02').blocks.find(b => b.id === 'strength_a').steps[0].after, 'gates');
+});
 test('creatine loading: 10 g a tap three times a day 11-05 to 11-10, 5 g once before and after; grams and met from the log', async () => {
   const { takenGrams, habitMet } = await import('../js/log.js');
   const dose = iso => { const x = dailyHabits(iso)[0]; return [x.grams, x.times, x.amount]; };

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.30.1 (2026-11-06)
+The 3 min rest after the Fab Five shows only when the Fab Five finished within the last 15 minutes (Ross: on 11-05
+Strength B opened on it at 16:06, eight hours after the Fab Five). A rest step can name the block it follows and a
+window (after, within); log.js stepApplies decides, and the runner leaves out steps that do not apply. A block left
+mid-way is saved by the step's place in the block, so it resumes on the same step whether or not the rest applied
+when it was left (older saves still resume).
+
 ## 0.30.0 (2026-11-05)
 Creatine takes more than one dose a day (Ross, loading 10 g three times a day, Thu 11-05 to Tue 11-10; the one-tap
 row vanished after the first 5 g and could log nothing else). The Creatine row on Today now stays until the day's

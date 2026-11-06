@@ -118,7 +118,7 @@ export const BLOCKS = {
   strength_a: {
     name: 'Strength A', summary: 'Chin-ups, split squats, push-ups, rows, curls', minutes: 50, xpSkills: ['strength', 'grip'],
     steps: [
-      step.rest(180, 'Rest 3 min after the Fab Five'),
+      step.rest(180, 'Rest 3 min after the Fab Five', { after: 'gates', within: 15 }),
       ...strengthWarmup,
       ...sets(3, i => step.set('chin_up', `Chin-ups, set ${i}`, { note: PULL_RULE, modes: ['full', 'negative'], set_no: i, cue: 'Dead hang to chin over the bar. Control the way down.' }), 120),
       ...sides(3, 'bss', 'Bulgarian split squats, 3 sec down', 30, [90, 'Rest 90 sec'], { cue: 'Front shin near vertical. Push through the front heel.' }),
@@ -133,7 +133,7 @@ export const BLOCKS = {
   strength_b: {
     name: 'Strength B', summary: 'Pull-ups, single-leg RDLs, goblet squats, paused push-ups, curls', minutes: 50, xpSkills: ['strength', 'grip'],
     steps: [
-      step.rest(180, 'Rest 3 min after the Fab Five'),
+      step.rest(180, 'Rest 3 min after the Fab Five', { after: 'gates', within: 15 }),
       ...strengthWarmup,
       ...sets(3, i => step.set('neutral_pullup', `Neutral-grip pull-ups, set ${i}`, { note: PULL_RULE, modes: ['full', 'negative'], set_no: i, cue: 'Palms facing each other. Dead hang to chin over the bar.' }), 120),
       ...sides(3, 'sl_rdl', 'Single-leg RDL, weight in opposite hand', 30, [90, 'Rest 90 sec'], { cue: 'Hips back, flat back, slight knee bend. Keep the hips square.' }),

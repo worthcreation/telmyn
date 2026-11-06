@@ -4,7 +4,9 @@
 export const step = {
   do: (text, o = {}) => ({ kind: 'do', text, ...o }),
   timed: (text, sec, o = {}) => ({ kind: 'timed', text, sec, ...o }),
-  rest: (sec, text) => ({ kind: 'rest', sec, text: text || `Rest ${sec >= 60 && sec % 60 === 0 ? sec / 60 + ' min' : sec + ' sec'}` }),
+  // o.after and o.within: a rest that only applies when that block finished within that many minutes (the rest
+  // after the Fab Five, pointless when the routine comes hours later; Ross, 2026-11-05). log.js stepApplies decides.
+  rest: (sec, text, o = {}) => ({ kind: 'rest', sec, text: text || `Rest ${sec >= 60 && sec % 60 === 0 ? sec / 60 + ' min' : sec + ' sec'}`, ...o }),
   set: (exercise, text, o = {}) => ({ kind: 'set', exercise, text, log: o.log || 'reps', ...o }),
 };
 
