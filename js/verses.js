@@ -1,4 +1,5 @@
-// Daily verse: theme by weekday, rotating one verse per week per theme (NKJV).
+// Daily verse: theme by weekday, rotating one verse per week per theme (NKJV). Weeks run Sunday to Saturday, so a
+// Sunday takes the verse of the week it opens (program/index.js weekAndDay).
 // Verse text comes live from Bible Gateway through the Telmyn API (scripture.js) in the version Ross picks,
 // and is cached on the phone. Nothing is typed from memory. TEXT below stays empty unless a checked text is added.
 import { weekday } from './clock.js';

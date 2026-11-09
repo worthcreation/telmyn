@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.31.0 (2026-11-09)
+Weeks run Sunday to Saturday (Ross: Sunday is the first day of the week, everywhere). One rule in clock.js
+(WEEK_START, weekStart) now sets the program's week numbers, the verse rotation and Progress. Progress shows Sunday
+first, the title reads Week of the Sunday, and every bar, tile and breakdown covers Sunday to Saturday. Week 1 is the
+week the program started in (Tue 10-27 to Sat 10-31); each Sunday opens the next week, so Sun 11-08 is Week 3, Day 13.
+A Sunday takes the verse of the week it opens: Sun 11-15 (Week 4) is Hebrews 12:2. Past Sundays with no saved
+reference show their new week's verse.
+
 ## 0.30.1 (2026-11-06)
 The 3 min rest after the Fab Five shows only when the Fab Five finished within the last 15 minutes (Ross: on 11-05
 Strength B opened on it at 16:06, eight hours after the Fab Five). A rest step can name the block it follows and a

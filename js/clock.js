@@ -28,6 +28,10 @@ export const addDays = (iso, n) => { const d = parseISO(iso); d.setDate(d.getDat
 export const daysBetween = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 86400000);
 export const weekday = iso => parseISO(iso).getDay(); // 0 Sun .. 6 Sat
 export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// Weeks run Sunday to Saturday (Ross, 2026-11-09). The one rule for where a week starts: program week numbers,
+// the verse rotation and Progress all count weeks from weekStart.
+export const WEEK_START = 0;
+export const weekStart = iso => addDays(iso, -((weekday(iso) - WEEK_START + 7) % 7));
 // A date for people: dayLabel('2026-10-31') = "Sat, Oct 31"; long: "Saturday, Oct 31"; year: "Sat, Oct 31, 2026".
 export const dayLabel = (iso, { long = false, year = false } = {}) => parseISO(iso).toLocaleDateString('en-US', { weekday: long ? 'long' : 'short', month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}) });
 // The time of day of an ISO timestamp ("06:45"), or '' for none.

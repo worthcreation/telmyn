@@ -1,10 +1,10 @@
 // Picks the program version in effect for a date and builds that day's plan.
 import * as v1_1 from './v1_1.js';
-import { weekday, daysBetween } from '../clock.js';
+import { weekday, daysBetween, weekStart } from '../clock.js';
 import { RULES, onDay } from '../reminder-rules.js';
 
 export const PROGRAMS = [
-  { version: 'v1.1', effective: '2026-10-27', weekOneMonday: '2026-10-26', data: v1_1 },
+  { version: 'v1.1', effective: '2026-10-27', data: v1_1 },
 ];
 
 export function programFor(iso) {
@@ -12,11 +12,12 @@ export function programFor(iso) {
   return p;
 }
 
+// Week 1 is the Sunday-to-Saturday week the program started in (clock.js weekStart); Day 1 is the start date.
 export function weekAndDay(iso) {
   const p = programFor(iso);
   return {
     version: p.version,
-    week: Math.floor(daysBetween(p.weekOneMonday, iso) / 7) + 1,
+    week: Math.floor(daysBetween(weekStart(p.effective), iso) / 7) + 1,
     day: daysBetween(p.effective, iso) + 1,
   };
 }

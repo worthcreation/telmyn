@@ -6,7 +6,7 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 | File | Owns |
 |---|---|
 | main.js | Boot: open storage, load today, start the shell, updates (Update Ready), reminders, cloud copy |
-| clock.js | Time. now(), isoDate, hhmm, atTime, dayLabel, addDays, weekday. Fake clock in the test app |
+| clock.js | Time. now(), isoDate, hhmm, atTime, dayLabel, addDays, weekday, weekStart (weeks run Sunday to Saturday). Fake clock in the test app |
 | db.js | IndexedDB stores and migrations (DB_VERSION), backups (exportAll, importAll) |
 | schema.js | The day's fields (DAY_FIELDS: form, import, export), FLUID_KINDS, cleanNumber |
 | log.js | What happened: every query over events, sets and fluids (grip breaks, leg habits, once-a-day habits like creatine, pulls, hangs, rowed, fluids), and how a set compares with the same set last time |

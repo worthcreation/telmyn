@@ -1,6 +1,7 @@
 // Runs in the browser (tests/index.html) and in Node (node tests/tests.js).
 import { parseHandoff, buildHandoff } from '../js/handoff.js';
 import { verseFor } from '../js/verses.js';
+import { weekStart } from '../js/clock.js';
 import { planFor, weekAndDay, nextBlock, dailyHabits, LEG_HABITS } from '../js/program/index.js';
 import { cleanNumber, blankDay } from '../js/schema.js';
 import { fluidTotals, rowTotals, versusLast, sameSetLast, lastSessionOf } from '../js/log.js';
@@ -130,11 +131,14 @@ INSTRUCTION UPDATES: applied in full on 2026-10-27.`;
 
 group('Program');
 test('week 1 day 1 on start date', () => eq(weekAndDay('2026-10-27'), { version: 'v1.1', week: 1, day: 1 }));
-test('next Monday is week 2', () => eq(weekAndDay('2026-11-02').week, 2));
+test('weeks start on Sunday: Sat 10-31 is week 1, Sun 11-01 is week 2', () => eq([weekAndDay('2026-10-31').week, weekAndDay('2026-11-01').week, weekAndDay('2026-11-02').week], [1, 2, 2]));
+test('Sun 11-08 opens week 3 (day 13), Mon 11-09 is week 3 day 14', () => eq([weekAndDay('2026-11-08'), weekAndDay('2026-11-09').week], [{ version: 'v1.1', week: 3, day: 13 }, 3]));
+test('weekStart is the Sunday of the week', () => eq(['2026-11-08', '2026-11-09', '2026-11-14'].map(weekStart), ['2026-11-08', '2026-11-08', '2026-11-08']));
 group('Verses');
 test('Tue week 1 verse is Galatians 6:9', () => eq(verseFor('2026-10-27').ref, 'Galatians 6:9'));
 test('Wed week 1 verse is James 1:5 (Wisdom)', () => { const v = verseFor('2026-10-28'); eq([v.ref, v.theme], ['James 1:5', 'Wisdom']); });
 test('Tue week 2 rotates to James 1:12', () => eq(verseFor('2026-11-03').ref, 'James 1:12'));
+test('a Sunday takes the verse of the week it opens: Sun 11-15 (week 4) is Hebrews 12:2', () => eq(verseFor('2026-11-15').ref, 'Hebrews 12:2'));
 group('Program');
 test('Tue plan is v1.1 Row, hangs before row, stretch at 06:30', () => { const p = planFor('2026-10-27'); eq([p.version, p.typeLabel, p.blocks.map(b => b.id), p.blocks[0].time], ['v1.1', 'Row', ['stretch', 'gates', 'hangs', 'row', 'evening_legs'], '06:30']); });
 test('Strength day keeps hangs after the routine', () => eq(planFor('2026-11-02').blocks.map(b => b.id), ['stretch', 'gates', 'strength_a', 'hangs', 'evening_legs']));

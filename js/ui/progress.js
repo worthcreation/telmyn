@@ -9,13 +9,12 @@ import { weightList } from './history.js';
 import { fluidOz, rowTotals, pullReps, hangSecs, gripCount } from '../log.js';
 import { state } from '../state.js';
 import { planFor, blockStatus, PROGRAMS } from '../program/index.js';
-import { addDays, weekday, WEEKDAYS } from '../clock.js';
+import { addDays, weekday, weekStart, WEEKDAYS } from '../clock.js';
 
 // Which week shows: 0 is this week, -1 last week. Swiping the day strip moves it (only the strip takes the swipe);
 // coming back to the tab starts at this week again. This listener is added before the shell's, so it runs first.
 let offset = 0, slide = '';
 addEventListener('hashchange', () => { if (location.hash === '#progress') offset = 0; });
-const mondayOf = d => addDays(d, -((weekday(d) + 6) % 7));
 const TITLE = n => n === 0 ? 'This Week' : n === -1 ? 'Last Week' : `${-n} Weeks Ago`;
 
 // A sideways swipe on the strip: past weeks to the right, back toward this week to the left. A swipe never also
@@ -37,12 +36,12 @@ export async function renderProgress(root) {
   const today = state.date;
   const { TARGETS } = state.plan.program.data;
   const start = PROGRAMS[0].effective;
-  const first = mondayOf(start), thisMonday = mondayOf(today);
-  const oldest = -Math.round((Date.parse(thisMonday) - Date.parse(first)) / 6048e5);
+  const first = weekStart(start), thisStart = weekStart(today);
+  const oldest = -Math.round((Date.parse(thisStart) - Date.parse(first)) / 6048e5);
   offset = Math.min(0, Math.max(oldest, offset));
-  const monday = addDays(thisMonday, offset * 7);
-  const dates = Array.from({ length: 7 }, (_, k) => addDays(monday, k));
-  const inWeek = r => r.date >= monday && r.date <= dates[6];
+  const sunday = addDays(thisStart, offset * 7);
+  const dates = Array.from({ length: 7 }, (_, k) => addDays(sunday, k));
+  const inWeek = r => r.date >= sunday && r.date <= dates[6];
   const [days, events, sets, fluids] = await Promise.all([db.all('days'), db.all('events'), db.all('sets'), db.all('fluids')]);
   const dayRec = Object.fromEntries(days.filter(inWeek).map(d => [d.date, d]));
   const ev = events.filter(inWeek), st = sets.filter(inWeek);
@@ -71,7 +70,7 @@ export async function renderProgress(root) {
   });
 
   const past = dates.filter(d => d <= today && d >= start);   // days the program was running
-  const week = area => () => areaSheet(area, monday, dates[6]);
+  const week = area => () => areaSheet(area, sunday, dates[6]);
   const elapsed = Math.max(1, past.length);
   const typeOn = d => planFor(d).typeKey;
   const strengthPlanned = past.filter(d => /strength/.test(typeOn(d))).length;
@@ -96,7 +95,7 @@ export async function renderProgress(root) {
   const nOf = v => v.filter(x => x !== null && x !== undefined).length;
 
   fill(root,
-    h('header', { class: 'top' }, h('p', { class: 'date' }, `Week of ${monday}`), h('h1', { class: 'daytype' }, TITLE(offset))),
+    h('header', { class: 'top' }, h('p', { class: 'date' }, `Week of ${sunday}`), h('h1', { class: 'daytype' }, TITLE(offset))),
     strip,
     h('section', { class: 'stats' },
       bar('Strength', strengthDone, strengthPlanned || null, `${strengthDone}/${strengthPlanned} sessions${pulls.length ? `, best pull set ${Math.max(...pulls)}` : ''}`, week('strength')),
