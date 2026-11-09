@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.31.1 (2026-11-09)
+Windmills are 25 lb in the program (Ross, 2026-11-06), so Gear and a first set start there.
+
 ## 0.31.0 (2026-11-09)
 Weeks run Sunday to Saturday (Ross: Sunday is the first day of the week, everywhere). One rule in clock.js
 (WEEK_START, weekStart) now sets the program's week numbers, the verse rotation and Progress. Progress shows Sunday

@@ -23,7 +23,7 @@ export const EXERCISES = {
   goblet: { name: 'Goblet squats', video: 'https://www.youtube.com/shorts/0Qb98XYiuho', weight_lb: 25 },
   magnet_curl: { name: 'Magnet curls', weight_lb: 20 },     // no standard video (Ross, 2026-10-31: no cues wanted)
   champagne_curl: { name: 'Champagne curls', weight_lb: 20 },
-  windmills: { name: 'Windmills (forearm rotation)', video: 'https://www.youtube.com/watch?v=VV7zsl6LafM', weight_lb: 20 },
+  windmills: { name: 'Windmills (forearm rotation)', video: 'https://www.youtube.com/watch?v=VV7zsl6LafM', weight_lb: 25 },
   row: { name: 'Rowing', video: 'https://www.youtube.com/watch?v=JunqWhTXTJs', alt: { label: 'Common errors', video: 'https://www.youtube.com/watch?v=ura2mFCdvVs' } },
   // Warm-up and cooldown moves (v1.1).
   arm_circles: { name: 'Arm circles' },
