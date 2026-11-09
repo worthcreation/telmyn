@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.32.0 (2026-11-09)
+Lower-body warm-up and cooldown (Ross, 2026-11-09). Strength A and B warm-ups add leg swings (front to back and side to
+side, 10 each leg), and a bodyweight ramp set comes before the first leg set (8 split squats each leg on A, 8
+single-leg RDLs each leg on B; warm-up, not raced). Strength cooldowns add the half-kneeling hip flexor and the figure-4
+glute stretch, 30 sec each side. The row's lunge hip stretch becomes the half-kneeling hip flexor, with clearer cues
+(tuck, squeeze, small shift), plus the figure-4. Ask Doctor Jo videos for both stretches (Ross: use hers when she has
+one). Single-arm rows start at 25 lb (Ross, 2026-11-02).
+
 ## 0.31.1 (2026-11-09)
 Windmills are 25 lb in the program (Ross, 2026-11-06), so Gear and a first set start there.
 

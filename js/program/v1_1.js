@@ -18,7 +18,7 @@ export const EXERCISES = {
   bss: { name: 'Bulgarian split squats', video: 'https://www.youtube.com/shorts/or1frhkjBDc', weight_lb: 25 },
   pushup: { name: 'Push-ups' },
   paused_pushup: { name: 'Paused push-ups' },
-  sa_row: { name: 'Single-arm rows', video: 'https://www.youtube.com/shorts/H8jf3DwlIlo', weight_lb: 20 },
+  sa_row: { name: 'Single-arm rows', video: 'https://www.youtube.com/shorts/H8jf3DwlIlo', weight_lb: 25 },   // 25 lb (Ross, 2026-11-02)
   sl_rdl: { name: 'Single-leg RDL', video: 'https://www.youtube.com/shorts/3Remzb_h59I', weight_lb: 25 },
   goblet: { name: 'Goblet squats', video: 'https://www.youtube.com/shorts/0Qb98XYiuho', weight_lb: 25 },
   magnet_curl: { name: 'Magnet curls', weight_lb: 20 },     // no standard video (Ross, 2026-10-31: no cues wanted)
@@ -32,7 +32,10 @@ export const EXERCISES = {
   lunge_reach: { name: 'Lunge with reach' },
   calf_wall: { name: 'Calf stretch at wall' },
   hamstring: { name: 'Hamstring stretch' },
-  hip_lunge: { name: 'Lunge hip stretch' },
+  // Ross, 2026-11-09: use Ask Doctor Jo's videos when she has one for the move.
+  hip_lunge: { name: 'Half-kneeling hip flexor stretch', video: 'https://www.youtube.com/watch?v=7bRaX6M2nr8' },   // Ask Doctor Jo, the kneeling stretch first
+  figure_four: { name: 'Figure-4 glute stretch', video: 'https://www.youtube.com/watch?v=8oPHrX_oALk' },          // Ask Doctor Jo, the first stretch
+  leg_swings: { name: 'Leg swings' },
   doorway_chest: { name: 'Doorway chest stretch' },
   forearm: { name: 'Forearm stretch', video: 'https://www.youtube.com/watch?v=mLVLLGUbyfU&t=36s' }, // approved by Ross 2026-10-27, starts at 0:36
   toe_touch: { name: 'Toe touch' },
@@ -46,7 +49,9 @@ const C = {
   lungeReach: 'Long lunge, back knee off the floor. Squeeze the back glute and reach that same arm up overhead.',
   calf: 'Back heel down, back knee straight, toes forward. Lean into the wall.',
   hamstring: 'Heel forward on the floor, toes up, knee soft. Hinge at the hips with a flat back until the back of the thigh stretches.',
-  hipLunge: 'Kneel on the back knee, front foot flat. Tuck the pelvis and squeeze the back glute. Stretch is in the front of the back hip.',
+  hipLunge: 'Back knee on a pad, both knees at 90. Tuck the tailbone, squeeze the back glute, stay tall, then shift forward an inch or two. Feel it in the front of the back hip. No arching, no deep lunge.',
+  figureFour: 'On your back, knees bent. Cross one ankle over the other knee. Pull the bottom thigh toward you until the crossed side of the seat stretches. Low back flat.',
+  legSwings: 'Hold the door frame. Easy swings that grow. Stay tall, no twisting.',
   doorway: 'Field goal arms: forearms on each side of the door frame, elbows at shoulder height. Step one foot through and bend that knee until the chest stretches. Ease off if the arm tingles.',
   forearmUp: 'Arm straight, palm up. Gently pull the fingers back.',
   forearmDown: 'Arm straight, palm down. Gently press the hand down.',
@@ -66,9 +71,12 @@ const doorway = step.timed('Doorway chest stretch', 30, { exercise: 'doorway_che
 const PULL_RULE = 'Full range. Stop 1-2 reps short of failure. Under 4 clean reps: 3-5 slow negatives instead.';
 
 const HANG_CUE = 'Shoulders pulled down from the ears, ribs down, arms straight.';
+// Leg swings and a bodyweight ramp set before the first leg set (Ross, 2026-11-09).
 const strengthWarmup = phase('Warm-up', [
   step.timed('Arm circles forward', 30, { exercise: 'arm_circles', cue: C.armCircles }),
   step.timed('Arm circles backward', 30, { exercise: 'arm_circles', cue: C.armCircles, setup: 0 }),
+  step.do('Leg swings front to back, 10 each leg', { exercise: 'leg_swings', cue: C.legSwings }),
+  step.do('Leg swings side to side, 10 each leg', { exercise: 'leg_swings', cue: C.legSwings }),
   step.set('scap_pullup', 'Scapular pull-ups, 10 reps', { cue: 'Arms straight. Pull the shoulder blades down, then let them rise.' }),
   step.rest(30),
   step.set('dead_hang', 'Active hang, 15 sec', { log: 'sec', sec: 15, set_no: 1, setup: 5, cue: HANG_CUE }),
@@ -77,9 +85,16 @@ const strengthWarmup = phase('Warm-up', [
   step.rest(60),
 ]);
 
+const hipHolds = [
+  ...eachSide('Hip flexor stretch, kneeling', 30, { exercise: 'hip_lunge', cue: C.hipLunge }, 'knee down'),
+  ...eachSide('Figure-4 glute stretch', 30, { exercise: 'figure_four', cue: C.figureFour }, 'ankle crossed'),
+];
+const ramp = (exercise, text, cue) => phase('Warm-up', [step.do(text, { exercise, cue })]);
+
 const strengthCooldown = phase('Cooldown', [
   ...eachSide('Calf stretch', 30, { exercise: 'calf_wall', cue: C.calf }, 'leg'),
   step.timed('Hamstring stretch', 30, { exercise: 'hamstring', cue: C.hamstring }),
+  ...hipHolds,
   doorway,
   ...eachSide('Forearm stretch', 30, { exercise: 'forearm', cue: C.forearmUp }, 'arm'),
 ]);
@@ -121,6 +136,7 @@ export const BLOCKS = {
       step.rest(180, 'Rest 3 min after the Fab Five', { after: 'gates', within: 15 }),
       ...strengthWarmup,
       ...sets(3, i => step.set('chin_up', `Chin-ups, set ${i}`, { note: PULL_RULE, modes: ['full', 'negative'], set_no: i, cue: 'Dead hang to chin over the bar. Control the way down.' }), 120),
+      ...ramp('bss', 'Ramp set: 8 bodyweight split squats each leg', 'No weight, back foot on the bench. Easy, smooth reps to wake up the legs.'),
       ...sides(3, 'bss', 'Bulgarian split squats, 3 sec down', 30, [90, 'Rest 90 sec'], { cue: 'Front shin near vertical. Push through the front heel.' }),
       ...sets(3, i => step.set('pushup', `Push-ups, set ${i}, 3 sec down, near failure`, { set_no: i, cue: 'Body straight as a plank. Chest close to the floor.' }), 90),
       ...sides(3, 'sa_row', 'Single-arm rows, 3 sec down', 0, [90, 'Rest 60-90 sec'], { cue: 'Flat back. Pull toward the hip, squeeze, lower slowly.' }, 'arm'),
@@ -136,6 +152,7 @@ export const BLOCKS = {
       step.rest(180, 'Rest 3 min after the Fab Five', { after: 'gates', within: 15 }),
       ...strengthWarmup,
       ...sets(3, i => step.set('neutral_pullup', `Neutral-grip pull-ups, set ${i}`, { note: PULL_RULE, modes: ['full', 'negative'], set_no: i, cue: 'Palms facing each other. Dead hang to chin over the bar.' }), 120),
+      ...ramp('sl_rdl', 'Ramp set: 8 bodyweight single-leg RDLs each leg', 'No weight. Slow hinge, hips square, find your balance.'),
       ...sides(3, 'sl_rdl', 'Single-leg RDL, weight in opposite hand', 30, [90, 'Rest 90 sec'], { cue: 'Hips back, flat back, slight knee bend. Keep the hips square.' }),
       ...sets(3, i => step.set('goblet', `Goblet squats, set ${i}, 2 sec pause at bottom`, { set_no: i, cue: 'Weight close to the chest. Sit between the heels.' }), 90),
       ...sets(3, i => step.set('paused_pushup', `Paused push-ups, set ${i}, 2 sec at bottom`, { set_no: i, cue: 'Pause just off the floor and stay tight.' }), 90),
@@ -165,7 +182,7 @@ export const BLOCKS = {
       ...phase('Cooldown', [
         ...eachSide('Calf stretch', 30, { exercise: 'calf_wall', cue: C.calf }, 'leg'),
         step.timed('Hamstring stretch', 30, { exercise: 'hamstring', cue: C.hamstring }),
-        ...eachSide('Lunge hip stretch', 30, { exercise: 'hip_lunge', cue: C.hipLunge }),
+        ...hipHolds,
         doorway,
         ...eachSide('Forearm stretch', 30, { exercise: 'forearm', cue: C.forearmUp }, 'arm'),
       ]),
