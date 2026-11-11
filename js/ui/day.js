@@ -39,7 +39,7 @@ export function daySheet(date = state.date) {
     fill(body,
       h('div', { class: 'dv-nav' },
         h('button', { class: 'icon-btn', 'aria-label': 'Previous day', disabled: d <= PROGRAMS[0].effective, onclick: () => { d = addDays(d, -1); draw(); } }, '‹'),
-        h('div', { class: 'dv-title' }, h('b', {}, dayLabel(d, { long: true })), h('span', {}, `${plan.typeLabel}, Week ${plan.week}, Day ${plan.day}`)),
+        h('div', { class: 'dv-title' }, h('b', {}, dayLabel(d, { long: true })), h('span', {}, `${plan.typeLabel}, Week ${plan.week}, Day ${plan.day}${plan.pause ? ', paused' : ''}`)),
         h('button', { class: 'icon-btn', 'aria-label': 'Next day', disabled: d >= state.date, onclick: () => { d = addDays(d, 1); draw(); } }, '›')),
       circles,
       h('section', { class: 'stats' },

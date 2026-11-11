@@ -248,6 +248,31 @@ test('creatine: a dose due at each time until taken, 15 min follow-ups, quiet af
   eq(kinds({ creatine: { date: '2026-11-11', taken: 0, times: 1, say: '5 g' } }, '2026-11-11T15:31:00Z')[0].body.startsWith('Today\u2019s dose, 5 g'), true);
   eq(kinds({}, '2026-11-05T15:31:00Z').length, 0);                                                     // phone never reported creatine
 });
+test('a pause quiets its reminder kinds on its dates only', async () => {
+  const { due } = await import('../js/reminder-rules.js');
+  const t = s => Date.parse(s), off = 360;
+  const pause = [{ from: '2026-11-11', to: '2026-11-13', kinds: ['grip', 'pumps', 'calf'] }];
+  const kinds = (at, st = {}) => due({ offset: off, state: { weight: at.slice(0, 10), ...st } }, t(at)).map(d => d.kind).sort().join();
+  eq(kinds('2026-11-12T16:00:00Z'), 'grip,pumps');                       // Thu 10:00, no pause: both due
+  eq(kinds('2026-11-12T16:00:00Z', { pause }), '');                      // paused
+  eq(kinds('2026-11-16T16:00:00Z', { pause }), 'grip,pumps');            // Mon after: back
+  eq(due({ offset: off, state: { pause: [{ from: '2026-11-12', to: '2026-11-12', kinds: ['weight'] }] } }, t('2026-11-12T13:00:00Z')).length, 0);
+});
+group('Program');
+test('a pause takes its blocks out of the day and marks the cloud copy', async () => {
+  const { setPauses } = await import('../js/pause.js');
+  setPauses([{ id: 'p1', preset: 'light', from: '2026-11-11', to: '2026-11-13', reason: 'tattoo healing', off: ['routine', 'grip', 'legs'] }]);
+  try {
+    const thu = planFor('2026-11-12');
+    eq(thu.blocks.map(b => b.id), ['stretch', 'gates', 'hangs', 'evening_legs']);
+    eq([thu.hourly, thu.pause.reason], [null, 'tattoo healing']);
+    eq(planFor('2026-11-14').blocks.map(b => b.id).includes('row'), true);   // over: the row is back
+    const text = buildHandoff({ day: { date: '2026-11-12' }, sets: [], events: [], fluids: [] });
+    eq(text.includes('ROUTINE: Strength B | paused (Light: tattoo healing)'), true);
+    eq(buildHandoff({ day: { date: '2026-11-11' }, sets: [], events: [], fluids: [] }).includes('ROUTINE: Off | none'), true);
+  } finally { setPauses([]); }
+});
+group('Reminders');
 test('weekends: calf raises hourly with the amount, no pumps or grip', async () => {
   const { due } = await import('../js/reminder-rules.js');
   const t = s => Date.parse(s);

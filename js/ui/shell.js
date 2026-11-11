@@ -39,17 +39,21 @@ async function pastCounts() {
   return pastCache.counts;
 }
 // The fill and words for a grip or leg pill: toward your average (plain fill), then toward your best (green).
-const paceAttrs = (n, counts, lvl) => {
+// A paused habit (js/pause.js) keeps its pill, quiet and dimmed, still able to log one.
+const paceAttrs = (n, counts, lvl, paused = false) => {
   const t = towardBest(n, counts);
+  if (paused) return { cls: 'pill paused', style: `--p:${t.p}`, label: ' paused' };
   return { cls: `pill${t.stage === 'best' || t.stage === 'top' ? ' met' : ''}${lvl ? ' behind due' : ''}`, style: `--p:${t.p}`, label: t.label };
 };
+const pausedNow = key => !!state.plan.pause?.off.includes(key);
 
 function gripPill(day, rerender, past) {
   const hist = hourlyHistory(day, state.events);
   const np = nextPalms(hist) || 'down';
   const arrow = np === 'up' ? '↑' : '↓';
-  const lvl = overdueLevel('grip', gripBreaks(state.events).pop()?.at);
-  const a = paceAttrs(hist.length, past.grip, lvl);
+  const quiet = pausedNow('grip');
+  const lvl = quiet ? 0 : overdueLevel('grip', gripBreaks(state.events).pop()?.at);
+  const a = paceAttrs(hist.length, past.grip, lvl, quiet);
   return holdable(h('button', { class: a.cls, style: a.style, 'data-due': lvl || null, 'aria-label': `Grip break, ${hist.length} today${a.label}. Tap to log one, palms ${np}.`, onclick: async () => {
     const { e, n, palms } = await logGripBreak();
     rerender();
@@ -66,8 +70,9 @@ function legPill(rerender, past) {
   const leg = legToday();
   if (!leg) return null;
   const list = habitSets(state.events, leg.key);
-  const lvl = overdueLevel(leg.remind, list[list.length - 1]?.at);
-  const a = paceAttrs(list.length, past[leg.key] || [], lvl);
+  const quiet = pausedNow('legs');
+  const lvl = quiet ? 0 : overdueLevel(leg.remind, list[list.length - 1]?.at);
+  const a = paceAttrs(list.length, past[leg.key] || [], lvl, quiet);
   return holdable(h('button', { class: a.cls, style: a.style, 'data-due': lvl || null, 'aria-label': `${leg.name}, ${list.length} today${a.label}. Tap to log a set.`, onclick: async () => {
     const e = await addEvent('habit', { habit: leg.key });
     rerender();
@@ -108,7 +113,7 @@ export async function renderShell(root) {
     h('nav', { class: 'status', 'aria-label': 'Today at a glance' },
       pill('Fluids', fluids, TARGETS.fluids_oz[0], 'oz', fluidSheet),
       pill('Protein', day.protein_g, TARGETS.protein_g[0], 'g', proteinSheet),
-      plan.hourly ? gripPill(day, rerender, past) : null,
+      plan.hourly || (plan.workday && pausedNow('grip')) ? gripPill(day, rerender, past) : null,
       legPill(rerender, past)),
     view,
     tabBar(tab.id));

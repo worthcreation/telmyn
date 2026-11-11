@@ -12,6 +12,8 @@ import { runBlock } from './runner.js';
 import { weightSheet, lastWeight } from './forms.js';
 import { verseSheet } from './verse.js';
 import { getVersion, fetchVerse } from '../scripture.js';
+import { pauseSheet } from './pause.js';
+import { pauseName } from '../pause.js';
 
 
 // Day ring: blocks closed out of the day's blocks, drawn around the count.
@@ -49,7 +51,8 @@ export async function renderToday(root, rerender) {
 
   // Daily habits (creatine): each tap logs one dose; the row stays, showing doses taken, until the day's doses are
   // all taken, then it joins the done line with the day's grams.
-  const daily = dailyHabits(state.date);
+  const pause = plan.pause;
+  const daily = dailyHabits(state.date).filter(x => !pause?.off.includes(x.key));
   const taken = daily.filter(x => habitMet(day, events, x)), toTake = daily.filter(x => !habitMet(day, events, x));
   const take = x => async () => {
     const n = takenDoses(events, x.key).length + 1;
@@ -60,7 +63,14 @@ export async function renderToday(root, rerender) {
   const doneNames = [...closed.map(b => b.name + ({ skip: ' (skipped)', partial: ' (partial)' }[status(b)] || '')), ...taken.map(x => `${x.name} ${takenGrams(day, events, x)} g`)];
   const doseWhen = x => { const n = takenDoses(events, x.key).length; return x.times > 1 ? `${x.amount}, ${n} of ${x.times} taken` : `${x.amount}, tap when taken`; };
 
+  // A pause shows as the first line of the day: what it is and when it ends. Tap to change or end it.
+  const pauseRow = pause ? h('li', {}, h('button', { class: 'pause-row', onclick: () => pauseSheet(rerender), 'aria-label': `${pauseName(pause)}, until ${dayLabel(pause.to)}. Tap to change or end it.` },
+    h('span', { class: 'dl-mark' }, '‖'),
+    h('span', { class: 'dl-name' }, pauseName(pause)),
+    h('span', { class: 'dl-when' }, `until ${dayLabel(pause.to)}`))) : null;
+
   const dayList = h('ol', { class: 'daylist' },
+    pauseRow,
     doneNames.length ? h('li', { class: 'closed-summary' }, h('span', { class: 'dl-mark' }, '✓'),
       h('span', { class: 'dl-name' }, doneNames.join(', '))) : null,
     toTake.map(x => h('li', {},
@@ -111,7 +121,7 @@ export async function renderToday(root, rerender) {
   // today's weight is logged (it floats, so nothing moves when it goes). Hold it for the last 7 readings.
   const { date: weighedOn } = await lastWeight();
   const weightAge = weighedOn ? daysBetween(weighedOn, state.date) : null;
-  const weigh = weightAge === 0 ? null : holdable(h('button', { class: 'weigh', onclick: () => weightSheet(rerender), 'aria-label': 'Log today’s weight' }, 'Weight'), weightList);
+  const weigh = weightAge === 0 || pause?.off.includes('weight') ? null : holdable(h('button', { class: 'weigh', onclick: () => weightSheet(rerender), 'aria-label': 'Log today’s weight' }, 'Weight'), weightList);
   if (weigh) dueMark(weigh, weightLevel(weightAge));
 
   // Two columns, each centered on its own. Left: what's next and what it involves, and the button named for it.

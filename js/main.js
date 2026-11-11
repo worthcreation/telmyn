@@ -7,6 +7,7 @@ import { APP_VERSION } from './version.js';
 import { loadPicks } from './ui/media.js';
 import { startReminders } from './remind.js';
 import { startSync, takeLinkKey, setSyncKey } from './sync.js';
+import { loadPauses } from './pause.js';
 
 const root = document.getElementById('app');
 
@@ -45,6 +46,7 @@ async function boot() {
   else indexedDB.deleteDatabase?.('telmyn-test');
   navigator.storage?.persist?.();
   await loadPicks();
+  await loadPauses();
   onChange(() => { if (!document.querySelector('.layer .log-form')) renderShell(root); });
   startShell(root);
   await load(isoDate());

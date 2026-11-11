@@ -13,6 +13,7 @@ import { gripBreaks, habitSets, takenGrams } from './log.js';
 import { API_BASE } from './config.js';
 import { SITE } from './site.js';
 import { now } from './clock.js';
+import { pauseState } from './pause.js';
 import { toast, chime } from './ui/dom.js';
 
 const sent = {};   // kind -> last time we nudged (ms), for the in-app checks
@@ -55,6 +56,7 @@ function lastTimes() {
     weight: state.day.weight_lb !== null && state.day.weight_lb !== undefined ? state.date : undefined,
     say: { pumps: H.ankle_pumps?.amount, calf: H.calf_raises?.amount },
     creatine: creatineState(),
+    pause: pauseState(state.date),
   };
 }
 export async function syncPush(on) {

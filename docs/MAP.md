@@ -14,6 +14,7 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 | program/index.js | Which program is in effect, planFor(date) (blocks in order, day type, week and day), blockStatus, legHabit, dailyHabits (creatine, with the day's dose) |
 | program/v1_1.js | The program content: EXERCISES (videos, weights), BLOCKS (steps), DAY_TYPES, SCHEDULE, HABITS, TARGETS |
 | program/steps.js | Step builders used by the program file (do, timed, rest, set, sets, sides, phase) |
+| pause.js | Pauses (light days): what can go off, presets, pauseFor(date), saving and ending; planFor, Today, reminders and the cloud copy read it |
 | reminder-rules.js | Reminder days, hours, intervals, follow-ups; due(). Bundled into the Worker too |
 | remind.js | Reminders on the phone: permission, push subscription, state reports to the Worker, in-app checks |
 | status.js | Judging the day: pace (fluids, protein), overdue (grip, pumps, calf), weight age, toward-best fills |
@@ -50,6 +51,7 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 | journal.js | The journal (verse notes by day) |
 | gear.js | Gear tab (dumbbell use comes from the program's weights) |
 | me.js, data.js | Me tab; backups, restore, reading speed, reminders, cloud copy, test controls |
+| pause.js | The pause sheet (from Me, or the pause line on Today) |
 | fx.js | The burst when a block is done |
 
 ## Everything else
@@ -75,6 +77,7 @@ Read this first in every build chat. One line per file: what it owns. Then "to c
 - How a screen looks: css/app.css with a token from css/tokens.css; a new shared piece goes in ui/dom.js
 - A notification's text or pictures: reminder-rules.js (text), sw.js (which picture), icons/ (icon-* and badge-*)
 - A new verse: verses.js and data/original.json (key words, each Greek key word with its Hebrew behind it; the tests check every bank verse has them), then `python3 tools/lexicon.py` for its word pages
+- What a pause can switch off, or its presets: pause.js (PAUSE_ITEMS, PRESETS, PAUSE_KINDS for reminders)
 - The cloud copy's lines: handoff.js buildHandoff (and the handoff template in the Project instructions)
 
 ## Build steps

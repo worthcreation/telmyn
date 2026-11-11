@@ -4,6 +4,7 @@ import { isoDate, atTime } from './clock.js';
 import { cleanNumber, blankDay } from './schema.js';
 import { fluidTotals, rowTotals, gripBreaks, habitSets, doneEvent, takenGrams } from './log.js';
 import { planFor, blockStatus, dailyHabits } from './program/index.js';
+import { pauseName } from './pause.js';
 import { verseFor } from './verses.js';
 
 const KEY = /^\s*([A-Z][A-Z_ ]*[A-Z]):\s?(.*)$/;
@@ -183,6 +184,10 @@ export function buildHandoff({ day, sets, events, fluids }) {
   const doneAt = id => doneEvent(events, id)?.done_at;
   const blockTimes = plan.blocks.filter(b => doneAt(b.id)).map(b => `${b.name} ${atTime(doneAt(b.id))}`).join(' | ');
   const routine = plan.blocks.find(b => !['stretch', 'gates', 'hangs', 'evening_legs'].includes(b.id));
+  // A pause (js/pause.js): blocks it switched off read "paused" instead of blank or pending.
+  const pz = plan.pause, offK = k => !!pz?.off.includes(k);
+  const pausedWord = pz ? `paused (${pauseName(pz)})` : '';
+  const hadRoutine = !!plan.program.data.DAY_TYPES[plan.typeKey]?.routine;
   const creatine = dailyHabits(day.date).find(x => x.key === 'creatine') || { key: 'creatine', grams: 5, times: 1 };
 
   const lines = [
@@ -191,9 +196,9 @@ export function buildHandoff({ day, sets, events, fluids }) {
     `PROGRAM: ${plan.version} | Week ${plan.week}, Day ${plan.day} | ${plan.typeLabel}`,
     `SLEEP: bed ${v(day.bed_time)} | wake ${v(day.wake_time)}`,
     `WEIGHT_LB: ${v(day.weight_lb)}`,
-    `STRETCH: ${statusWord(blockStatus('stretch', events), day.stretch_status)}`,
-    `FAB_FIVE: ${statusWord(blockStatus('gates', events), day.fab_five_status)}`,
-    `ROUTINE: ${plan.typeLabel} | ${routine ? statusWord(blockStatus(routine.id, events), day.routine_status) || 'pending' : 'none'}`,
+    `STRETCH: ${statusWord(blockStatus('stretch', events), day.stretch_status) || (offK('stretch') ? 'paused' : '')}`,
+    `FAB_FIVE: ${statusWord(blockStatus('gates', events), day.fab_five_status) || (offK('gates') ? 'paused' : '')}`,
+    `ROUTINE: ${plan.typeLabel} | ${routine ? statusWord(blockStatus(routine.id, events), day.routine_status) || 'pending' : hadRoutine && offK('routine') ? pausedWord : 'none'}`,
     `  PULLUPS: ${pull.length ? `${joinSets(pull, 'reps')} | ${pullEx === 'chin_up' ? 'chin-up' : 'neutral'} | ${pullMode}` : ''}`,
     `  LEGS: ${legEx ? `${legName} | ${perLeg(of(legEx))} (per leg)${lbText(of(legEx))}` : ''}`,
     ...EXTRA.map(extraLine),

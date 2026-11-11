@@ -157,8 +157,12 @@ export async function logSheet(date = state.date, group = null) {
     const id = `fld-${f.key}`;
     const save = raw => ctx.save(f.key, f.type === 'number' ? cleanNumber(raw) : (raw === '' ? null : raw));
     let input;
+    // A day with fluid entries: this field is what the entries do not hold (drinks reported later, or carried in
+    // from a handoff), so a past day can be completed. The day's total, with the entries, shows under it.
     if (f.derivedFrom && ctx.fluids.length) {
-      return h('div', { class: 'field' }, h('span', { class: 'lbl' }, `${f.label} (${f.unit})`), h('span', { class: 'derived' }, `${fluidTotals(ctx.rec, ctx.fluids)[f.key] ?? ''} (imported total plus fluid entries)`));
+      return h('div', { class: 'field' }, h('label', { class: 'lbl', for: id }, `${f.label} not in entries (${f.unit})`),
+        h('input', { id, type: 'number', inputmode: 'decimal', step: f.step || null, value: val ?? '', onchange: async e => { await save(e.target.value); draw(); } }),
+        h('span', { class: 'derived' }, `Day total ${fluidTotals(ctx.rec, ctx.fluids)[f.key] ?? 0} ${f.unit}, with the entries`));
     }
     if (f.type === 'choice') {
       input = h('div', { class: 'seg' }, f.options.map(o => h('button', { class: val === o ? 'on' : '', onclick: async () => { await save(ctx.rec[f.key] === o ? '' : o); draw(); } }, o)));

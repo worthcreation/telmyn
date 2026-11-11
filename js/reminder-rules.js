@@ -31,6 +31,7 @@ const ago = min => (min >= 60 && min % 60 === 0 ? (min === 60 ? 'an hour' : `${m
 
 // What is due right now. rec: { offset, state: { grip, pumps, calf (ms of the last one), weight (date logged),
 // say: { pumps, calf } (the amounts, e.g. "30 per foot") }, sent: { kind: ms of the last reminder } }.
+// pause: [{ from, to, kinds }] quiets those kinds on those dates.
 // A kind is due once its interval has passed since the last one logged (or since the window opened); after that
 // it repeats every FOLLOW_UP_MIN until something is logged for it.
 export function due(rec, now = Date.now()) {
@@ -38,9 +39,11 @@ export function due(rec, now = Date.now()) {
   const L = local(now, rec.offset || 0);
   const s = rec.state || {}, sent = rec.sent || {}, say = s.say || {};
   const follow = FOLLOW_UP_MIN * 60000;
+  // A pause the phone reported ({ from, to, kinds }) quiets its kinds on its dates (js/pause.js).
+  const quiet = new Set((s.pause || []).filter(p => L.date >= p.from && L.date <= p.to).flatMap(p => p.kinds || []));
   for (const kind of TIMED) {
     const r = RULES[kind];
-    if (!onDay(r.days, L.day) || L.hm < r.from || L.hm >= r.to) continue;
+    if (quiet.has(kind) || !onDay(r.days, L.day) || L.hm < r.from || L.hm >= r.to) continue;
     const opened = L.at(r.from), base = Math.max(s[kind] || 0, opened);
     if (now - base < r.every * 60000) continue;
     const last = typeof sent[kind] === 'number' ? sent[kind] : 0;
@@ -54,7 +57,7 @@ export function due(rec, now = Date.now()) {
   // Creatine: s.creatine = { date, taken, times, say } from the phone (doses taken today, doses the day holds, the
   // dose text). A day the phone has not reported yet counts as none taken.
   const c = RULES.creatine, cs = s.creatine;
-  if (cs && cs.times > 0 && L.hm < c.followTo) {
+  if (cs && cs.times > 0 && L.hm < c.followTo && !quiet.has('creatine')) {
     const taken = cs.date === L.date ? cs.taken || 0 : 0;
     const dueAt = c.at.slice(0, cs.times).filter(t => L.hm >= t).length;   // doses whose time has come
     if (taken < dueAt) {
@@ -68,7 +71,7 @@ export function due(rec, now = Date.now()) {
     }
   }
   const w = RULES.weight;
-  if (L.hm >= w.from && s.weight !== L.date) {
+  if (L.hm >= w.from && s.weight !== L.date && !quiet.has('weight')) {
     // Older records kept the date of the reminder instead of its time.
     const last = typeof sent.weight === 'number' ? sent.weight : sent.weight === L.date ? L.at(w.from) : 0;
     const today = last >= L.at('00:00');

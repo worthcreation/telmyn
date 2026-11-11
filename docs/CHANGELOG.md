@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.33.0 (2026-11-11)
+Pauses (Ross, 2026-11-11). Me has Pause or light days: pick Light, Sick or Travel, the dates, what stays on (morning
+stretch, Fab Five, routine, dead hangs, legs up, grip breaks, pumps and calf raises, creatine, weight) and a reason.
+Each preset remembers its last choices. On paused days the blocks that went off leave Today and the day ring, a
+paused habit's pill stays quiet and dimmed (still tappable), creatine and weight leave Today when paused, and the
+Worker sends no reminder for anything paused. Today's list opens with the pause and its end date (tap to change or
+end it). Progress counts a paused block as not planned, never missed, and dims the day's circle; the Day log says
+paused. The cloud copy reads "paused" for paused stretch and Fab Five, and the routine line names the pause, such as
+ROUTINE: Strength B | paused (Light: tattoo healing). One pause on any date; End now brings today back.
+Day log: on a day with fluid entries, Water and Other drinks now take what the entries do not hold (drinks reported
+later), with the day's total under each, so a past day can be completed.
+
 ## 0.32.0 (2026-11-09)
 Lower-body warm-up and cooldown (Ross, 2026-11-09). Strength A and B warm-ups add leg swings (front to back and side to
 side, 10 each leg), and a bodyweight ramp set comes before the first leg set (8 split squats each leg on A, 8

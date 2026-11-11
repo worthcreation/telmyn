@@ -55,7 +55,8 @@ export async function renderProgress(root) {
     const frac = p.blocks.length ? n / p.blocks.length : 0;
     const before = d < start;
     const open = d <= today && !before;
-    return h(open ? 'button' : 'div', { class: `wk${d === today ? ' today' : ''}${d > today ? ' future' : ''}${before ? ' before' : ''}`, onclick: open ? () => daySheet(d) : null, 'aria-label': open ? `Open the log for ${d}` : null },
+    // A paused day (js/pause.js) counts only the blocks that stayed on, and its circle shows it was paused.
+    return h(open ? 'button' : 'div', { class: `wk${d === today ? ' today' : ''}${d > today ? ' future' : ''}${before ? ' before' : ''}${p.pause ? ' paused' : ''}`, onclick: open ? () => daySheet(d) : null, 'aria-label': open ? `Open the log for ${d}${p.pause ? ', paused' : ''}` : null },
       h('span', { class: 'wk-d' }, WEEKDAYS[weekday(d)][0]),
       h('span', { class: 'wk-dot', style: `--p:${before ? 0 : frac}` }),
       h('span', { class: 'wk-n' }, d > today || before ? '' : `${n}/${p.blocks.length}`));
@@ -73,17 +74,19 @@ export async function renderProgress(root) {
   const week = area => () => areaSheet(area, sunday, dates[6]);
   const elapsed = Math.max(1, past.length);
   const typeOn = d => planFor(d).typeKey;
-  const strengthPlanned = past.filter(d => /strength/.test(typeOn(d))).length;
+  // A block paused that day was not planned, so it never counts as missed.
+  const planned = (d, id) => planFor(d).blocks.some(b => b.id === id);
+  const strengthPlanned = past.filter(d => /strength/.test(typeOn(d)) && planned(d, typeOn(d))).length;
   const strengthDone = past.filter(d => done(d, typeOn(d))).filter(d => /strength/.test(typeOn(d))).length;
-  const rowPlanned = past.filter(d => typeOn(d) === 'row').length;
+  const rowPlanned = past.filter(d => typeOn(d) === 'row' && planned(d, 'row')).length;
   const rowDone = past.filter(d => typeOn(d) === 'row' && done(d, 'row')).length;
   // Minutes and meters rowed this week, each day from its row block or its imported numbers (one rule: rowTotals).
   const rowed = past.map(d => rowTotals(dayRec[d] || {}, st.filter(s => s.date === d)));
   const rowMin = rowed.reduce((a, r) => a + (r.min || 0), 0), rowM = rowed.reduce((a, r) => a + (r.m || 0), 0);
   const pulls = pullReps(st), hangs = hangSecs(st);
   const hourly = past.reduce((a, d) => a + gripCount(dayRec[d], ev.filter(e => e.date === d)), 0);
-  const stretchDays = past.filter(d => done(d, 'stretch')).length;
-  const legsDays = past.filter(d => done(d, 'evening_legs')).length;
+  const stretchDays = past.filter(d => done(d, 'stretch')).length, stretchPlanned = Math.max(1, past.filter(d => planned(d, 'stretch') || done(d, 'stretch')).length);
+  const legsDays = past.filter(d => done(d, 'evening_legs')).length, legsPlanned = Math.max(1, past.filter(d => planned(d, 'evening_legs') || done(d, 'evening_legs')).length);
   const proteinDays = past.filter(d => (dayRec[d]?.protein_g || 0) >= TARGETS.protein_g[0]).length;
   const versesApplied = past.filter(d => dayRec[d]?.verse_applied_notes).length;
   // Fluids per day: imported total plus app entries. Blank days stay out of averages.
@@ -101,10 +104,10 @@ export async function renderProgress(root) {
       bar('Strength', strengthDone, strengthPlanned || null, `${strengthDone}/${strengthPlanned} sessions${pulls.length ? `, best pull set ${Math.max(...pulls)}` : ''}`, week('strength')),
       bar('Endurance', rowDone, rowPlanned || null, `${rowDone}/${rowPlanned} rows, ${Math.round(rowMin)} min${rowM ? `, ${rowM.toLocaleString('en-US')} m` : ''}`, week('endurance')),
       bar('Grip', hangs.length ? Math.max(...hangs) : 0, 20, `${hourly} grip breaks${hangs.length ? `, best hang ${Math.max(...hangs)} sec` : ''}`, week('grip')),
-      bar('Mobility', stretchDays, elapsed, `${stretchDays}/${elapsed} morning stretches`, week('mobility')),
+      bar('Mobility', stretchDays, stretchPlanned, `${stretchDays}/${stretchPlanned} morning stretches`, week('mobility')),
       bar('Fuel', proteinDays, elapsed, `${proteinDays}/${elapsed} days at ${TARGETS.protein_g[0]} g protein`, week('fuel')),
       bar('Hydration', fluidDays, elapsed, `${fluidDays}/${elapsed} days at ${TARGETS.fluids_oz[0]} oz`, week('hydration')),
-      bar('Recovery', legsDays, elapsed, `${legsDays}/${elapsed} evenings legs up`, week('recovery')),
+      bar('Recovery', legsDays, legsPlanned, `${legsDays}/${legsPlanned} evenings legs up`, week('recovery')),
       h('button', { class: 'stat spirit', onclick: journalSheet }, h('div', { class: 'stat-top' }, h('span', { class: 'stat-l' }, 'Spirit'),
         h('span', { class: 'stat-d' }, `Verse applied on ${versesApplied} of ${elapsed} days. Tap for your journal.`)))),
     h('section', { class: 'avg', 'aria-label': 'Weekly averages' },

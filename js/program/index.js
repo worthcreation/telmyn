@@ -2,6 +2,7 @@
 import * as v1_1 from './v1_1.js';
 import { weekday, daysBetween, weekStart } from '../clock.js';
 import { RULES, onDay } from '../reminder-rules.js';
+import { pauseFor } from '../pause.js';
 
 export const PROGRAMS = [
   { version: 'v1.1', effective: '2026-10-27', data: v1_1 },
@@ -38,7 +39,11 @@ export function planFor(iso) {
   // Sunday is off with an optional walk (program spec). Offered before legs up; "Not today" closes it.
   if (wd === 0 && BLOCKS.walk && !order.includes('walk')) order.splice(Math.max(0, order.indexOf('evening_legs')), 0, 'walk');
 
-  const blocks = order.map(id => ({
+  // A pause (js/pause.js) takes its blocks out of the day: 'routine' is the day's strength, row or walk.
+  const pause = pauseFor(iso), off = new Set(pause?.off || []);
+  const paused = id => off.has(id) || (off.has('routine') && (id === type.routine || id === 'walk'));
+
+  const blocks = order.filter(id => !paused(id)).map(id => ({
     id,
     ...BLOCKS[id],
     mode: timing[id]?.mode || 'open',
@@ -52,7 +57,8 @@ export function planFor(iso) {
     typeLabel: type.label,
     workday,
     blocks,
-    hourly: workday ? { id: 'hourly', ...BLOCKS.hourly } : null,
+    hourly: workday && !off.has('grip') ? { id: 'hourly', ...BLOCKS.hourly } : null,
+    pause,
     program: p,
   };
 }
