@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.33.1 (2026-11-16)
+Creatine 10 g once a day in the morning Huel from 2026-11-16 (Ross). Earlier days keep their doses (5 g from 11-11).
+The 09:30 reminder now says 10 g.
+
 ## 0.33.0 (2026-11-11)
 Pauses (Ross, 2026-11-11). Me has Pause or light days: pick Light, Sick or Travel, the dates, what stays on (morning
 stretch, Fab Five, routine, dead hangs, legs up, grip breaks, pumps and calf raises, creatine, weight) and a reason.

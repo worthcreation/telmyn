@@ -251,7 +251,9 @@ export const HABITS = {
   // tap logs one dose of grams. Loading (Ross, 2026-11-04): 10 g three times a day with food, 11-05 to 11-10, then
   // back to 5 g once a day. remind names its reminder rule; the dose times are there.
   creatine: { name: 'Creatine', grams: 5, times: 1, daily: true, since: '2026-11-03', remind: 'creatine', note: '5 g, stirred into the morning Huel.',
-    phases: [{ from: '2026-11-05', to: '2026-11-10', grams: 10, times: 3, note: '10 g three times a day with food, loading.' }] },
+    phases: [{ from: '2026-11-05', to: '2026-11-10', grams: 10, times: 3, note: '10 g three times a day with food, loading.' },
+      // 10 g once a day in the morning Huel from 2026-11-16 (Ross: top of the ISSN 5-10 g range for larger athletes).
+      { from: '2026-11-16', to: '9999-12-31', grams: 10, times: 1, note: '10 g, stirred into the morning Huel.' }] },
 };
 export const TARGETS = { fluids_oz: [100, 120], protein_g: [160, 200] };
 

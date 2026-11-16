@@ -259,6 +259,10 @@ test('a pause quiets its reminder kinds on its dates only', async () => {
   eq(due({ offset: off, state: { pause: [{ from: '2026-11-12', to: '2026-11-12', kinds: ['weight'] }] } }, t('2026-11-12T13:00:00Z')).length, 0);
 });
 group('Program');
+test('creatine: 5 g from 11-11, 10 g once a day from 11-16', () => {
+  const c = d => { const x = dailyHabits(d).find(h => h.key === 'creatine'); return [x.grams, x.times]; };
+  eq([c('2026-11-10'), c('2026-11-15'), c('2026-11-16'), c('2027-03-01')], [[10, 3], [5, 1], [10, 1], [10, 1]]);
+});
 test('a pause takes its blocks out of the day and marks the cloud copy', async () => {
   const { setPauses } = await import('../js/pause.js');
   setPauses([{ id: 'p1', preset: 'light', from: '2026-11-11', to: '2026-11-13', reason: 'tattoo healing', off: ['routine', 'grip', 'legs'] }]);
