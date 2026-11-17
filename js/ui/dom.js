@@ -195,6 +195,10 @@ export const sounds = {
   tick: () => tone(660, 0.09),
   go: () => { tone(1046, 0.6); navigator.vibrate?.(150); },
   end: () => { tone(880, 0.2); tone(880, 0.2, 0.28); navigator.vibrate?.([120, 80, 120]); },
+  // Timed negatives: each part its own sound, so the phone can stay out of sight. Up high, hold in the middle, down low and long.
+  jump: () => { tone(1175, 0.18); tone(1568, 0.22, 0.16); navigator.vibrate?.(120); },
+  hold: () => { tone(988, 0.3); navigator.vibrate?.(60); },
+  down: () => { tone(587, 0.6); navigator.vibrate?.([60, 60, 60]); },
 };
 
 export function chime(times = 1) {

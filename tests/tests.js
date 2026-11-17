@@ -141,6 +141,11 @@ test('Tue week 2 rotates to James 1:12', () => eq(verseFor('2026-11-03').ref, 'J
 test('a Sunday takes the verse of the week it opens: Sun 11-15 (week 4) is Hebrews 12:2', () => eq(verseFor('2026-11-15').ref, 'Hebrews 12:2'));
 group('Program');
 test('Tue plan is v1.1 Row, hangs before row, stretch at 06:30', () => { const p = planFor('2026-10-27'); eq([p.version, p.typeLabel, p.blocks.map(b => b.id), p.blocks[0].time], ['v1.1', 'Row', ['stretch', 'gates', 'hangs', 'row', 'evening_legs'], '06:30']); });
+test('pull-up sets default to negatives, timed jump 2, hold 3, down 5', () => {
+  const pulls = ['2026-11-16', '2026-11-19'].flatMap(d => planFor(d).blocks.flatMap(b => b.steps || []).filter(s => s.exercise === 'chin_up' || s.exercise === 'neutral_pullup'));
+  eq(pulls.length, 6);
+  for (const s of pulls) eq([s.mode_default, s.modes.includes(s.mode_default), s.cycle], ['negative', true, { jump: 2, hold: 3, down: 5 }]);
+});
 test('Strength day keeps hangs after the routine', () => eq(planFor('2026-11-02').blocks.map(b => b.id), ['stretch', 'gates', 'strength_a', 'hangs', 'evening_legs']));
 test('every v1.1 step has a cue except rests, palms choice and curls without cues', () => {
   for (const b of Object.values(planFor('2026-10-27').program.data.BLOCKS)) for (const s of b.steps) {

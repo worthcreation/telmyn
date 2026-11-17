@@ -47,6 +47,9 @@ export function runBlock(block, opts = {}) {
   // The ghost: the same set (and side) from last time, or that session's last set when it had fewer. Warm-up sets
   // show last time but are not raced (they are there to warm up, not to beat).
   const races = s => s.phase !== 'Warm-up';
+  // A set with modes starts in the program's default mode (pull-ups: negatives), so a set is never logged as full
+  // range just because the switch was not touched (11-16, set 3).
+  const modeOf = s => entry.mode || (s.modes ? (s.mode_default || s.modes[0]) : null);
   const lastFor = s => {
     const t = lastTime[s.exercise], pick = t && sameSetLast(t.rows, s);
     return pick ? { ...pick, day: WEEKDAYS[weekday(t.date)] } : null;
@@ -140,6 +143,43 @@ export function runBlock(block, opts = {}) {
     render();
   }
   function stopCountUp() { clearTimers(); cue('end'); advance(true); }
+
+  // Timed negatives: Start runs jump, hold, down on beeps, back to back, counting each finished rep, until Stop.
+  // Stop puts the finished reps in the box (adjust if needed) and Save logs them. Typing a number instead skips the timer.
+  const PARTS = [['jump', 'Jump'], ['hold', 'Hold'], ['down', 'Down']];
+  const canCycle = s => s.kind === 'set' && s.cycle && modeOf(s) === 'negative';
+  const needsStart = s => canCycle(s) && !entry.cycled && !entry.manual;
+  function runCycle(s) {
+    clearTimers();
+    paused = false;
+    timer = { kind: 'cycle', part: -1, reps: 0 };
+    const nextPart = () => {
+      if (timer.part === 2) timer.reps++;
+      timer.part = (timer.part + 1) % 3;
+      const [key] = PARTS[timer.part];
+      timer.total = s.cycle[key];
+      timer.end = now().getTime() + timer.total * 1000;
+      cue(key);
+      render();
+    };
+    nextPart();
+    timer.int = setInterval(() => {
+      const left = Math.max(0, (timer.end - now().getTime()) / 1000);
+      const el = root.querySelector('.clock');
+      if (el) el.textContent = fmtSec(Math.ceil(left));
+      const bar = root.querySelector('.clock-fill');
+      if (bar) bar.style.transform = `scaleX(${1 - left / timer.total})`;
+      if (left <= 0) nextPart();
+    }, 100);
+  }
+  function stopCycle() {
+    const reps = timer?.reps || 0;
+    clearTimers();
+    cue('end');
+    entry.value = String(reps);
+    entry.cycled = true;
+    render();
+  }
   const startStep = s => (isTimedSet(s) ? runCountUp(s) : runHold(s));
 
   function runRest(s) {
@@ -178,7 +218,7 @@ export function runBlock(block, opts = {}) {
       const field = LOG[s.log][0];
       const val = entry.value;
       if (val !== undefined && val !== null && val !== '') {
-        const saved = { block: block.id, exercise: s.exercise, set_no: s.set_no || 1, side: s.side || null, [field]: Number(val), mode: entry.mode || (s.modes ? 'full' : null), lb: weighted(s) ? entry.lb : undefined };
+        const saved = { block: block.id, exercise: s.exercise, set_no: s.set_no || 1, side: s.side || null, [field]: Number(val), mode: modeOf(s), lb: weighted(s) ? entry.lb : undefined };
         await addSet(saved);
         if (s.logField) await setField(s.logField, Number(val));
         if (races(s)) cheer(versusLast(saved, lastFor(s), field), LOG[s.log][1]);
@@ -236,7 +276,7 @@ export function runBlock(block, opts = {}) {
     const ex = exKey ? EXERCISES[exKey] : null;
     if (!ex?.video) return null;
     // Watching a demo pauses any running timer; it stays paused until you resume.
-    const hooks = { onOpen: () => { if (timer && timer.kind !== 'countup') pause(); study.hold(); } };
+    const hooks = { onOpen: () => { if (timer && timer.kind !== 'countup' && timer.kind !== 'cycle') pause(); study.hold(); } };
     return h('div', { class: 'links' },
       watchButton('Watch', ex.video, hooks, ex.name, { key: exKey, query: `${ex.name} exercise form tutorial` }),
       ex.alt ? watchButton(ex.alt.label, ex.alt.video, hooks, `${ex.name}: ${ex.alt.label}`, { key: `${exKey}:alt`, query: `${ex.name} ${ex.alt.label} tutorial` }) : null);
@@ -253,14 +293,14 @@ export function runBlock(block, opts = {}) {
     const ghostEl = h('p', { class: 'ghost-vs' });
     const race = () => ghost(ghostEl, s, field, unit);
     const input = h('input', { class: 'num', type: 'number', inputmode: 'decimal', min: 0, 'aria-label': unit,
-      value: entry.value ?? '', oninput: e => { entry.value = e.target.value; syncSave(s); race(); } });
-    const bump = d => () => { const cur = Number(input.value || 0); input.value = Math.max(0, cur + d); entry.value = input.value; syncSave(s); race(); };
+      value: entry.value ?? '', oninput: e => { entry.value = e.target.value; entry.manual = true; syncSave(s); race(); } });
+    const bump = d => () => { const cur = Number(input.value || 0); input.value = Math.max(0, cur + d); entry.value = input.value; entry.manual = true; syncSave(s); race(); };
     const kids = [h('div', { class: 'stepper' },
       h('button', { class: 'round', 'aria-label': 'Less', onclick: bump(-stepBy) }, '−'),
       h('label', {}, input, h('span', {}, unit)),
       h('button', { class: 'round', 'aria-label': 'More', onclick: bump(stepBy) }, '+'))];
     if (s.modes) {
-      entry.mode ||= 'full';
+      entry.mode = modeOf(s);
       kids.push(h('div', { class: 'seg' }, s.modes.map(m => h('button', { class: entry.mode === m ? 'on' : '', onclick: () => { entry.mode = m; render(); } }, m === 'full' ? 'Full range' : 'Negatives'))));
     }
     // Dumbbell exercises: the weight, starting where you last left it (today's last set, then your last session,
@@ -284,7 +324,7 @@ export function runBlock(block, opts = {}) {
   // The race line under the ghost. One line, always there while there is a ghost, so nothing jumps as it changes.
   function ghost(el, s, field, unit) {
     const g = lastFor(s);
-    const v = versusLast({ [field]: entry.value, lb: weighted(s) ? entry.lb : undefined, mode: entry.mode || (s.modes ? 'full' : null) }, g, field);
+    const v = versusLast({ [field]: entry.value, lb: weighted(s) ? entry.lb : undefined, mode: modeOf(s) }, g, field);
     el.className = `ghost-vs${v?.result === 'up' ? ' up' : ''}`;
     el.textContent = !v ? '\u00a0' : v.result === 'up' ? (v.mode ? 'Beats it: full reps' : v.heavier ? `Beats it: ${v.heavier} lb heavier` : `Beats it by ${v.by}`)
       : v.result === 'tie' ? 'Ties it. One more beats it'
@@ -306,6 +346,7 @@ export function runBlock(block, opts = {}) {
     if (!btn || s.kind !== 'set') return;
     const empty = entry.value === undefined || entry.value === null || entry.value === '';
     const unit = LOG[s.log][2];
+    if (needsStart(s)) { btn.disabled = false; btn.textContent = 'Start'; return; }
     btn.disabled = empty;
     btn.textContent = empty ? `Enter ${unit}` : (i === steps.length - 1 ? 'Finish block' : 'Save and next');
   }
@@ -317,6 +358,15 @@ export function runBlock(block, opts = {}) {
 
     const inTransition = timer?.kind === 'transition';
     const counting = timer?.kind === 'countup';
+    const cycling = timer?.kind === 'cycle';
+    if (cycling) {
+      const reps = timer.reps;
+      body.push(h('div', { class: 'clock-wrap' },
+        h('p', { class: 'getready-label' }, PARTS[timer.part][1]),
+        h('div', { class: 'clock' }, fmtSec(Math.ceil(Math.max(0, (timer.end - now().getTime()) / 1000)))),
+        h('div', { class: 'clock-bar' }, h('div', { class: 'clock-fill' })),
+        h('p', { class: 'countup-hint' }, `${reps} ${reps === 1 ? 'rep' : 'reps'} done. Tap Stop when you are finished.`)));
+    }
     if (isTimedSet(s) && !inTransition) {
       const [lo, hi] = rangeOf(s);
       body.push(h('div', { class: 'clock-wrap' },
@@ -331,7 +381,7 @@ export function runBlock(block, opts = {}) {
         inTransition ? h('p', { class: 'getready-label' }, 'Starts in') : null,
         h('div', { class: 'clock' }, fmtSec(shown)), h('div', { class: 'clock-bar' }, h('div', { class: 'clock-fill' }))));
     }
-    if (s.kind === 'set' && !counting && !(isTimedSet(s) && inTransition)) body.push(stepper(s));
+    if (s.kind === 'set' && !counting && !cycling && !(isTimedSet(s) && inTransition)) body.push(stepper(s));
     if (s.choice === 'palms') {
       const sug = suggestPalms();
       entry.mode ||= entry.palms || sug || null;
@@ -339,17 +389,20 @@ export function runBlock(block, opts = {}) {
       if (sug) body.push(h('p', { class: 'muted small' }, `Alternating: palms ${sug} this time.`));
     }
 
-    const running = timer && (timer.kind === 'hold' || timer.kind === 'rest' || inTransition || counting);
+    const running = timer && (timer.kind === 'hold' || timer.kind === 'rest' || inTransition || counting || cycling);
     const isLast = i === steps.length - 1;
     let primary;
     if (inTransition) primary = h('button', { class: 'btn', onclick: () => startStep(s) }, 'Start now');
     else if (counting) primary = h('button', { class: 'btn', onclick: stopCountUp }, 'Stop and save');
+    else if (cycling) primary = h('button', { class: 'btn', onclick: stopCycle }, 'Stop');
     else if (isTimedSet(s) && !entry.value) primary = h('button', { class: 'btn', onclick: () => { paused = false; runCountUp(s); } }, 'Start');
     else if (s.kind === 'rest') primary = running ? h('button', { class: 'btn', onclick: next }, 'Skip rest') : h('button', { class: 'btn', onclick: resume }, 'Resume rest');
     else if (s.kind === 'timed' && !running) primary = h('button', { class: 'btn', onclick: () => { paused = false; runHold(s); } }, paused ? 'Resume' : 'Start');
     else if (s.kind === 'timed') primary = h('button', { class: 'btn next-btn', onclick: next }, isLast ? 'Finish block' : 'Done early');
-    else primary = h('button', { class: 'btn next-btn', onclick: next }, isLast ? 'Finish block' : (s.kind === 'set' ? 'Save and next' : 'Done'));
-    const secondary = running
+    else primary = h('button', { class: 'btn next-btn', onclick: () => (needsStart(s) ? runCycle(s) : next()) }, isLast ? 'Finish block' : (s.kind === 'set' ? 'Save and next' : 'Done'));
+    const secondary = cycling
+      ? h('button', { class: 'btn ghost', disabled: true }, 'Back')
+      : running
       ? h('button', { class: 'btn ghost', onclick: pause }, 'Pause')
       : h('button', { class: 'btn ghost', onclick: back, disabled: i === 0 }, 'Back');
 
@@ -366,7 +419,7 @@ export function runBlock(block, opts = {}) {
       videoLinks(s),
       ...body);
     fill(footEl, secondary, primary);
-    if (s.kind === 'set' && !counting && !inTransition) syncSave(s);
+    if (s.kind === 'set' && !counting && !cycling && !inTransition) syncSave(s);
     const cw = mainEl.querySelector('.clock-wrap');
     if (root.classList.contains('video-mode') && cw) fill(clockEl, cw); else fill(clockEl);
     // Study video starts with the first timer and then keeps playing; only you pause it (tap the video).

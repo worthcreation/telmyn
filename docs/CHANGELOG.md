@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.34.0 (2026-11-17)
+Timed negatives (Ross, 2026-11-17). Chin-up and pull-up sets start on Negatives (11-16's third set was logged as full
+range only because the switch defaulted there). On Negatives, Start runs the reps on beeps, back to back: Jump (2 sec,
+rising double tone), Hold chin over the bar (3 sec, middle tone), Down slowly (5 sec, low long tone), then the next
+Jump, counting each finished rep, until Stop. Stop puts the reps in the box to adjust and save; typing a number skips
+the timer, and Full range logs as before. The seconds live in program/v1_1.js (PULL.cycle).
+
 ## 0.33.1 (2026-11-16)
 Creatine 10 g once a day in the morning Huel from 2026-11-16 (Ross). Earlier days keep their doses (5 g from 11-11).
 The 09:30 reminder now says 10 g.

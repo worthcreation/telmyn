@@ -69,6 +69,9 @@ const forearmHolds = sec => [
 const doorway = step.timed('Doorway chest stretch', 30, { exercise: 'doorway_chest', cue: C.doorway });
 
 const PULL_RULE = 'Full range. Stop 1-2 reps short of failure. Under 4 clean reps: 3-5 slow negatives instead.';
+// Negatives are the default until full reps come (Ross, 2026-11-17). Start runs them on beeps, back to back:
+// jump to the top, hold chin over the bar, lower slowly, then the next jump, until Stop. Seconds per part here.
+const PULL = { modes: ['full', 'negative'], mode_default: 'negative', cycle: { jump: 2, hold: 3, down: 5 } };
 
 const HANG_CUE = 'Shoulders pulled down from the ears, ribs down, arms straight.';
 // Leg swings and a bodyweight ramp set before the first leg set (Ross, 2026-11-09).
@@ -135,7 +138,7 @@ export const BLOCKS = {
     steps: [
       step.rest(180, 'Rest 3 min after the Fab Five', { after: 'gates', within: 15 }),
       ...strengthWarmup,
-      ...sets(3, i => step.set('chin_up', `Chin-ups, set ${i}`, { note: PULL_RULE, modes: ['full', 'negative'], set_no: i, cue: 'Dead hang to chin over the bar. Control the way down.' }), 120),
+      ...sets(3, i => step.set('chin_up', `Chin-ups, set ${i}`, { note: PULL_RULE, ...PULL, set_no: i, cue: 'Dead hang to chin over the bar. Control the way down.' }), 120),
       ...ramp('bss', 'Ramp set: 8 bodyweight split squats each leg', 'No weight, back foot on the bench. Easy, smooth reps to wake up the legs.'),
       ...sides(3, 'bss', 'Bulgarian split squats, 3 sec down', 30, [90, 'Rest 90 sec'], { cue: 'Front shin near vertical. Push through the front heel.' }),
       ...sets(3, i => step.set('pushup', `Push-ups, set ${i}, 3 sec down, near failure`, { set_no: i, cue: 'Body straight as a plank. Chest close to the floor.' }), 90),
@@ -151,7 +154,7 @@ export const BLOCKS = {
     steps: [
       step.rest(180, 'Rest 3 min after the Fab Five', { after: 'gates', within: 15 }),
       ...strengthWarmup,
-      ...sets(3, i => step.set('neutral_pullup', `Neutral-grip pull-ups, set ${i}`, { note: PULL_RULE, modes: ['full', 'negative'], set_no: i, cue: 'Palms facing each other. Dead hang to chin over the bar.' }), 120),
+      ...sets(3, i => step.set('neutral_pullup', `Neutral-grip pull-ups, set ${i}`, { note: PULL_RULE, ...PULL, set_no: i, cue: 'Palms facing each other. Dead hang to chin over the bar.' }), 120),
       ...ramp('sl_rdl', 'Ramp set: 8 bodyweight single-leg RDLs each leg', 'No weight. Slow hinge, hips square, find your balance.'),
       ...sides(3, 'sl_rdl', 'Single-leg RDL, weight in opposite hand', 30, [90, 'Rest 90 sec'], { cue: 'Hips back, flat back, slight knee bend. Keep the hips square.' }),
       ...sets(3, i => step.set('goblet', `Goblet squats, set ${i}, 2 sec pause at bottom`, { set_no: i, cue: 'Weight close to the chest. Sit between the heels.' }), 90),
